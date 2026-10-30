@@ -342,8 +342,6 @@ export const register: Register = (on, options) => {
     // Open only while there is more to show: with two rows or fewer there is no arrow to close it.
     const isOpen = (await read($, detailed)) && v.rows.length > 2
     const maestro = v.inProject && v.role === 'maestro'
-    const shown = maestro && !isOpen ? v.rows.slice(0, 2) : v.rows
-    const hidden = v.rows.slice(shown.length)
     const rule = pic(RULE, 'divider', undefined, 1)
 
     const toggle = async () => {
@@ -401,17 +399,6 @@ export const register: Register = (on, options) => {
       </Box>
     )
 
-    let body = null
-    if (maestro && v.total === 0 && v.rows.length === 0) body = <Text dimColor>No workstreams yet. Start one with /orchestra:start-workstream.</Text>
-    else if (maestro && v.rows.length === 0) body = <Text dimColor>Nothing needs you.</Text>
-    else if (v.rows.length > 0) body = (
-      <Box flexDirection="column">
-        {maestro && isOpen && heads}
-        {shown.map(row)}
-        {hidden.length > 0 && <Box paddingX={1}><Text dimColor>+{hidden.length} more: {[...new Set(hidden.map(r => r.status))].join(', ')}</Text></Box>}
-      </Box>
-    )
-
     const show5 = v.fiveHour !== null || v.inProject
     const showWeek = v.week !== null || v.inProject
     const counted = maestro && v.total > 0
@@ -436,6 +423,25 @@ export const register: Register = (on, options) => {
     const compact = 6 + (show5 ? shortCells('5h', v.fiveHour) : 0) + (showWeek ? 2 + shortCells('Weekly', v.week) : 0)
       + (counted ? `${v.running}/${v.total}`.length + 2 : 0) + (toggleButton ? 4 : 0)
     const named = !desktop || e.props.bodyColumns >= compact + 10
+
+    // The app scrolls a band taller than maxRows, which hides the footer: open, the list keeps to the rows left beside
+    // the header, headings and footer (one more on the desktop for its rules and gaps), with a count for the rest.
+    const hasFooter = pt.shown || v.pings > 0 || v.liveview !== ''
+    const fixedRows = (narrow && runOutAt !== null ? 2 : 1) + (maestro && isOpen ? 1 : 0) + (hasFooter ? 1 : 0) + (desktop ? 1 : 0)
+    const room = e.props.maxRows - fixedRows
+    const shown = maestro && !isOpen ? v.rows.slice(0, 2) : v.rows.length <= room ? v.rows : v.rows.slice(0, Math.max(2, room - 1))
+    const hidden = v.rows.slice(shown.length)
+
+    let body = null
+    if (maestro && v.total === 0 && v.rows.length === 0) body = <Text dimColor>No workstreams yet. Start one with /orchestra:start-workstream.</Text>
+    else if (maestro && v.rows.length === 0) body = <Text dimColor>Nothing needs you.</Text>
+    else if (v.rows.length > 0) body = (
+      <Box flexDirection="column">
+        {maestro && isOpen && heads}
+        {shown.map(row)}
+        {hidden.length > 0 && <Box paddingX={1}><Text dimColor>+{hidden.length} more: {[...new Set(hidden.map(r => r.status))].join(', ')}</Text></Box>}
+      </Box>
+    )
 
     const header = narrow ? (
       <Box flexDirection="row" alignItems="flex-start" gap={2}>
@@ -477,7 +483,7 @@ export const register: Register = (on, options) => {
       </Box>
     )
 
-    const footer = pt.shown || v.pings > 0 || v.liveview !== '' ? (
+    const footer = hasFooter ? (
       <Box flexDirection="row" alignItems="center" gap={1}>
         {pt.shown && <Text dimColor>ponytail</Text>}
         {pt.shown && LEVELS.map(level => (
