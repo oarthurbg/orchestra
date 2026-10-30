@@ -699,6 +699,36 @@ test('any cell of a row opens its session, and the week shows its reset or its r
   await ui.unmount()
 })
 
+test('a narrow band, as in a split view, keeps one line and adds a red line only while the week runs out', async ($, on) => {
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY,
+    [`${ROOT}/.orchestra/sessions/s2.json`]: report('s2', { workstream: 'reports', state: 'waiting' }),
+  }
+  disk(on, files)
+  session(on, ROOT, 'o')
+  const week = (percentUsed: number) => [{ kind: 'seven_day', percentUsed, resetsAt: new Date(Date.now() + 3 * 86_400_000).toISOString() }]
+  on('session.measure', ($, e) => ({ changed: e.changed }))
+  await start($)
+  const mount = (bodyColumns: number) => $.ui.mount({ ...BAND, props: { ...BAND.props, bodyColumns }, surface: 'desktop' })
+  await $.session.measure({ context: { tokens: 30_000, window: 1_000_000 }, rateLimits: week(10), changed: [] } as never)
+  let ui = await mount(60)
+  expect(await ui.find({ type: 'Text', text: /^10%$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /% used/ })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /^\d+\/\d+$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /runs out/i })).toBeUndefined()
+  await ui.unmount()
+  await $.session.measure({ context: { tokens: 30_000, window: 1_000_000 }, rateLimits: week(95), changed: [] } as never)
+  ui = await mount(60)
+  expect(await ui.find({ type: 'Text', text: /^Weekly limit runs out .+, before it resets$/ })).toBeDefined()
+  await ui.unmount()
+  // Narrower still: no bars, "Wk", and the short warning.
+  ui = await mount(40)
+  expect(await ui.find({ type: 'Text', text: /^Wk$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^Runs out / })).toBeDefined()
+  for (const s of await ui.findAll({ type: 'Svg' })) expect(String(s.props.alt)).not.toMatch(/limit/)
+  await ui.unmount()
+})
+
 test('a FileChanged path in another case and with backslashes still refreshes', async ($, on) => {
   const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
   disk(on, files)
