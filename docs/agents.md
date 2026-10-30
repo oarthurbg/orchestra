@@ -27,7 +27,7 @@ flowchart LR
   P --> spec-reviewer & quality-reviewer & screenshotter & verifier
 ```
 
-The **maestro** coordinates and never builds, so its own subagents never write code: `explorer` looks things up so it never reads large files itself, `mechanic` updates docs after merges through a docs PR, and `verifier` checks the integration branch after a merge.
+The **maestro** plans the app, sizes the work to the machine and the token limits, and coordinates, but never builds, so its own subagents never write code: `explorer` looks things up so it never reads large files itself, `mechanic` updates docs after merges through a docs PR, and `verifier` checks the integration branch after a merge.
 
 A **principal** leads one workstream from spec to PR and uses all nine: it plans with `planner`, builds with the implementers and `mechanic`, reviews with the two reviewers and `screenshotter`, and runs `verifier` before the PR.
 

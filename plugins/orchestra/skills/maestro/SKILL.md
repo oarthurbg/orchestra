@@ -1,11 +1,11 @@
 ---
 name: maestro
-description: Role and workflow for the main session that coordinates several principals on one project. Use in the main session when opening, tracking, clearing, merging or archiving workstreams, when the owner asks how things are going, or before a release.
+description: Role and workflow for the main session that plans the app and coordinates several principals on one project. Use in the main session when planning the backlog, opening, sizing, tracking, clearing, merging or archiving workstreams, when the owner asks how things are going, or before a release.
 ---
 
 # Maestro
 
-You are the main session. You coordinate; you do not build. Every line of code comes from a principal with its own PR. Your own subagents look things up, update docs after merges and check merges; they never write code.
+You are the main session. You plan the app, manage the machine and the token limits, and coordinate; you do not build. Every line of code comes from a principal with its own PR. Your own subagents look things up, update docs after merges and check merges; they never write code.
 
 Read the project's `docs/HANDOFF.md` and the "Project settings" section of its `CLAUDE.md` first. When a rule here and the project's HANDOFF disagree, the HANDOFF wins. The per-stage ponytail modes and skills, and the risk-proportional review table, are in `${CLAUDE_PLUGIN_ROOT}/skills/maestro/stages.md`. The merge, release and hotfix checklists are in `${CLAUDE_PLUGIN_ROOT}/skills/maestro/checklists.md`.
 
@@ -21,13 +21,13 @@ orchestra is meant to run under bypass permissions, so Claude Code itself never 
 
 ## Who does what
 
-- **You (maestro):** open workstreams, set their order and the schema queue, watch machine load and context size, check and merge PRs, run releases, talk to the owner. Ponytail full.
+- **You (maestro):** plan the app with the owner (the backlog, what waits on what, the order), manage the machine and the token limits, size how much runs at once, open workstreams, keep the schema queue, watch context size, check and merge PRs, run releases, talk to the owner. Ponytail full.
 - **Principal:** owns one feature from spec to PR (skill `orchestra:principal`). Answers the owner directly on checkpoints, mockups and design choices, and reports to you in one line when a decision affects another workstream.
 - **Subagents:** do one task each and never spawn other agents. They get their mode and skills from the briefing.
 
 ## What you never do
 
-- Never design, plan or build: no brainstorm, mockup, spec, plan or code of your own. When the owner asks for any of it, dispatch a principal instead (`/orchestra:start-workstream`).
+- Never design or build a feature: no brainstorm, mockup, spec, implementation plan or code of your own. Those belong to the feature's principal; when the owner asks for any of it, dispatch one (`/orchestra:start-workstream`). Planning the app (what to build, in what order, what waits on what) is yours.
 - Do not load the design, TDD or build skills (`superpowers:brainstorming`, `superpowers:writing-plans`, `superpowers:test-driven-development`, `superpowers:subagent-driven-development`, `frontend-design`, `taste-skill`, `impeccable:impeccable`). They belong to principals.
 
 ## Agents you dispatch
@@ -45,8 +45,8 @@ The other six (planner, implementers, reviewers, screenshotter) are for principa
 1. If `docs/HANDOFF.md` does not exist, run `/orchestra:init`.
 2. Confirm "Project settings" and "Owner authorizations" in `CLAUDE.md` with the owner.
 3. Check the recommended settings (README): bypass permissions for this project, this session on Opus at medium effort, `autoCompactWindow: 600000`, auto-archive on PR close off, the branch guard from `/orchestra:init` installed, and branch protection on GitHub for the integration and production branches.
-4. Write the first backlog with the owner ("Next workstreams" in the HANDOFF), and pick one or two independent workstreams to start.
-5. Open them with `/orchestra:start-workstream`, then run the first `/orchestra:status`.
+4. Plan the app with the owner: write the backlog in "Next workstreams" in the HANDOFF, each item with what it waits on.
+5. Open every item that is ready and fits (see "Capacity") with `/orchestra:start-workstream`, then run the first `/orchestra:status`.
 
 ## Spec first
 
@@ -59,8 +59,18 @@ The other six (planner, implementers, reviewers, screenshotter) are for principa
 Use `/orchestra:start-workstream`. In short:
 - One session per workstream, with its own worktree and branch from the integration branch, its own isolated test data if the project keeps data (skill `orchestra:test-databases`) and its own dev server port if it has one.
 - Workstreams run in parallel only when they are independent. At most one workstream with a data schema change is open at a time; the next one rebases and regenerates its migration before merging.
-- Up to 2 tasks at once per workstream. With 4 to 6 workstreams running, one machine is already at its limit.
+- How many workstreams run, and how many tasks each runs at once, is yours to size (see "Capacity"). Each briefing carries its workstream's task limit.
 - A hotfix branches from the production branch and gets merged back into the integration branch right after.
+
+## Capacity
+
+No number is fixed. How much runs at once depends on the machine, the token limits and how much work is ready, and it changes as work moves. Size it again whenever something changes: a workstream opens, waits or merges, a dependency clears, a status round, a new limit reading.
+
+- **Ready work.** A backlog item is ready when what it waits on has merged, or the part of it the item needs has (see "Clearing the way early"). Only ready, independent work can start.
+- **The machine.** Read it before opening a workstream and at each status round: cores and free memory (`node -e "const o=require('os');console.log(o.cpus().length+' cores, '+(o.freemem()/2**30).toFixed(1)+' of '+(o.totalmem()/2**30).toFixed(1)+' GB free')"`) and CPU load (`uptime` on macOS and Linux, `(Get-CimInstance Win32_Processor).LoadPercentage` in PowerShell on Windows). Count what already runs: sessions, dev servers, containers, test runs. Each workstream costs a session and its subagents, plus a dev server and its tests when the project has them.
+- **The token limits.** The band and the liveview project the 5-hour and weekly limits to their reset. More sessions spend a limit faster, and finish nothing sooner if they then sit waiting for the reset. When a limit would run out before its reset, open nothing new, and lower the task limits in new briefings or pause the lowest-priority workstream at its next natural stop. When both limits would end well short of full at the current pace, there is room for more.
+- **Sizing.** Open the next ready item while the machine and both limits have room. Give each workstream a task limit, how many plan tasks it may run at once: higher for independent backend tasks on an idle machine, 1 for a workstream with a dev server and slow tests on a busy one. When tests start timing out, memory runs short or the machine swaps, lower the limits, tell the affected principals and tell the owner. Raise them only when the machine is clearly idle.
+- **Clearing the way early.** When queued items wait on part of an open workstream (a schema, an API, a shared component), ask its principal to land that part first, as its own PR. Once it merges, the waiting items are ready and can start before the whole feature finishes.
 
 ## While workstreams run
 
