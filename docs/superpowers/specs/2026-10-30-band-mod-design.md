@@ -70,6 +70,7 @@ A `ui.render` hook on `AbovePrompt`.
 - **A row appears when a workstream:** is waiting (yellow triangle); is at 250k context or more (red square); is stale, meaning open in the registry but its file is more than 30 minutes old (half circle, `stale · <age>`); or is an `unregistered` worktree session (half circle, `unregistered <branch>`), so a forgotten worktree gets noticed.
 - **In a workstream session:** the summary line plus its own row (stage, context, keep-warm pings), always shown.
 - **Outside an orchestra project:** the limits line only.
+- **Sharing the slot:** other mods draw above the prompt too (ponytail's band does). The hook draws `next(e)` beneath its own band, as ponytail's does, so every band shows and none replaces another. It shows no ponytail controls; ponytail's band has the level switch.
 - **Refresh:** a 20-second timer lists `.orchestra/sessions/` and compares file timestamps, then re-reads and redraws only when something changed. The session's own figures redraw on `session.measure`.
 - **No limit readings yet** (API key, or before the first response): the limits part is hidden and the context part still shows.
 - **A file that fails to parse** (read mid-write) is skipped and the last good reading for that session is kept.
@@ -94,7 +95,7 @@ The same timer as the band's drives it.
 - `plugin.json`: the hooks module, the two settings, version 0.2.0.
 - `/orchestra:status`: reads `.orchestra/sessions/` first for each session's context and state, and falls back to `get_usage` and `list_events` when a file is missing or stale.
 - Merge checklist (`skills/orchestrator/checklists.md`): after merging, delete the workstream's session file.
-- README: a band section with screenshots, the two settings and the keep-warm trade-off.
+- README: a band section with screenshots, the two settings and the keep-warm trade-off, and a note that ponytail's level is one flag for every session (`~/.claude/.ponytail-active`): switching it in one session switches all of them, while each agent's per-stage mode stays in its own prompt.
 - ROADMAP: item 1 links to this spec and notes keep-warm as part of it.
 
 ## Testing
@@ -106,7 +107,7 @@ The same timer as the band's drives it.
   - the run-out time, including no run-out time before the reset;
   - the attention and stale rules;
   - the ping schedule and the `warmMaxHours` stop.
-- **Render test:** seeded session files (one waiting, one at 254k, one stale, one healthy) produce the summary line and exactly three rows; a project with no `.orchestra/` produces the limits line only.
+- **Render test:** seeded session files (one waiting, one at 254k, one stale, one healthy) produce the summary line and exactly three rows; a project with no `.orchestra/` produces the limits line only; a band another mod returns from `next(e)` is drawn beneath ours.
 - **Static checks:** `claude plugin validate` and `tsc -p` pass.
 - **Live check in the desktop app, first build step, before the rest:**
   - the timer fires while the session is idle;
