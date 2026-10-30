@@ -60,6 +60,8 @@ The commands, branches, test data and dev server come from the "Project settings
 
 **Job.** Searches and summarizes the repository: where X lives, who calls Y, what a large file does. It answers with `file:line` for every finding, quotes code only when the code is the answer, and says where it looked when it finds nothing.
 
+**Code navigation.** For who-calls, impact and trace questions about TypeScript, JavaScript or Python it runs the `lsp/lsp.mjs` command first, and uses grep when the command cannot answer.
+
 **Why it exists.** Reading whole files fills a session's context. The maestro and principals send `explorer` to read for them and keep only the conclusion. It runs nothing that changes state and never reads credentials, `.env` files or paths the project marks as confidential.
 
 ## planner
@@ -67,6 +69,8 @@ The commands, branches, test data and dev server come from the "Project settings
 **Opus, high** · ponytail **ultra** · writes only the plan · dispatched by principals
 
 **Job.** Turns one workstream's approved spec into an implementation plan with `superpowers:writing-plans`. Each task fits a subagent with a 100k to 200k token window and is self-contained, with an **Interfaces** block of exact names, signatures and paths. Every task is tagged with the agent that should build it (`implementer`, `implementer-advanced` or `mechanic`) and its risk (`mechanical`, `normal`, `sensitive` or `ui`). The principal picks the reviews from that risk tag.
+
+**Code navigation.** It checks who calls what a task changes with the same `lsp/lsp.mjs` command as the explorer, with grep as the fallback.
 
 **Why ultra.** The spec rules everything. Ultra cuts from the plan whatever the spec does not ask for, and never what it does. If the spec is wrong, incomplete, or overlaps another workstream, the planner stops and reports instead of planning over it: the fix goes into the spec first.
 
