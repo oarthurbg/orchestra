@@ -579,6 +579,28 @@ test('more than two rows: the compact band shows two and a count, the arrow open
   await ui.unmount()
 })
 
+test('an open band in a short window shows the rows that fit and a count, and keeps the footer', async ($, on) => {
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY3,
+    [`${ROOT}/.orchestra/liveview.json`]: JSON.stringify({ url: 'http://localhost:4123/' }),
+    [`${ROOT}/.orchestra/sessions/s2.json`]: report('s2', { workstream: 'reports', state: 'waiting', link: 'claude://claude.ai/epitaxy/local_s2' }),
+    [`${ROOT}/.orchestra/sessions/s3.json`]: report('s3', { workstream: 'auth', context: { tokens: 254_000, window: 1_000_000 } }),
+  }
+  disk(on, files)
+  session(on, ROOT, 'o')
+  mock.store(on)
+  await start($)
+  let ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  await ui.press({ key: 'orchestra-toggle' })
+  await ui.unmount()
+  ui = await $.ui.mount({ ...BAND, props: { ...BAND.props, maxRows: 6, scroll: { offset: 0, bodyRows: 6 } }, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /^Workstream$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /\+1 more: stale/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /no report yet/ })).toBeUndefined()
+  expect(await ui.find({ key: 'liveview' })).toBeDefined()
+  await ui.unmount()
+})
+
 test('the empty states: no workstreams yet, and nothing needs you', async ($, on) => {
   const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY.split(String.fromCharCode(10)).slice(0, 2).join(String.fromCharCode(10)) }
   disk(on, files)
@@ -640,6 +662,43 @@ test('the ponytail switch shows only while ponytail hides its own band, and runs
   ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
   expect(await ui.find({ key: 'orchestra-ponytail-full' })).toBeUndefined()
   await ui.unmount()
+})
+
+test('the ponytail switch follows this session: its own switches move it, a flag another session wrote does not', async ($, on) => {
+  const CFG = '/home/u/.claude'
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY,
+    [`${CFG}/plugins/installed_plugins.json`]: '{"plugins": {"ponytail@ponytail": []}}',
+    [`${CFG}/.ponytail-active`]: 'full\n',
+    [`${CFG}/.ponytail-band`]: 'off',
+  }
+  disk(on, files)
+  session(on, ROOT, 'o')
+  mock.env(on, { CLAUDE_CONFIG_DIR: CFG })
+  on('classic.FileChanged', () => ({}))
+  on('tool.call', () => ({ result: { success: true, commandName: 'ponytail:ponytail' } }) as never)
+  on('prompt.submit', ($, e) => ({ text: e.text }))
+  await start($)
+  const selected = async () => {
+    const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+    const on = []
+    for (const level of ['off', 'lite', 'full', 'ultra']) if ((await ui.find({ key: `orchestra-ponytail-${level}` }))?.props.variant === 'secondary') on.push(level)
+    await ui.unmount()
+    return on
+  }
+  expect(await selected()).toEqual(['full'])
+  // Another session switched to ultra: the shared flag moved, this session did not.
+  files[`${CFG}/.ponytail-active`] = 'ultra'
+  await $.classic.FileChanged({ file_path: `${CFG}/.ponytail-active`, event: 'change' })
+  expect(await selected()).toEqual(['full'])
+  // A principal switches at a stage change by calling the skill.
+  await $.tool.call({ tool: 'Skill', skill: 'ponytail:ponytail', args: 'lite' } as never)
+  expect(await selected()).toEqual(['lite'])
+  // Another skill changes nothing; a typed "stop ponytail" turns it off.
+  await $.tool.call({ tool: 'Skill', skill: 'ponytail:ponytail-review', args: 'ultra' } as never)
+  expect(await selected()).toEqual(['lite'])
+  await $.prompt.submit({ text: 'stop ponytail' } as never)
+  expect(await selected()).toEqual(['off'])
 })
 
 test('a principal session shows its own row and no arrow or running count', async ($, on) => {
@@ -712,6 +771,8 @@ test('a narrow band, as in a split view, keeps one line and adds a red line only
   const mount = (bodyColumns: number) => $.ui.mount({ ...BAND, props: { ...BAND.props, bodyColumns }, surface: 'desktop' })
   await $.session.measure({ context: { tokens: 30_000, window: 1_000_000 }, rateLimits: week(10), changed: [] } as never)
   let ui = await mount(60)
+  // The name stays while it fits, beside the mark.
+  expect(await ui.find({ type: 'Text', text: /^orchestra$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /^10%$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /% used/ })).toBeUndefined()
   expect(await ui.find({ type: 'Text', text: /^\d+\/\d+$/ })).toBeDefined()
@@ -723,6 +784,7 @@ test('a narrow band, as in a split view, keeps one line and adds a red line only
   await ui.unmount()
   // Narrower still: no bars, "Wk", and the short warning.
   ui = await mount(40)
+  expect(await ui.find({ type: 'Text', text: /^orchestra$/ })).toBeUndefined()
   expect(await ui.find({ type: 'Text', text: /^Wk$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /^Runs out / })).toBeDefined()
   for (const s of await ui.findAll({ type: 'Svg' })) expect(String(s.props.alt)).not.toMatch(/limit/)

@@ -160,14 +160,30 @@ const claudeDir = async ($: EngineInterface) =>
   (await $.env.get('CLAUDE_CONFIG_DIR')) ?? `${norm((await $.env.get('HOME')) ?? (await $.env.get('USERPROFILE')) ?? '')}/.claude`
 
 // ponytail's switch shows here only when ponytail is installed and `/ponytail band` hid its own band, so it is never drawn twice.
-async function readPonytail($: EngineInterface) {
+// ponytail keeps one level flag for every session (last write wins), so the level is read from it only when this
+// session wrote it (its start, its own switch); after that this session follows its own switches (`switched`).
+async function readPonytail($: EngineInterface, withLevel = false) {
   const dir = await claudeDir($)
   const installed = /"ponytail@/.test((await read$($, `${dir}/plugins/installed_plugins.json`)) ?? '')
   const hidden = ((await read$($, `${dir}/.ponytail-band`)) ?? '').trim() === 'off'
   // The level ponytail's own hooks write; an absent flag is off.
-  const level = ((await read$($, `${dir}/.ponytail-active`)) ?? '').trim()
-  const next = { shown: installed && hidden, level: LEVELS.includes(level) ? level : 'off' }
-  await update($, ponytail, p => (p.shown === next.shown && p.level === next.level ? p : next))
+  const flag = withLevel ? ((await read$($, `${dir}/.ponytail-active`)) ?? '').trim() : ''
+  await update($, ponytail, p => {
+    const next = { shown: installed && hidden, level: withLevel ? (LEVELS.includes(flag) ? flag : 'off') : p.level }
+    return p.shown === next.shown && p.level === next.level ? p : next
+  })
+}
+
+// The level a ponytail switch asks for: `/ponytail lite`, the skill with `ultra`, "stop ponytail"; null for anything else.
+function switched(text: string): string | null {
+  const t = text.trim().toLowerCase().replace(/[.!?\s]+$/, '')
+  if (t === 'stop ponytail' || t === 'normal mode') return 'off'
+  const m = /^\/?(?:ponytail:)?ponytail\s+(off|lite|full|ultra)$/.exec(t)
+  return m ? m[1]! : null
+}
+
+async function follow($: EngineInterface, level: string | null) {
+  if (level !== null) await update($, ponytail, p => (p.level === level ? p : { ...p, level }))
 }
 
 // What a file watch covers: the reports, the registry, liveview.json and ponytail's two flags.
@@ -225,7 +241,7 @@ export const register: Register = (on, options) => {
     await writeReport($)
     await refresh($)
     await update($, detailed, () => stored === true)
-    await readPonytail($).catch(() => {})
+    await readPonytail($, true).catch(() => {})
     return result
   }).catch(($, e, next) => next(e))
 
@@ -284,6 +300,19 @@ export const register: Register = (on, options) => {
     return next(e)
   }).catch(($, e, next) => next(e))
 
+  // This session's own ponytail switches: a prompt the person typed, or the skill a principal calls at a stage change.
+  on('prompt.submit', async ($, e, next) => {
+    const result = await next(e)
+    await follow($, switched(e.text)).catch(() => {})
+    return result
+  }).catch(($, e, next) => next(e))
+  on('tool.call', { tool: 'Skill' }, async ($, e, next) => {
+    const result = await next(e)
+    const { skill, args } = e as unknown as { skill?: string; args?: string }
+    if (/^(ponytail:)?ponytail$/.test(skill ?? '')) await follow($, switched(`ponytail ${args ?? ''}`)).catch(() => {})
+    return result
+  }).catch(($, e, next) => next(e))
+
   // Waiting on the owner, live, for as long as the question is open.
   on('tool.call', { tool: 'AskUserQuestion' }, async ($, e, next) => {
     const questions = (e as unknown as { questions?: { question?: string }[] }).questions
@@ -313,8 +342,6 @@ export const register: Register = (on, options) => {
     // Open only while there is more to show: with two rows or fewer there is no arrow to close it.
     const isOpen = (await read($, detailed)) && v.rows.length > 2
     const maestro = v.inProject && v.role === 'maestro'
-    const shown = maestro && !isOpen ? v.rows.slice(0, 2) : v.rows
-    const hidden = v.rows.slice(shown.length)
     const rule = pic(RULE, 'divider', undefined, 1)
 
     const toggle = async () => {
@@ -327,7 +354,7 @@ export const register: Register = (on, options) => {
       // The same command a person types, so ponytail's own skill stays the only logic.
       await $.command.run({ command: 'ponytail:ponytail', args: level }).catch(() => {})
       // The flag ponytail wrote is the truth: a command that failed puts the switch back.
-      await readPonytail($).catch(() => {})
+      await readPonytail($, true).catch(() => {})
     }
 
     const limit = (label: string, l: { pct: number } | null, tail: string, alarm: boolean) => (
@@ -372,17 +399,6 @@ export const register: Register = (on, options) => {
       </Box>
     )
 
-    let body = null
-    if (maestro && v.total === 0 && v.rows.length === 0) body = <Text dimColor>No workstreams yet. Start one with /orchestra:start-workstream.</Text>
-    else if (maestro && v.rows.length === 0) body = <Text dimColor>Nothing needs you.</Text>
-    else if (v.rows.length > 0) body = (
-      <Box flexDirection="column">
-        {maestro && isOpen && heads}
-        {shown.map(row)}
-        {hidden.length > 0 && <Box paddingX={1}><Text dimColor>+{hidden.length} more: {[...new Set(hidden.map(r => r.status))].join(', ')}</Text></Box>}
-      </Box>
-    )
-
     const show5 = v.fiveHour !== null || v.inProject
     const showWeek = v.week !== null || v.inProject
     const counted = maestro && v.total > 0
@@ -402,22 +418,50 @@ export const register: Register = (on, options) => {
       </Box>
     )
 
-    const header = narrow ? (
+    // The compact line keeps the name while it has the room (about 10 cells), then the mark alone.
+    const shortCells = (label: string, l: { pct: number } | null) => label.length + (l === null ? 2 : 8 + `${l.pct}%`.length)
+    const compact = 6 + (show5 ? shortCells('5h', v.fiveHour) : 0) + (showWeek ? 2 + shortCells('Weekly', v.week) : 0)
+      + (counted ? `${v.running}/${v.total}`.length + 2 : 0) + (toggleButton ? 4 : 0)
+    const named = !desktop || e.props.bodyColumns >= compact + 10
+
+    // The app scrolls a band taller than maxRows, which hides the footer: open, the list keeps to the rows left beside
+    // the header, headings and footer (one more on the desktop for its rules and gaps), with a count for the rest.
+    const hasFooter = pt.shown || v.pings > 0 || v.liveview !== ''
+    const fixedRows = (narrow && runOutAt !== null ? 2 : 1) + (maestro && isOpen ? 1 : 0) + (hasFooter ? 1 : 0) + (desktop ? 1 : 0)
+    const room = e.props.maxRows - fixedRows
+    const shown = maestro && !isOpen ? v.rows.slice(0, 2) : v.rows.length <= room ? v.rows : v.rows.slice(0, Math.max(2, room - 1))
+    const hidden = v.rows.slice(shown.length)
+
+    let body = null
+    if (maestro && v.total === 0 && v.rows.length === 0) body = <Text dimColor>No workstreams yet. Start one with /orchestra:start-workstream.</Text>
+    else if (maestro && v.rows.length === 0) body = <Text dimColor>Nothing needs you.</Text>
+    else if (v.rows.length > 0) body = (
       <Box flexDirection="column">
-        <Box flexDirection="row" alignItems="center" gap={2}>
-          {desktop ? pic(MARK, 'orchestra mark', 20, 20) : <Text bold>orchestra</Text>}
-          {show5 && short('5h', v.fiveHour, false)}
-          {showWeek && short(tight ? 'Wk' : 'Weekly', v.week, runOutAt !== null)}
-          <Box width={0} flexGrow={1} />
-          {counted && <Text size="footnote" dimColor>{v.running}/{v.total}</Text>}
-          {toggleButton}
+        {maestro && isOpen && heads}
+        {shown.map(row)}
+        {hidden.length > 0 && <Box paddingX={1}><Text dimColor>+{hidden.length} more: {[...new Set(hidden.map(r => r.status))].join(', ')}</Text></Box>}
+      </Box>
+    )
+
+    const header = narrow ? (
+      <Box flexDirection="row" alignItems="flex-start" gap={2}>
+        <Box flexShrink={0} flexDirection="row" alignItems="center" gap={1}>
+          {desktop && pic(MARK, 'orchestra mark', 20, 20)}
+          {named && <Text bold>orchestra</Text>}
         </Box>
-        {/* The run-out warning keeps its time on a line of its own, only while the week runs out. */}
-        {runOutAt !== null && (
-          <Box paddingLeft={desktop ? 4 : 0}>
-            <Text size="footnote" color="error">{tight ? `Runs out ${dayTime(runOutAt)}` : `Weekly limit runs out ${dayTime(runOutAt)}, before it resets`}</Text>
+        <Box flexDirection="column" flexGrow={1}>
+          <Box flexDirection="row" alignItems="center" gap={2}>
+            {show5 && short('5h', v.fiveHour, false)}
+            {showWeek && short(tight ? 'Wk' : 'Weekly', v.week, runOutAt !== null)}
+            <Box width={0} flexGrow={1} />
+            {counted && <Text size="footnote" dimColor>{v.running}/{v.total}</Text>}
+            {toggleButton}
           </Box>
-        )}
+          {/* The run-out warning keeps its time on a line of its own, only while the week runs out. */}
+          {runOutAt !== null && (
+            <Text size="footnote" color="error">{tight ? `Runs out ${dayTime(runOutAt)}` : `Weekly limit runs out ${dayTime(runOutAt)}, before it resets`}</Text>
+          )}
+        </Box>
       </Box>
     ) : (
       <Box flexDirection="row" alignItems="center">
@@ -439,7 +483,7 @@ export const register: Register = (on, options) => {
       </Box>
     )
 
-    const footer = pt.shown || v.pings > 0 || v.liveview !== '' ? (
+    const footer = hasFooter ? (
       <Box flexDirection="row" alignItems="center" gap={1}>
         {pt.shown && <Text dimColor>ponytail</Text>}
         {pt.shown && LEVELS.map(level => (
