@@ -111,10 +111,10 @@ The approved prototype was built with taste-skill (app style `achromatic-ledger`
   - The project folder name as the `h1`.
   - One sentence with the finding: "billing is waiting on you: approve the invoice mockup. Open work lands by Fri 06:19."
   - On the right, the one primary action, "Open <the first waiting session>" (its `claude://` link), shown only when a waiting session has a link.
-- **Limits strip:** one card split into three cells:
-  - weekly limit %, with the run-out time or the projected % at the reset;
-  - 5-hour limit %, with the run-out time or the reset time;
+- **Strip:** one card split into three cells, in the owner's priority order:
   - "All merged by", the latest projected merge, with "ETA from N finished tasks" or "Uncalibrated".
+  - 5-hour limit %, with the run-out time or the reset time;
+  - weekly limit %, with the run-out time or the projected % at the reset;
 - **Middle row:** "Needs you" (1fr) beside "Weekly limit" (2fr).
   - "Needs you" lists every session that is waiting, at 250k or more, stale, unregistered, or registered with no session. Each has its shape, name, an "Open" link when it has one, and a plain reason ("254k context: clear it at the next stop"). When nothing needs the owner, it keeps its frame and says so.
   - The chart shows cumulative weekly % across the 7-day window:
@@ -139,7 +139,7 @@ The approved prototype was built with taste-skill (app style `achromatic-ledger`
   - It runs from the start of the oldest open workstream, at most 3 days back, to the latest projected end, and is at least one day wide.
   - Under 2 days the axis shows hours every 3 hours, with midnight named ("30 Fri"); otherwise it shows day names.
   - Labels stay inside the track.
-- **Phone (below 640px):** the top bar drops `liveview`, the action moves under the finding, and the limits strip becomes two cells and one full-width cell. "Needs you" and the chart stack. Each workstream becomes a two-line row (name and ETA, then context and stage) with its track below; every other hour label hides. The page never scrolls sideways.
+- **Phone (below 640px):** the top bar drops `liveview`, the action moves under the finding, and the strip becomes two cells ("All merged by", 5-hour) and the weekly limit full width. "Needs you" and the chart stack. Each workstream becomes a two-line row (name and ETA, then context and stage) with its track below; every other hour label hides. The page never scrolls sideways.
 
 ## Errors
 
