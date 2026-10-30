@@ -192,7 +192,7 @@ const SHAPE_SVG: Record<Shape, string> = {
 const SHAPE_TEXT: Record<Shape, [string, string]> = { triangle: ['▲', 'warning'], square: ['■', 'error'], circle: ['●', 'suggestion'], half: ['◓', 'inactive'], hollow: ['◠', 'inactive'] }
 const svg = (body: string, w: number, h: number) => `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${body}</svg>`
 // assets/brand/mark-dark.svg, scaled by its viewBox.
-const MARK = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 100 100"><path d="M8 92 A 32 32 0 0 1 72 92 Z" fill="#B9C8F2"/><circle cx="32" cy="34" r="22" fill="#2450E0"/><rect x="60" y="12" width="30" height="44" fill="#F0442C"/><polygon points="73,92 99,92 86,60" fill="#FFC21A"/></svg>'
+const MARK = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="6 6 88 88"><path d="M10 90 A 27 27 0 0 1 64 90 Z" fill="#B9C8F2"/><circle cx="34" cy="34" r="24" fill="#2450E0"/><rect x="62" y="10" width="28" height="42" fill="#F0442C"/><polygon points="66,90 90,90 78,56" fill="#FFC21A"/></svg>'
 const bar = (pct: number, alarm: boolean) =>
   svg(`<rect width="44" height="4" rx="2" fill="#8080804D"/><rect width="${Math.max(2, Math.round((44 * Math.min(100, pct)) / 100))}" height="4" rx="2" fill="${alarm ? '#F0442C' : '#A9A49A'}"/>`, 44, 4)
 // A hairline as wide as the slot: wider than any band, stretched (not scaled) to the slot's width.
