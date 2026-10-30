@@ -35,6 +35,7 @@ a{color:inherit}
 .bar-top{height:48px;display:flex;align-items:center;gap:12px;padding:0 var(--gutter);border-bottom:1px solid var(--border)}
 .word{font-family:var(--display);font-weight:800;font-size:21px;letter-spacing:-.02em}
 .scope{color:var(--muted)}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .fresh{margin-left:auto;color:var(--muted);font-size:12px}
 .themes{display:flex;gap:2px;padding:2px;border:1px solid var(--border);border-radius:999px}
 .themes button{font:500 12px var(--body);color:var(--muted);background:none;border:0;border-radius:999px;padding:4px 10px;cursor:pointer}
@@ -151,6 +152,7 @@ h2{font-family:var(--display);font-weight:800;font-size:17px;line-height:24px;le
   <span class="word">orchestra</span>
   <span class="scope">liveview</span>
   <span class="fresh" id="fresh"></span>
+  <p id="status" class="sr-only" role="status"></p>
   <div class="themes" role="group" aria-label="Theme">
     <button type="button" data-theme-pick="system" aria-pressed="false">System</button>
     <button type="button" data-theme-pick="light" aria-pressed="false">Light</button>
@@ -194,6 +196,10 @@ const $ = (tag, attrs = {}, ...kids) => {
   for (const kid of kids.flat()) if (kid !== null && kid !== undefined && kid !== false) el.append(kid instanceof Node ? kid : String(kid))
   return el
 }
+// One persistent live region, written only when a state changes, so a screen reader hears failures and recovery, never the 5 s refresh.
+const say = t => { const s = document.getElementById('status'); if (s.textContent !== t) s.textContent = t }
+let failed = false
+const fail = t => { failed = true; say(t) }
 const MIN = 60000, HOUR = 60 * MIN, DAY = 24 * HOUR
 const dur = m => (m == null ? '–' : m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${String(m % 60).padStart(2, '0')} m` : ''}` : `${m} m`) // taste-skill-ignore: zero-padded minutes in a duration, not index numbering
 const ktok = n => (n == null ? '–' : `${Math.round(n / 1000)}k`)
@@ -234,7 +240,7 @@ function title(snap) {
   document.getElementById('project').textContent = snap.project
   const age = Math.max(0, Math.round((Date.now() - snap.builtAt) / 1000))
   document.getElementById('fresh').replaceChildren($('span', {},
-    snap.staleSince ? $('span', { class: 'error', role: 'status' }, `Stale since ${clock(snap.staleSince)} · `) : null, `Updated ${age} s ago`))
+    snap.staleSince ? $('span', { class: 'error' }, `Stale since ${clock(snap.staleSince)} · `) : null, `Updated ${age} s ago`))
   const waiting = snap.rows.filter(r => r.reason === 'waiting')
   const last = lastEnd(snap)
   const parts = []
@@ -450,7 +456,8 @@ function render(snap) {
 
 function draw(snap) {
   if (snap.error) {
-    document.getElementById('finding').replaceChildren($('span', { class: 'error', role: 'status' }, `The snapshot failed: ${snap.error}`))
+    document.getElementById('finding').replaceChildren($('span', { class: 'error' }, `The snapshot failed: ${snap.error}`))
+    fail(`The snapshot failed: ${snap.error}`)
     return
   }
   title(snap)
@@ -459,6 +466,8 @@ function draw(snap) {
   needs(snap)
   grid(snap)
   calendar(snap)
+  if (snap.staleSince) fail(`The data is stale since ${clock(snap.staleSince)}: the last rebuild failed.`)
+  else if (failed) { failed = false; say('Live again.') }
 }
 
 let last = null
@@ -468,14 +477,18 @@ async function poll() {
     if (!r.ok) throw new Error(`HTTP ${r.status}`)
     last = await r.json()
   } catch {
-    document.getElementById('fresh').replaceChildren($('span', { class: 'error', role: 'status' }, 'The liveview server stopped. Start it again with /orchestra:liveview.'))
+    const msg = 'The liveview server stopped. Start it again with /orchestra:liveview.'
+    document.getElementById('fresh').replaceChildren($('span', { class: 'error' }, msg))
+    fail(msg)
     return
   }
   try {
     if (last) render(last)
   } catch (err) {
     console.error(err)
-    document.getElementById('fresh').replaceChildren($('span', { class: 'error', role: 'status' }, `This page failed to draw the snapshot: ${err.message}`))
+    const msg = `This page failed to draw the snapshot: ${err.message}`
+    document.getElementById('fresh').replaceChildren($('span', { class: 'error' }, msg))
+    fail(msg)
   }
 }
 applyTheme(theme)
