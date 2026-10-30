@@ -149,15 +149,21 @@ export const register: Register = (on, options) => {
     return next(e)
   }).catch(($, e, next) => next(e))
 
+  // Only a main-thread turn is the session's turn: a subagent's turn has its own cache.
   on('turn.start', async ($, e, next) => {
-    ctx.turn = true
-    await writeReport($)
+    if (e.agentId === undefined) {
+      ctx.turn = true
+      await writeReport($)
+    }
     return next(e)
   }).catch(($, e, next) => next(e))
 
+  // Only a main-thread turn is the session's turn: a subagent's turn has its own cache.
   on('turn.complete', async ($, e, next) => {
-    ctx.turn = false
-    await writeReport($)
+    if (e.agentId === undefined) {
+      ctx.turn = false
+      await writeReport($)
+    }
     return next(e)
   }).catch(($, e, next) => next(e))
 

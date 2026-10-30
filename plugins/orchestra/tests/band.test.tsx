@@ -340,3 +340,19 @@ test('a refresh that rejects does not stop the keep-warm check', { options: { ca
   await clock.advance(5 * MIN)
   expect(forks.count).toBe(1)
 })
+
+test('a subagent turn is not the session turn: the ping goes out and the report stays idle', { options: { cacheMinutes: 5, warmMaxHours: 2 } }, async ($, on) => {
+  const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+  disk(on, files)
+  const clock = session(on, ROOT, 'o', () => [AGENT('a1')])
+  const forks = forker(on)
+  on('turn.start', ($, e) => ({ turnId: e.turnId }))
+  on('turn.complete', ($, e) => ({ text: e.answer }))
+  await start($)
+  await $.turn.start({ text: 'go', turnId: 't1', agentId: 'a1' })
+  expect(JSON.parse(files[`${ROOT}/.orchestra/sessions/o.json`]!).state).toBe('idle')
+  await clock.advance(5 * MIN)
+  expect(forks.count).toBe(1)
+  await $.turn.complete({ reason: 'answer', answer: '', durationMs: 1, isAborted: false, turnId: 't1', agentId: 'a1' })
+  expect(JSON.parse(files[`${ROOT}/.orchestra/sessions/o.json`]!).state).toBe('idle')
+})
