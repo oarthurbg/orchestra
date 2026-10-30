@@ -402,22 +402,31 @@ export const register: Register = (on, options) => {
       </Box>
     )
 
+    // The compact line keeps the name while it has the room (about 10 cells), then the mark alone.
+    const shortCells = (label: string, l: { pct: number } | null) => label.length + (l === null ? 2 : 8 + `${l.pct}%`.length)
+    const compact = 6 + (show5 ? shortCells('5h', v.fiveHour) : 0) + (showWeek ? 2 + shortCells('Weekly', v.week) : 0)
+      + (counted ? `${v.running}/${v.total}`.length + 2 : 0) + (toggleButton ? 4 : 0)
+    const named = !desktop || e.props.bodyColumns >= compact + 10
+
     const header = narrow ? (
-      <Box flexDirection="column">
-        <Box flexDirection="row" alignItems="center" gap={2}>
-          {desktop ? pic(MARK, 'orchestra mark', 20, 20) : <Text bold>orchestra</Text>}
-          {show5 && short('5h', v.fiveHour, false)}
-          {showWeek && short(tight ? 'Wk' : 'Weekly', v.week, runOutAt !== null)}
-          <Box width={0} flexGrow={1} />
-          {counted && <Text size="footnote" dimColor>{v.running}/{v.total}</Text>}
-          {toggleButton}
+      <Box flexDirection="row" alignItems="flex-start" gap={2}>
+        <Box flexShrink={0} flexDirection="row" alignItems="center" gap={1}>
+          {desktop && pic(MARK, 'orchestra mark', 20, 20)}
+          {named && <Text bold>orchestra</Text>}
         </Box>
-        {/* The run-out warning keeps its time on a line of its own, only while the week runs out. */}
-        {runOutAt !== null && (
-          <Box paddingLeft={desktop ? 4 : 0}>
-            <Text size="footnote" color="error">{tight ? `Runs out ${dayTime(runOutAt)}` : `Weekly limit runs out ${dayTime(runOutAt)}, before it resets`}</Text>
+        <Box flexDirection="column" flexGrow={1}>
+          <Box flexDirection="row" alignItems="center" gap={2}>
+            {show5 && short('5h', v.fiveHour, false)}
+            {showWeek && short(tight ? 'Wk' : 'Weekly', v.week, runOutAt !== null)}
+            <Box width={0} flexGrow={1} />
+            {counted && <Text size="footnote" dimColor>{v.running}/{v.total}</Text>}
+            {toggleButton}
           </Box>
-        )}
+          {/* The run-out warning keeps its time on a line of its own, only while the week runs out. */}
+          {runOutAt !== null && (
+            <Text size="footnote" color="error">{tight ? `Runs out ${dayTime(runOutAt)}` : `Weekly limit runs out ${dayTime(runOutAt)}, before it resets`}</Text>
+          )}
+        </Box>
       </Box>
     ) : (
       <Box flexDirection="row" alignItems="center">
