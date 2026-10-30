@@ -95,6 +95,15 @@ Then, in your project:
 2. In your main session, load the `orchestra:maestro` skill. Its "First session" steps confirm the settings and owner authorizations with you, write the first backlog and open the first workstreams with `/orchestra:start-workstream <name> <goal>`.
 3. Ask "how is it going?" any time: the maestro answers with `/orchestra:status`, one table of every workstream plus what needs you.
 
+## Updating
+
+Claude Code installs a new version of orchestra only when its version number changes, and every release bumps it. Auto-update is off by default for marketplaces you add yourself, so pick one:
+
+- **Automatic:** run `/plugin`, open **Marketplaces**, select `orchestra` and choose **Enable auto-update**. Claude Code then checks for new versions up to ten minutes after your first message in a session. This covers every plugin installed from this marketplace.
+- **By hand:** run `claude plugin update orchestra@orchestra`, or choose **Update now** on the **Installed** tab of `/plugin`. The plugins listed above update the same way, with their own name in place of the first `orchestra`; they follow their authors' repositories.
+
+A new version loads in your next session, or right away after `/reload-plugins`. A liveview that is already running keeps the old version until you restart it: `/orchestra:liveview stop`, then `/orchestra:liveview`.
+
 ## Requirements
 
 - **Claude Code desktop app** (Code tab) for the session tools the workflow relies on: starting sessions, messaging between them, reading their context size, clearing and archiving them. In the plain CLI the roles and agents still work, but you start, brief, clear and archive sessions by hand.
