@@ -642,6 +642,43 @@ test('the ponytail switch shows only while ponytail hides its own band, and runs
   await ui.unmount()
 })
 
+test('the ponytail switch follows this session: its own switches move it, a flag another session wrote does not', async ($, on) => {
+  const CFG = '/home/u/.claude'
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY,
+    [`${CFG}/plugins/installed_plugins.json`]: '{"plugins": {"ponytail@ponytail": []}}',
+    [`${CFG}/.ponytail-active`]: 'full\n',
+    [`${CFG}/.ponytail-band`]: 'off',
+  }
+  disk(on, files)
+  session(on, ROOT, 'o')
+  mock.env(on, { CLAUDE_CONFIG_DIR: CFG })
+  on('classic.FileChanged', () => ({}))
+  on('tool.call', () => ({ result: { success: true, commandName: 'ponytail:ponytail' } }) as never)
+  on('prompt.submit', ($, e) => ({ text: e.text }))
+  await start($)
+  const selected = async () => {
+    const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+    const on = []
+    for (const level of ['off', 'lite', 'full', 'ultra']) if ((await ui.find({ key: `orchestra-ponytail-${level}` }))?.props.variant === 'secondary') on.push(level)
+    await ui.unmount()
+    return on
+  }
+  expect(await selected()).toEqual(['full'])
+  // Another session switched to ultra: the shared flag moved, this session did not.
+  files[`${CFG}/.ponytail-active`] = 'ultra'
+  await $.classic.FileChanged({ file_path: `${CFG}/.ponytail-active`, event: 'change' })
+  expect(await selected()).toEqual(['full'])
+  // A principal switches at a stage change by calling the skill.
+  await $.tool.call({ tool: 'Skill', skill: 'ponytail:ponytail', args: 'lite' } as never)
+  expect(await selected()).toEqual(['lite'])
+  // Another skill changes nothing; a typed "stop ponytail" turns it off.
+  await $.tool.call({ tool: 'Skill', skill: 'ponytail:ponytail-review', args: 'ultra' } as never)
+  expect(await selected()).toEqual(['lite'])
+  await $.prompt.submit({ text: 'stop ponytail' } as never)
+  expect(await selected()).toEqual(['off'])
+})
+
 test('a principal session shows its own row and no arrow or running count', async ($, on) => {
   const WT = `${ROOT}/.worktrees/reports`
   const files: Record<string, string> = {

@@ -160,14 +160,30 @@ const claudeDir = async ($: EngineInterface) =>
   (await $.env.get('CLAUDE_CONFIG_DIR')) ?? `${norm((await $.env.get('HOME')) ?? (await $.env.get('USERPROFILE')) ?? '')}/.claude`
 
 // ponytail's switch shows here only when ponytail is installed and `/ponytail band` hid its own band, so it is never drawn twice.
-async function readPonytail($: EngineInterface) {
+// ponytail keeps one level flag for every session (last write wins), so the level is read from it only when this
+// session wrote it (its start, its own switch); after that this session follows its own switches (`switched`).
+async function readPonytail($: EngineInterface, withLevel = false) {
   const dir = await claudeDir($)
   const installed = /"ponytail@/.test((await read$($, `${dir}/plugins/installed_plugins.json`)) ?? '')
   const hidden = ((await read$($, `${dir}/.ponytail-band`)) ?? '').trim() === 'off'
   // The level ponytail's own hooks write; an absent flag is off.
-  const level = ((await read$($, `${dir}/.ponytail-active`)) ?? '').trim()
-  const next = { shown: installed && hidden, level: LEVELS.includes(level) ? level : 'off' }
-  await update($, ponytail, p => (p.shown === next.shown && p.level === next.level ? p : next))
+  const flag = withLevel ? ((await read$($, `${dir}/.ponytail-active`)) ?? '').trim() : ''
+  await update($, ponytail, p => {
+    const next = { shown: installed && hidden, level: withLevel ? (LEVELS.includes(flag) ? flag : 'off') : p.level }
+    return p.shown === next.shown && p.level === next.level ? p : next
+  })
+}
+
+// The level a ponytail switch asks for: `/ponytail lite`, the skill with `ultra`, "stop ponytail"; null for anything else.
+function switched(text: string): string | null {
+  const t = text.trim().toLowerCase().replace(/[.!?\s]+$/, '')
+  if (t === 'stop ponytail' || t === 'normal mode') return 'off'
+  const m = /^\/?(?:ponytail:)?ponytail\s+(off|lite|full|ultra)$/.exec(t)
+  return m ? m[1]! : null
+}
+
+async function follow($: EngineInterface, level: string | null) {
+  if (level !== null) await update($, ponytail, p => (p.level === level ? p : { ...p, level }))
 }
 
 // What a file watch covers: the reports, the registry, liveview.json and ponytail's two flags.
@@ -215,7 +231,7 @@ export const register: Register = (on, options) => {
     await writeReport($)
     await refresh($)
     await update($, detailed, () => stored === true)
-    await readPonytail($).catch(() => {})
+    await readPonytail($, true).catch(() => {})
     return result
   }).catch(($, e, next) => next(e))
 
@@ -274,6 +290,19 @@ export const register: Register = (on, options) => {
     return next(e)
   }).catch(($, e, next) => next(e))
 
+  // This session's own ponytail switches: a prompt the person typed, or the skill a principal calls at a stage change.
+  on('prompt.submit', async ($, e, next) => {
+    const result = await next(e)
+    await follow($, switched(e.text)).catch(() => {})
+    return result
+  }).catch(($, e, next) => next(e))
+  on('tool.call', { tool: 'Skill' }, async ($, e, next) => {
+    const result = await next(e)
+    const { skill, args } = e as unknown as { skill?: string; args?: string }
+    if (/^(ponytail:)?ponytail$/.test(skill ?? '')) await follow($, switched(`ponytail ${args ?? ''}`)).catch(() => {})
+    return result
+  }).catch(($, e, next) => next(e))
+
   // Waiting on the owner, live, for as long as the question is open.
   on('tool.call', { tool: 'AskUserQuestion' }, async ($, e, next) => {
     const questions = (e as unknown as { questions?: { question?: string }[] }).questions
@@ -317,7 +346,7 @@ export const register: Register = (on, options) => {
       // The same command a person types, so ponytail's own skill stays the only logic.
       await $.command.run({ command: 'ponytail:ponytail', args: level }).catch(() => {})
       // The flag ponytail wrote is the truth: a command that failed puts the switch back.
-      await readPonytail($).catch(() => {})
+      await readPonytail($, true).catch(() => {})
     }
 
     const limit = (label: string, l: { pct: number } | null, tail: string, alarm: boolean) => (
