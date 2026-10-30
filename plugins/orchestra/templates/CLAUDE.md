@@ -33,6 +33,7 @@ The orchestra agents read this section for every project-specific value. Keep it
   - Real data tests must never touch: `<dev database, data folder, bucket...>`
 - Browser checks: `none` | `no login` | <how agents sign in: a test user plus a saved session file outside the repository>. Only for apps with a web UI and a dev server.
 - Confidential paths agents must never read or copy: `none` | <paths>
+- Code graph: `none` | `graphify` | `declined`. `graphify`: the maestro built the graph and keeps it current. `declined`: the owner said no, and the maestro never proposes it again.
 - Commit trailer: `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`
 - Language for code, commits and docs: English
 
@@ -47,5 +48,6 @@ The maestro reads this before each action below and acts at its level: `ask` (wa
 - Archive a finished principal session: `ask`
 - Start a new principal session: `ask`
 - Server commands that need no admin rights and touch no production data (send files, read health and logs): `ask`
+- Build the code graph (graphify, first build only): `ask`
 
 Always `ask`, whatever is written above, for the maestro, principals and every subagent: anything that needs admin rights, deletes data or branches, or touches credentials, money or production data.
