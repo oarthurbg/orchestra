@@ -58,13 +58,13 @@ test('serves the page and the snapshot, refuses a foreign Host, and cleans up on
 
 test('liveUrl pings the bound IPv4 address, as on Node 18 where fetch does not fall back from ::1', async () => {
   const root = fixture()
-  const before = net.getDefaultAutoSelectFamily()
+  const before = net.getDefaultAutoSelectFamily?.() ?? false
   const s = await startServer({ root, port: PORT + 20, reader: reader(), auto: false, onIdle: () => {} })
-  net.setDefaultAutoSelectFamily(false)
+  net.setDefaultAutoSelectFamily?.(false)
   try {
     assert.equal(await liveUrl(root), s.url)
   } finally {
-    net.setDefaultAutoSelectFamily(before)
+    net.setDefaultAutoSelectFamily?.(before)
     await s.close()
   }
 })
