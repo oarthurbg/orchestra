@@ -6,15 +6,19 @@ argument-hint: <workstream-name> <one-line goal>
 You are the orchestrator (skill `orchestra:orchestrator`). Open the workstream described in: $ARGUMENTS
 
 1. **Name:** lowercase letters, digits and `_` or `-` for the branch; test data uses the same name with `-` replaced by `_`.
-2. **Overlap check:** read `docs/HANDOFF.md` ("Workstreams") and list `docs/superpowers/specs/`. If the goal overlaps an open spec or worktree, stop and tell the owner which one.
+2. **Overlap check:** read `.orchestra/workstreams.md` and list `docs/superpowers/specs/`. If the goal overlaps an open spec or worktree, stop and tell the owner which one.
 3. **Schema queue:** if the goal likely changes a data schema and another open workstream already does, tell the owner it has to wait or go after that one.
 4. **Load:** count running workstreams. With 4 to 6 already running, tell the owner the machine is at its limit before adding one.
 5. **Resources:** using the values in `CLAUDE.md` ("Project settings"):
    - `git fetch origin` and `git worktree add -b <branch> <worktree path> origin/<integration branch>`;
    - if "Test data" is not `none`, run its Create command with the workstream name and note the "Tests read" value;
    - if "Dev server" is not `none`, pick the next free port.
-6. **Register:** add a row to the "Workstreams" table in `docs/HANDOFF.md`.
-7. **Session:** in the desktop app, start a new session in the worktree folder (`start_session`) with this briefing, filled in (leave out the test data and port parts when the project has none):
+6. **Register:** add a row to `.orchestra/workstreams.md` (not versioned; create it with this header if missing):
+
+   | Workstream | Session | Branch and worktree | Test data | Port | Schema change | Stage |
+   | --- | --- | --- | --- | --- | --- | --- |
+
+7. **Session:** check the level of "Start a new workstream session" in "Owner authorizations" (`CLAUDE.md`) and act on it. Then, in the desktop app, start a new session in the worktree folder (`start_session`) with this briefing, filled in (leave out the test data and port parts when the project has none):
 
    > You are the workstream session for `<name>`: <goal>. Load the `orchestra:workstream` skill and follow it. Worktree `<path>` on branch `<branch>`. Test data `<ENV_VAR>=<value>`. Dev server port `<port>`. Start with `superpowers:brainstorming` with the owner, then the spec. Report to the orchestrator session `<orchestrator session id>` in one line on cross-workstream decisions, schema changes, wave ends (with your context size) and when the PR is ready.
 
