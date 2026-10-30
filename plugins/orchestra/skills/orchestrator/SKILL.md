@@ -24,8 +24,8 @@ Read the project's `docs/HANDOFF.md` and the "Project settings" section of its `
 ## Opening a workstream
 
 Use `/orchestra:start-workstream`. In short:
-- One session per workstream, with its own worktree and branch from the integration branch, its own test database (skill `orchestra:test-databases`) and its own dev server port.
-- Workstreams run in parallel only when they are independent. At most one workstream with a database schema change is open at a time; the next one rebases and regenerates its migration before merging.
+- One session per workstream, with its own worktree and branch from the integration branch, its own isolated test data if the project keeps data (skill `orchestra:test-databases`) and its own dev server port if it has one.
+- Workstreams run in parallel only when they are independent. At most one workstream with a data schema change is open at a time; the next one rebases and regenerates its migration before merging.
 - Up to 2 tasks at once per workstream. With 4 to 6 workstreams running, one machine is already at its limit.
 - A hotfix branches from the production branch and gets merged back into the integration branch right after.
 
@@ -39,7 +39,7 @@ Use `/orchestra:start-workstream`. In short:
 ## Reviews and merging
 
 - The workstream runs the reviews (two stages, risk-proportional, plus the third UI review with screenshots; see `stages.md`) and the close-out review: `superpowers:requesting-code-review` dispatches a whole-branch reviewer using `ponytail:ponytail-review`, and `ponytail:ponytail-debt` lists the `shortcut:` comments in the PR description.
-- A workstream never merges its own PR. You check it (reviews done, CI green, nothing red), merge it into the integration branch, and run the full test suite after merging, since reviewers without a test database skip integration tests.
+- A workstream never merges its own PR. You check it (reviews done, CI green, nothing red), merge it into the integration branch, and run the full test suite after merging, since reviewers without test data skip the tests that need it.
 - Releases (integration branch to production branch): run the full verification (`verifier`) in a worktree on the integration branch, open the release PR, merge it the way the project's HANDOFF says.
 - The integration and production branches are permanent: nobody commits or pushes to them directly, and release and hotfix-return PRs are merged with a merge commit (`gh pr merge --merge`), never squash or rebase, and never with `--delete-branch`, which would delete one of them.
 - Between releases: `ponytail:ponytail-audit` on the code and the impeccable audit on the screens, to open cleanup workstreams.

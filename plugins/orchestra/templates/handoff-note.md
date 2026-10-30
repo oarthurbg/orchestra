@@ -15,11 +15,11 @@ Plan: `docs/superpowers/plans/<plan>.md`, task <N>: <title>. State: <not started
 - `<path>` on branch `<branch>` (integration)
 - `<path>` on branch `<branch>` (task <N>)
 
-## 4. Test databases and dev server port
+## 4. Test data and dev server port
 
-- Test database: `<db>_test_<workstream>`
-- Capture database: `<db>_capture_<workstream>` (or none)
-- Dev server port: <port>
+- Test data: `<ENV_VAR>=<value>` (or none)
+- Capture copy: `<value>` (or none)
+- Dev server port: <port> (or none)
 
 ## 5. Next steps, in order
 

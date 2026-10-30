@@ -15,7 +15,7 @@ Read first: your handoff note if one exists (`docs/workstreams/<name>.md`, skill
 2. **Spec** (ponytail lite): write it in `docs/superpowers/specs/`. Sensitive specs get `security-audit` early.
 3. **Plan:** dispatch `planner` (it runs in ultra). Each task comes back tagged with an agent and a risk.
 4. **Implementation:** `superpowers:subagent-driven-development`, one subagent at a time, visible in the conversation. Backend, database and integrations: `implementer` or `implementer-advanced` in full. UI: `implementer` in lite with `impeccable:impeccable`. Infrastructure: ultra. Mechanical: `mechanic`.
-5. **Reviews** per task, proportional to its risk (table in `stages.md`). UI tasks get the third review: `screenshotter`, then `impeccable:impeccable-finish-reviewer` against the approved mockup, with `design:accessibility-review`. Handle findings with `superpowers:receiving-code-review`.
+5. **Reviews** per task, proportional to its risk (table in `stages.md`). UI tasks get the third review: `screenshotter` (web UI with a dev server), then `impeccable:impeccable-finish-reviewer` against the approved mockup, with `design:accessibility-review`. Handle findings with `superpowers:receiving-code-review`.
 6. **Close-out:** `verifier` for the full verification; `superpowers:requesting-code-review` dispatches a whole-branch reviewer using `ponytail:ponytail-review`; `ponytail:ponytail-debt` lists the `shortcut:` comments in the PR description; `security-audit` before a PR that touches access, credentials, public pages or email; `superpowers:finishing-a-development-branch`. Open the PR into the integration branch. Delete your handoff note in the last commit before merge (its summary goes to the HANDOFF and the decisions log).
 
 ## Rules
@@ -23,7 +23,7 @@ Read first: your handoff note if one exists (`docs/workstreams/<name>.md`, skill
 - **Spec first.** If you or a subagent find the spec wrong or incomplete, stop: fix the spec (and record it in the decisions log), then the plan, then the code.
 - **Modes:** switch your own ponytail mode per stage (`ponytail:ponytail` with `lite` or `ultra`, or "stop ponytail") and state the mode, model and skills in every subagent briefing.
 - **Parallelism:** at most 2 tasks at once. Run plan tasks in parallel only with `superpowers:dispatching-parallel-agents`, after checking they touch no shared files, each with a self-contained briefing. Use it too for 2 or more independent failures. Flaky or "unstable" failures get `superpowers:systematic-debugging`.
-- **Your resources:** your own worktree, your own test database (`<db>_test_<workstream>`, skill `orchestra:test-databases`), your own dev server port. Never the dev database for tests. Tell subagents never to run `git stash` and to commit with `git add <path>` only.
+- **Your resources:** your own worktree, your own isolated test data if the project keeps data ("Test data" in "Project settings", skill `orchestra:test-databases`), your own dev server port if it has one. Tests never touch real or dev data. Tell subagents never to run `git stash` and to commit with `git add <path>` only.
 - **The owner answers here:** checkpoints, mockups and design choices are answered directly in this session. Decisions that only affect you go into the spec and the decisions log.
 
 ## Reporting to the orchestrator

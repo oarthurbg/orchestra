@@ -1,7 +1,7 @@
 {
   "name": "orchestra",
   "version": "0.1.0",
-  "description": "Multi-session agent orchestration: an orchestrator session that only coordinates, workstream sessions that each own a feature from spec to PR, 9 subagents with set models and ponytail modes, handoff notes and per-workstream test databases.",
+  "description": "Multi-session agent orchestration: an orchestrator session that only coordinates, workstream sessions that each own a feature from spec to PR, 9 subagents with set models and ponytail modes, handoff notes and isolated test data per workstream. No database, server or Docker required.",
   "author": {
     "name": "oarthurbg",
     "url": "https://github.com/oarthurbg"

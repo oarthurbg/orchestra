@@ -18,7 +18,7 @@ Copy `${CLAUDE_PLUGIN_ROOT}/templates/handoff-note.md` and keep its 8 sections, 
 1. Current task (plan path and task number)
 2. Last commit on the integration worktree
 3. Worktrees
-4. Test databases and dev server port
+4. Test data and dev server port (or none)
 5. Next steps, in order
 6. Accepted decisions (with the date, and whether they are already in the spec and the decisions log)
 7. Pending items for the owner

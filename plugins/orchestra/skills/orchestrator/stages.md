@@ -16,7 +16,7 @@ Every session starts in ponytail full. The workstream session switches its own m
 | Close-out and PR | Workstream session; `verifier` (Sonnet, low) | full | `superpowers:requesting-code-review` (dispatches a whole-branch reviewer using `ponytail:ponytail-review`), `ponytail:ponytail-debt` (lists the `shortcut:` comments in the PR description), `security-audit` before a PR that touches access, credentials, public pages or email, `superpowers:finishing-a-development-branch` |
 | Between releases | Orchestrator | full | `ponytail:ponytail-audit` on the code and the impeccable audit on the screens, to open cleanup workstreams |
 
-`dataviz` and `security-audit` are optional skills: use them when your Claude Code has them, skip them otherwise. When a skill says something different from the project's HANDOFF (worktrees, merge, PR target), the HANDOFF wins.
+`dataviz` ships with recent Claude Code versions; `security-audit` is Cloudflare's skill, listed in the orchestra marketplace. Skip either one if it is missing. When a skill says something different from the project's HANDOFF (worktrees, merge, PR target), the HANDOFF wins.
 
 ## Risk-proportional review
 
