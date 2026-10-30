@@ -139,17 +139,21 @@ h2{font-family:var(--display);font-weight:800;font-size:17px;line-height:24px;le
 .ask{grid-area:ask}
 .ev{grid-area:ev}
 .act{grid-area:act;align-self:start;margin-top:20px;display:flex;align-items:center;gap:12px}
-.who{display:flex;align-items:center;gap:8px;color:var(--muted)}
+.who{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;color:var(--muted)}
 .who b{color:var(--text);font-weight:600}
-.who time, .who .late{margin-left:auto;text-align:right}
+.who b, .who > span:not(.late){white-space:nowrap}
+.who time{margin-left:auto;text-align:right}
+.who .late{flex-basis:100%;text-align:left}
 .who time.long{color:var(--negative)}
 .q h2{font-family:var(--display);font-weight:800;font-size:22px;line-height:28px;letter-spacing:-.015em;margin:12px 0 0;max-width:36ch;text-wrap:balance;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
 .opts{margin:16px 0 0;font-size:16px;line-height:24px;color:var(--muted);max-width:60ch}
 .opts b{color:var(--text);font-weight:500}
+p.opts + ul.opts{margin-top:4px}
 ul.opts{padding-left:20px}
 ul.opts li{color:var(--text)}
 .opened{color:var(--muted)}
-.q.is-opened{opacity:.55}
+.q.is-opened{--text:var(--muted)}
+.q.is-opened img{opacity:.55}
 .shots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .ev.one{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 24px;align-items:start}
 .ev.one .shots{grid-template-columns:minmax(0,1fr)}
@@ -596,7 +600,7 @@ const fileUrl = (q, f) => `/api/file?s=${encodeURIComponent(q.session)}&n=${f.n}
 // Opened cards, per session and waitingSince, so a reload keeps them and a new question does not inherit one.
 let opened = new Set()
 try { opened = new Set(JSON.parse(sessionStorage.getItem('inbox-opened') || '[]')) } catch { /* private window */ }
-const openedKey = q => `${q.session}|${q.since}`
+const openedKey = q => `${q.session}|${q.since ?? q.question}`
 const markOpened = q => { opened.add(openedKey(q)); try { sessionStorage.setItem('inbox-opened', JSON.stringify([...opened])) } catch { /* private window */ } }
 
 // Thumbnails are kept across redraws: the file route is no-store, so a new <img> would download again every 5 seconds.
@@ -636,7 +640,7 @@ function card(q, first) {
   const isOpened = opened.has(openedKey(q))
   const wait = q.stale
     ? $('span', { class: 'late' }, `No report for ${q.reportedAt == null ? 'a while' : lag(q.reportedAt)}; the question may be answered already.`)
-    : q.since != null ? $('time', { class: long(q) ? 'long' : null, datetime: new Date(q.since).toISOString(), 'aria-label': `waiting ${spoken(q.since)}` }, `Waiting ${waited(q.since)}`) : null
+    : q.since != null ? $('time', { class: long(q) ? 'long' : null, datetime: new Date(q.since).toISOString(), }, $('span', { 'aria-hidden': 'true' }, `Waiting ${waited(q.since)}`), $('span', { class: 'sr-only' }, `waiting ${spoken(q.since)}`)) : null
   // Redrawn after the click, so the link is still in the page when it navigates.
   const answer = $('a', { class: first ? 'btn' : 'btn quiet', href: q.link, 'data-focus': `answer:${q.session}`, onclick: () => { markOpened(q); setTimeout(() => last && render(last)) } }, `Answer in ${q.workstream}`)
   return $('section', { class: `q${isOpened ? ' is-opened' : ''}`, id, 'aria-labelledby': `h-${id}` },
@@ -646,7 +650,7 @@ function card(q, first) {
       offers(q)),
     evidence(q),
     $('div', { class: 'act' }, !q.link ? $('span', { class: 'opened' }, "No link to this session. Open it from the app's sidebar.")
-      : isOpened ? $('span', { class: 'opened' }, `Opened in ${q.workstream}. It leaves the inbox once answered.`) : answer))
+      : isOpened ? $('span', { class: 'opened', tabindex: '-1', 'data-focus': `answer:${q.session}` }, `Opened in ${q.workstream}. It leaves the inbox once answered.`) : answer))
 }
 
 function inbox(snap) {
@@ -666,13 +670,15 @@ function inbox(snap) {
       $('p', {}, 'When a workstream asks you something, its question and the files to look at show up here.'),
       $('a', { class: 'btn quiet', href: '/' }, 'Go to the overview')),
   ]))
+  const live = new Set(list.flatMap(q => q.files.map(f => `${q.session}|${f.n}|${f.path}`)))
+  for (const k of thumbs.keys()) if (!live.has(k)) thumbs.delete(k)
 }
 
 // Redraws replace the DOM every 5 seconds; keep keyboard focus on the same control.
 function render(snap) {
   const focused = document.activeElement?.dataset?.focus
   draw(snap)
-  if (focused) document.querySelector(`[data-focus="${CSS.escape(focused)}"]`)?.focus()
+  if (focused) document.querySelector(`[data-focus="${CSS.escape(focused)}"]`)?.focus({ preventScroll: true })
 }
 
 function draw(snap) {
