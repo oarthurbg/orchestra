@@ -53,7 +53,7 @@ write('.orchestra/workstreams.md', registry)
 // billing's branch commits what its question points at; the origin remote makes its #14 a link.
 const inboxMode = process.argv.includes('--inbox') ? process.argv[process.argv.indexOf('--inbox') + 1] : 'three'
 const billing = path.join(root, '.worktrees', 'billing')
-const brand = new URL('../../../../assets/brand/', import.meta.url)
+const brand = new URL('../../../../assets/readme/', import.meta.url)
 const put = (rel, body) => { fs.mkdirSync(path.dirname(path.join(billing, rel)), { recursive: true }); fs.writeFileSync(path.join(billing, rel), body) }
 put('docs/mockups/invoice-light.png', fs.readFileSync(new URL('liveview-light.png', brand)))
 put('docs/mockups/invoice-dark.png', fs.readFileSync(new URL('liveview-dark.png', brand)))

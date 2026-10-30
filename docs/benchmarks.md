@@ -1,5 +1,7 @@
 # Benchmarks
 
+[README](../README.md) · [Setup](setup.md) · [Agents](agents.md) · [Stages, modes and skills](stages.md) · [The band](band.md) · [The liveview](liveview.md) · **Benchmarks**
+
 Measured on 2026-10-30. Every number below comes from a script in `bench/` run on the machine described here, or, for the token table, from the measurement note it cites. Raw results are in `bench/results/`.
 
 ## Machine

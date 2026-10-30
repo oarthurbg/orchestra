@@ -44,7 +44,7 @@ The other six (planner, implementers, reviewers, screenshotter) are for principa
 
 1. If `docs/HANDOFF.md` does not exist, run `/orchestra:init`.
 2. Confirm "Project settings" and "Owner authorizations" in `CLAUDE.md` with the owner.
-3. Check the recommended settings (README): bypass permissions for this project, this session on Opus at medium effort, `autoCompactWindow: 600000` at the top level and under `modelSettings` for Opus, auto-archive on PR close off, the branch guard from `/orchestra:init` installed, and branch protection on GitHub for the integration and production branches.
+3. Check the recommended settings (orchestra's `docs/setup.md`): bypass permissions for this project, this session on Opus at medium effort, `autoCompactWindow: 600000` at the top level and under `modelSettings` for Opus, auto-archive on PR close off, the branch guard from `/orchestra:init` installed, and branch protection on GitHub for the integration and production branches.
 4. Plan the app with the owner: write the backlog in "Next workstreams" in the HANDOFF, each item with what it waits on.
 5. Open every item that is ready and fits (see "Capacity") with `/orchestra:start-workstream`, then run the first `/orchestra:status`.
 

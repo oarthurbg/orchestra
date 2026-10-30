@@ -10,7 +10,7 @@ Items 1, 2, 3 and 5 are built and shipped in 1.0.0, along with the maestro's cap
 
 ### 1. A Claude Code mod for the session band
 
-Built in 0.2.0: see "The band" in the README and the spec at [`docs/superpowers/specs/2026-10-30-band-mod-design.md`](superpowers/specs/2026-10-30-band-mod-design.md). The dashboard (item 2) writes `.orchestra/liveview.json` with its local URL while it runs, which shows the band's `Liveview` button.
+Built in 0.2.0: see [The band](band.md) and the spec at [`docs/superpowers/specs/2026-10-30-band-mod-design.md`](superpowers/specs/2026-10-30-band-mod-design.md). The dashboard (item 2) writes `.orchestra/liveview.json` with its local URL while it runs, which shows the band's `Liveview` button.
 
 Complements ponytail's own band and does not duplicate it. Shows:
 - 5-hour and weekly plan-limit %;
@@ -57,7 +57,7 @@ To investigate: whether the mod can answer inside the app. App sessions are neve
 
 ### 5. A language server for code navigation
 
-Built in 0.6.0: see "Code navigation" in the README and the spec at [`docs/superpowers/specs/2026-10-30-lsp-command-design.md`](superpowers/specs/2026-10-30-lsp-command-design.md).
+Built in 0.6.0: see "Code navigation" in [Setup](setup.md#code-navigation) and the spec at [`docs/superpowers/specs/2026-10-30-lsp-command-design.md`](superpowers/specs/2026-10-30-lsp-command-design.md).
 
 Two measured trials. A command that prints references with their source line and callers as function names (a thin wrapper around Pyright or the TypeScript language service) cut explorer work tokens about 30% on networkx, the Python standard library and a public TypeScript app, and 65% (75% fewer tool calls) on a 1,960-file public app. The real Claude Code `LSP` tool, whose output is bare positions, saved nothing on that app. With Opus (high effort) as the explorer the saving shrinks to about 16%, but grep alone missed 2 of 8 callers on the trace question in every run and the language server did not. See [`docs/superpowers/specs/2026-10-30-lsp-measurement.md`](superpowers/specs/2026-10-30-lsp-measurement.md).
 
