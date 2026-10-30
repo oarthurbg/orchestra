@@ -33,7 +33,7 @@ The orchestra agents read this section for every project-specific value. Keep it
   - Real data tests must never touch: `<dev database, data folder, bucket...>`
 - Browser checks: `none` | `no login` | <how agents sign in: a test user plus a saved session file outside the repository>. Only for apps with a web UI and a dev server.
 - Confidential paths agents must never read or copy: `none` | <paths>
-- Code graph: `none` | `graphify` | `declined`. `graphify`: the maestro built the graph and keeps it current. `declined`: the owner said no, and the maestro never proposes it again.
+- Code graph: `none` | `declined`. `declined`: the owner said no, and the maestro never proposes it again. The graph is on when `graphify-out/graph.json` exists in the main checkout.
 - Commit trailer: `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`
 - Language for code, commits and docs: English
 

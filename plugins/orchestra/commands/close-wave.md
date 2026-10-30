@@ -20,4 +20,4 @@ Close a wave of tasks. First decide which role this session has: a principal (sk
 3. Above 250k: confirm the handoff note is committed and current, then clear at its level in "Owner authorizations" (`CLAUDE.md`) with `clear_session`.
 4. Send the briefing back: "Load the `orchestra:principal` skill. Read `docs/workstreams/<name>.md` and follow its clean-session checklist. Continue from task <N> of `<plan path>`."
 5. If the workstream's PR is merged and no work is coming, archive the session instead, at its level in "Owner authorizations" (`archive_session`, after checking no agent is running).
-6. If "Code graph" in "Project settings" is `none`, run "Measure and propose" from "Code graph" in `${CLAUDE_PLUGIN_ROOT}/skills/maestro/checklists.md`.
+6. Run "Measure and propose" from "Code graph" in `${CLAUDE_PLUGIN_ROOT}/skills/maestro/checklists.md`. It does nothing when the graph is already on or "Code graph" is `declined`.

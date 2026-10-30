@@ -45,9 +45,9 @@ What the runs showed:
 
 `templates/CLAUDE.md`, "Project settings", gets one line:
 
-- Code graph: `none` | `graphify` | `declined`
+- Code graph: `none` | `declined`
 
-`none` is the default. `graphify` means the graph is built and kept current. `declined` means the owner said no, and the maestro never proposes it again. The owner can change it by hand at any time.
+`none` is the default. `declined` means the owner said no, and the maestro never proposes it again. The owner can change it by hand at any time. Whether the graph is on is not a setting: it is on when `graphify-out/graph.json` exists in the main checkout, the same test the explorer and planner use. A setting would lag behind: at a wave end it changes only through a docs PR, and until that merged the maestro would propose a graph that exists and skip its updates.
 
 ### 2. Owner authorizations line
 
@@ -59,36 +59,35 @@ The maestro skill's list of gated actions names it too.
 
 ### 3. Measuring and proposing
 
-At `/orchestra:init` (a new step after the existing ones that look at the project) and at each wave end in the maestro (`/orchestra:close-wave` in the maestro), when "Code graph" is `none`:
+At `/orchestra:init` (a new step after the existing ones that look at the project) and at each wave end in the maestro (`/orchestra:close-wave` in the maestro), while the graph is off and "Code graph" is `none`:
 
-1. Count the TS and JS files tracked on the integration branch, from the main checkout:
+1. `git fetch origin`, then count the TS and JS files tracked on the integration branch, from the main checkout:
    `git ls-tree -r --name-only origin/<integration branch> | grep -cE '\.(ts|tsx|js|jsx|mjs|cjs)$'`
-   (`origin/` is left out when the project has no remote). Declaration files (`.d.ts`) are counted too; they are a small share in an app.
+   (with no remote, the local branch; at init, before the integration branch exists, `HEAD`). Declaration files (`.d.ts`) are counted too; they are a small share in an app.
 2. Below 500, do nothing and say nothing.
 3. At 500 or more, propose the build at the "Build the code graph" level, with the count and one line on what it costs: about a minute, no tokens, about 10 MB on disk, ignored by git. If `graphify --help` does not run, the proposal also says that `pip install graphifyy` installs it.
-4. A no sets "Code graph" to `declined`. "Later" or "not installed yet" leaves it at `none`, so the next wave end proposes it again.
+4. A no sets "Code graph" to `declined`; while the docs PR that records it is open, it already counts. "Later" or "not installed yet" leaves it at `none`, so the next wave end proposes it again.
 
 At init, the line is written only after the owner answers; at a wave end, the change goes through the next docs PR like any other `CLAUDE.md` change.
 
 ### 4. First build
 
-In the main checkout, on an up-to-date integration branch (`git pull --ff-only`):
+In the main checkout, on an up-to-date integration branch (`git pull --ff-only`, skipped with no remote). The maestro never switches the main checkout's branch: if it is not on the integration branch, it tells the owner and stops.
 
-1. Check that `.gitignore` lists `graphify-out/`. `/orchestra:init` now adds it next to `.orchestra/` in its `.gitignore` step, for every project; a project set up before this version gets it in the docs PR that records "Code graph".
+1. Check that `.gitignore` lists `graphify-out/`. `/orchestra:init` now adds it next to `.orchestra/` in its `.gitignore` step, for every project; a project set up before this version gets `graphify-out/` in `.git/info/exclude` right away, and in `.gitignore` through the next docs PR.
 2. Check that every worktree inside the main checkout is ignored: for each path from `git worktree list` that sits under the main checkout, `git check-ignore -q <path>` must succeed. graphify reads the same `.gitignore` and `info/exclude` files, so a path git ignores is a path graphify skips. If one is not ignored, the scan would sweep in a whole copy of the code: tell the owner to add it to `.gitignore` or `.graphifyignore`, and stop.
-3. Run `graphify extract . --code-only`.
-4. Set "Code graph" to `graphify`.
+3. Run `graphify extract . --code-only`. The graph is now on.
 
 ### 5. After each merge
 
-The merge checklist's "After merging" list gets one item, run by the maestro: when "Code graph" is `graphify`, pull the main checkout (`git pull --ff-only` on the integration branch) and run `graphify update .` there. If graphify reports that it kept the old graph because the new one is smaller, run `graphify update . --force`. A failure is reported in the next status round and never blocks the merge.
+The merge checklist's "After merging" list gets one item, run by the maestro: when the graph is on, pull the main checkout (`git pull --ff-only` on the integration branch, skipped with no remote) and run `graphify update .` there. If the main checkout is not on the integration branch, the update is skipped and reported. If graphify reports that it kept the old graph because the new one is smaller, run `graphify update . --force`. A failure never blocks the merge: it is reported in the next status round, and the checklist carries on.
 
 ### 6. Explorer and planner
 
 Both agent files get the same short rule:
 
 - The graph, if any, is `<main checkout>/graphify-out/graph.json`; the main checkout is the first line of `git worktree list`. If the file or the `graphify` command is missing, search with grep as usual and do not mention it.
-- For "who calls X", "what breaks if X changes" and "how does A reach B", start with `graphify affected "<name>()" --graph <path>` (and `explain` for one node, `path` between two). Pick the node by its file when a name exists twice. Do not use free-text `graphify query`.
+- For "who calls X", "what breaks if X changes" and "how does A reach B", start with `graphify affected "<name>()" --graph <path>` (and `explain` for one node, `path` between two). When a name exists twice, graphify finds no unique node: list the node IDs from `graph.json` with grep and pass the one whose path matches the file. Do not use free-text `graphify query`.
 - The graph maps the integration branch, not your branch, and it misses calls through a module attribute or dynamic dispatch. Confirm every line you report with grep or Read, and grep for what the graph might miss.
 
 Implementers, reviewers and the other agents do not change.
