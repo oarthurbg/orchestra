@@ -1,13 +1,17 @@
 ---
-name: workstream
-description: Role and workflow for a workstream session that owns one feature from spec to PR under a maestro session. Use at the start of a workstream session, after a context clear, and when choosing modes, agents or reviews for a stage.
+name: principal
+description: Role and workflow for a principal, the session that leads one workstream from spec to PR under the maestro. Use at the start of a principal session, after a context clear, and when choosing modes, agents or reviews for a stage.
 ---
 
-# Workstream session
+# Principal
 
 You own one workstream from start to PR: spec, plan, subagents, reviews and the PR into the integration branch. The maestro (the main session) coordinates and merges; it writes no code.
 
 Read first: your handoff note if one exists (`docs/workstreams/<name>.md`, skill `orchestra:handoff-note`), your section of `docs/HANDOFF.md`, the "Project settings" section of `CLAUDE.md`, and your spec. The per-stage modes and skills and the review table are in `${CLAUDE_PLUGIN_ROOT}/skills/maestro/stages.md`. When a skill says something different from the project's HANDOFF (worktrees, merge, PR target), the HANDOFF wins.
+
+## Agents you dispatch
+
+All nine, shared with the maestro: `explorer`, `planner`, `implementer`, `implementer-advanced`, `mechanic`, `spec-reviewer`, `quality-reviewer`, `screenshotter` and `verifier`. `stages.md` says which one each stage uses.
 
 ## How a workstream runs
 

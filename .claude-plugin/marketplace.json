@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "orchestra",
-  "description": "Multi-session agent orchestration for Claude Code: one maestro session, parallel workstream sessions, spec-first, risk-proportional reviews. Also lists the third-party plugins the workflow uses, fetched from their own upstream repositories.",
+  "description": "Multi-session agent orchestration for Claude Code: one maestro session, parallel principals, spec-first, risk-proportional reviews. Also lists the third-party plugins the workflow uses, fetched from their own upstream repositories.",
   "owner": {
     "name": "oarthurbg",
     "url": "https://github.com/oarthurbg"
@@ -10,7 +10,7 @@
     {
       "name": "orchestra",
       "source": "./plugins/orchestra",
-      "description": "Maestro and workstream roles, 9 subagents, handoff notes, per-workstream test databases, and /orchestra:init to scaffold a project.",
+      "description": "Maestro and principal roles, 9 subagents, handoff notes, per-workstream test databases, and /orchestra:init to scaffold a project.",
       "category": "productivity",
       "tags": ["orchestration", "multi-session", "workflow", "subagents"]
     },

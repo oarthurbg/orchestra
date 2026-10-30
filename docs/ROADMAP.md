@@ -2,7 +2,7 @@
 
 ## Phase 1: base package (done)
 
-Maestro and workstream roles, 9 agents, handoff notes, isolated test data per workstream, `/orchestra:init`, `/orchestra:start-workstream`, `/orchestra:close-wave`, and a marketplace that lists the third-party plugins from their upstream repositories.
+Maestro and principal roles, 9 agents, handoff notes, isolated test data per workstream, `/orchestra:init`, `/orchestra:start-workstream`, `/orchestra:close-wave`, and a marketplace that lists the third-party plugins from their upstream repositories.
 
 ## Phase 2: backlog
 

@@ -1,4 +1,4 @@
-export type Role = 'maestro' | 'workstream' | 'unregistered'
+export type Role = 'maestro' | 'principal' | 'unregistered'
 export type State = 'running' | 'idle' | 'waiting'
 export type Limit = { kind: string; percentUsed: number; resetsAt?: string }
 

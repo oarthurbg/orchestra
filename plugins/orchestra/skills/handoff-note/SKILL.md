@@ -1,6 +1,6 @@
 ---
 name: handoff-note
-description: Fixed template for a workstream's handoff note and the checklist a clean session follows to resume from it. Use when a workstream closes a wave, before its context is cleared, and when a cleared or new session picks a workstream back up.
+description: Fixed template for a workstream's handoff note and the checklist a clean session follows to resume from it. Use when a principal closes a wave, before its context is cleared, and when a cleared or new session picks a workstream back up.
 ---
 
 # Handoff note
@@ -17,7 +17,7 @@ The line right under the title is what the maestro's status round reads, so keep
 
 `Status: <running | idle | waiting on owner> · context <N>k · <stage>, task <N> of <M> · PR <none | #N open | #N ready> · waiting on: <none | what, for whom> · updated <YYYY-MM-DD HH:MM>`
 
-It is also how a workstream reports without the desktop app: the maestro reads it straight from the worktree folder.
+It is also how a principal reports without the desktop app: the maestro reads it straight from the worktree folder.
 
 ## Template
 

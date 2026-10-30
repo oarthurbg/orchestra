@@ -17,7 +17,7 @@ const REGISTRY = `| Workstream | Session | Branch and worktree | Test data | Por
 `
 const now = () => new Date().toISOString()
 const report = (session: string, over: Record<string, unknown>) => JSON.stringify({
-  v: 1, session, role: 'workstream', workstream: null, branch: '', title: '', link: '', state: 'running', detail: '',
+  v: 1, session, role: 'principal', workstream: null, branch: '', title: '', link: '', state: 'running', detail: '',
   stage: '', pr: '', context: { tokens: 40_000, window: 1_000_000 }, limits: [], warm: { pings: 0, last: null }, updatedAt: now(), ...over,
 })
 
@@ -164,7 +164,7 @@ test('a worktree session reports into the main checkout and reads its branch fro
   session(on, WT, 'w')
   await $.session.start({ cwd: WT, surface: 'desktop', isInteractive: true })
   const mine = JSON.parse(files[`${ROOT}/.orchestra/sessions/w.json`]!)
-  expect(mine).toMatchObject({ role: 'workstream', workstream: 'reports', branch: 'reports-branch' })
+  expect(mine).toMatchObject({ role: 'principal', workstream: 'reports', branch: 'reports-branch' })
   expect(Object.keys(files).filter(k => k.startsWith(`${WT}/.orchestra`))).toEqual([])
 })
 
@@ -642,7 +642,7 @@ test('the ponytail switch shows only while ponytail hides its own band, and runs
   await ui.unmount()
 })
 
-test('a workstream session shows its own row and no arrow or running count', async ($, on) => {
+test('a principal session shows its own row and no arrow or running count', async ($, on) => {
   const WT = `${ROOT}/.worktrees/reports`
   const files: Record<string, string> = {
     [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY,

@@ -108,7 +108,7 @@ footer{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padd
     <h2 id="t-roles">Who does what</h2>
     <div class="roles">
       <div class="role"><h3>Main session (maestro)</h3><p>Opens workstreams, sets order and the schema queue, watches machine load and context size, merges PRs, talks to the owner. Writes no code, not even through subagents.</p></div>
-      <div class="role"><h3>Workstream session</h3><p>Owns one feature end to end: spec, plan, subagents, reviews, PR. Answers the owner directly on checkpoints and mockups, and reports cross-workstream decisions to the maestro in one line.</p></div>
+      <div class="role"><h3>Principal</h3><p>Owns one feature end to end: spec, plan, subagents, reviews, PR. Answers the owner directly on checkpoints and mockups, and reports cross-workstream decisions to the maestro in one line.</p></div>
       <div class="role"><h3>Subagents</h3><p>Do one task each (implementer, reviewers, planner, explorer) and never spawn other agents. They get their mode and skills from the briefing.</p></div>
     </div>
   </section>
@@ -148,7 +148,7 @@ footer{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padd
   <section aria-labelledby="t-rhythm">
     <h2 id="t-rhythm">Session rhythm</h2>
     <div class="rules">
-      <div class="rule"><div class="big">250k</div><p>Tokens. When a wave of tasks closes above this, the workstream writes its handoff note and the maestro clears its context, then sends a short briefing back.</p></div>
+      <div class="rule"><div class="big">250k</div><p>Tokens. When a wave of tasks closes above this, the principal writes its handoff note and the maestro clears its context, then sends a short briefing back.</p></div>
       <div class="rule"><div class="big">600k</div><p>Auto-compact safety net (<code>autoCompactWindow</code>), for when nobody checked in time.</p></div>
       <div class="rule"><div class="big">2</div><p>Tasks at once per workstream, because every workstream shares one machine.</p></div>
       <div class="rule"><div class="big">docs/workstreams/</div><p>Where each workstream keeps its handoff note, on its own branch, with a fixed template and a clean-session checklist.</p></div>
@@ -162,11 +162,11 @@ footer{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padd
 
 <script>
 const STAGES=[
- {n:"Brainstorm and mockups",who:"Workstream session, with the owner",agent:"the session itself",mode:"off",skills:["brainstorming","frontend-design","taste","impeccable detector","design-critique","dataviz"]},
- {n:"Spec",who:"Workstream session",agent:"the session itself",mode:"lite",skills:["security-audit"]},
+ {n:"Brainstorm and mockups",who:"Principal, with the owner",agent:"the session itself",mode:"off",skills:["brainstorming","frontend-design","taste","impeccable detector","design-critique","dataviz"]},
+ {n:"Spec",who:"Principal",agent:"the session itself",mode:"lite",skills:["security-audit"]},
  {n:"Plan",who:"Subagent",agent:"planner · Opus",mode:"ultra",skills:["writing-plans"]},
- {n:"Backend implementation",who:"The workstream dispatches one subagent per task (subagent-driven-development); the subagent uses the rest",agent:"implementer · Sonnet\nor advanced · Opus",mode:"full",skills:["subagent-driven-development","dispatching-parallel-agents","test-driven-development","verification-before-completion","systematic-debugging"]},
- {n:"UI implementation",who:"The workstream dispatches one subagent per task (subagent-driven-development); the subagent uses the rest",agent:"implementer · Sonnet",mode:"lite",skills:["subagent-driven-development","dispatching-parallel-agents","impeccable","test-driven-development","verification-before-completion","dataviz"]},
+ {n:"Backend implementation",who:"The principal dispatches one subagent per task (subagent-driven-development); the subagent uses the rest",agent:"implementer · Sonnet\nor advanced · Opus",mode:"full",skills:["subagent-driven-development","dispatching-parallel-agents","test-driven-development","verification-before-completion","systematic-debugging"]},
+ {n:"UI implementation",who:"The principal dispatches one subagent per task (subagent-driven-development); the subagent uses the rest",agent:"implementer · Sonnet",mode:"lite",skills:["subagent-driven-development","dispatching-parallel-agents","impeccable","test-driven-development","verification-before-completion","dataviz"]},
  {n:"Reviews",who:"Read-only subagents",agent:"spec compliance · Sonnet\ncode quality · Opus\nfinish-reviewer",mode:"off",skills:["verification-before-completion","receiving-code-review","impeccable-finish-reviewer","accessibility-review","dispatching-parallel-agents"]},
  {n:"PR and wrap-up",who:"Workstream and maestro",agent:"maestro merges",mode:"full",skills:["requesting-code-review","security-audit","finishing-a-development-branch","dispatching-parallel-agents","systematic-debugging"]}
 ];
@@ -175,11 +175,11 @@ const GROUPS=[
  {t:"Superpowers",src:"superpowers",items:[
   ["brainstorming","Guided conversation that turns a request into an approved design, before any spec.","Workstream, before the spec"],
   ["writing-plans","Writes the plan as small, self-contained tasks, each with its test and definition of done.","Planner"],
-  ["subagent-driven-development","The workstream session runs the plan by dispatching one subagent per task, with review in between. The implementer does not load it: it is the dispatched subagent.","Workstream session, during implementation"],
+  ["subagent-driven-development","The principal runs the plan by dispatching one subagent per task, with review in between. The implementer does not load it: it is the dispatched subagent.","Principal, during implementation"],
   ["test-driven-development","Forces seeing the test fail before implementing.","Implementers"],
   ["verification-before-completion","Only allows claiming success with the command run and the output in hand.","Implementers and reviewers"],
   ["systematic-debugging","Methodical investigation of failures with no clear cause, including flaky ones.","When something breaks"],
-  ["dispatching-parallel-agents","The workstream checks that tasks are independent (no shared files) and gives each agent a self-contained briefing. Up to 2 at once per workstream.","Parallel tasks and multiple unrelated failures"],
+  ["dispatching-parallel-agents","The principal checks that tasks are independent (no shared files) and gives each agent a self-contained briefing. Up to 2 at once per workstream.","Parallel tasks and multiple unrelated failures"],
   ["requesting-code-review","Asks for a review of the whole branch before opening the PR.","Before the workstream PR"],
   ["receiving-code-review","Handles reviewer findings without blindly accepting or rejecting them.","When reviews come back"],
   ["finishing-a-development-branch","Wrap-up checklist: tests, PR, worktree and branch cleanup.","Closing the workstream"]]},

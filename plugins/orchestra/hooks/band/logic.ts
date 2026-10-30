@@ -45,7 +45,7 @@ export function roleOf(root: string, main: string, rows: RegistryRow[]): { role:
   const r = norm(root)
   if (r === norm(main)) return { role: 'maestro', workstream: null }
   const row = rows.find(x => resolvePath(main, x.worktree) === r)
-  return row ? { role: 'workstream', workstream: row.workstream } : { role: 'unregistered', workstream: null }
+  return row ? { role: 'principal', workstream: row.workstream } : { role: 'unregistered', workstream: null }
 }
 
 // "Status: <running | idle | waiting on owner> · context <N>k · <stage> · PR <...> · waiting on: <...> · updated <...>"
