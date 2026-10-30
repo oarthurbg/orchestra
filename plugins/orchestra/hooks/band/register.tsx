@@ -191,12 +191,13 @@ const SHAPE_SVG: Record<Shape, string> = {
 // The terminal has no Svg: a glyph in a theme colour.
 const SHAPE_TEXT: Record<Shape, [string, string]> = { triangle: ['▲', 'warning'], square: ['■', 'error'], circle: ['●', 'suggestion'], half: ['◓', 'inactive'], hollow: ['◠', 'inactive'] }
 const svg = (body: string, w: number, h: number) => `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${body}</svg>`
-const MARK = svg('<g transform="scale(0.16)"><path d="M8 92 A 32 32 0 0 1 72 92 Z" fill="#B9C8F2"/><circle cx="32" cy="34" r="22" fill="#2450E0"/><rect x="60" y="12" width="30" height="44" fill="#F0442C"/><polygon points="74,92 94,92 84,60" fill="#FFC21A"/></g>', 16, 16)
+// assets/brand/mark-dark.svg, scaled by its viewBox.
+const MARK = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 100 100"><path d="M8 92 A 32 32 0 0 1 72 92 Z" fill="#B9C8F2"/><circle cx="32" cy="34" r="22" fill="#2450E0"/><rect x="60" y="12" width="30" height="44" fill="#F0442C"/><polygon points="74,92 94,92 84,60" fill="#FFC21A"/></svg>'
 const bar = (pct: number, alarm: boolean) =>
   svg(`<rect width="44" height="4" rx="2" fill="#8080804D"/><rect width="${Math.max(2, Math.round((44 * Math.min(100, pct)) / 100))}" height="4" rx="2" fill="${alarm ? '#F0442C' : '#A9A49A'}"/>`, 44, 4)
 // A hairline as wide as the slot: wider than any band, stretched (not scaled) to the slot's width.
 const RULE = '<svg xmlns="http://www.w3.org/2000/svg" width="4000" height="1" viewBox="0 0 4000 1" preserveAspectRatio="none"><rect width="4000" height="1" fill="#80808059"/></svg>'
-const STRIPE = '#8080801A'
+const STRIPE = '#80808012'
 const HOVER = '#80808033'
 
 export const register: Register = (on, options) => {
@@ -341,7 +342,7 @@ export const register: Register = (on, options) => {
     const row = (r: BandRow, n: number) => {
       const waiting = r.shape === 'triangle'
       return (
-        <Box key={`row-${r.key}`} flexDirection="row" alignItems="center" paddingX={1} {...(n % 2 === 1 ? { backgroundColor: STRIPE } : {})} {...(r.link !== '' ? { hover: { backgroundColor: HOVER } } : {})}>
+        <Box key={`row-${r.key}`} flexDirection="row" alignItems="center" paddingX={1} {...(desktop ? { paddingY: 'xs' as const } : {})} {...(n % 2 === 1 ? { backgroundColor: STRIPE } : {})} {...(r.link !== '' ? { hover: { backgroundColor: HOVER } } : {})}>
           <Box width="24%">{cell(r, 'name', r.name, { bold: waiting, underline: r.link !== '' })}</Box>
           <Box width="18%" flexDirection="row" alignItems="center" gap={1}>
             {desktop ? pic(svg(SHAPE_SVG[r.shape], 12, 12), r.status, 12, 12) : <Text color={SHAPE_TEXT[r.shape][1]}>{SHAPE_TEXT[r.shape][0]}</Text>}
@@ -353,7 +354,7 @@ export const register: Register = (on, options) => {
       )
     }
     const heads = (
-      <Box flexDirection="row" paddingX={1}>
+      <Box flexDirection="row" paddingX={1} {...(desktop ? { paddingY: 'xs' as const } : {})}>
         <Box width="24%" paddingLeft={inset}><Text dimColor>Workstream</Text></Box>
         <Box width="18%" paddingLeft={desktop ? 3 + inset : 2}><Text dimColor>Status</Text></Box>
         <Box width="9%" justifyContent="flex-end" paddingRight={inset}><Text dimColor>Context</Text></Box>
