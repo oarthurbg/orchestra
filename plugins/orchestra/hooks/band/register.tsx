@@ -200,6 +200,13 @@ const RULE = '<svg xmlns="http://www.w3.org/2000/svg" width="4000" height="1" vi
 const STRIPE = '#80808012'
 const HOVER = '#80808033'
 
+// Starts the liveview for this project. The server skips the start itself when one already answers for this root.
+async function startLiveview($: EngineInterface) {
+  const plugin = await $.env.get('CLAUDE_PLUGIN_ROOT')
+  if (!plugin || ctx.main === null) return
+  await $.process.run(['node', `${norm(plugin)}/liveview/server.mjs`, '--root', ctx.main, '--detach']).catch(() => undefined)
+}
+
 export const register: Register = (on, options) => {
   // session.start's locate, which classic.SessionStart waits for so its watch paths know the main checkout.
   let located: Promise<void> = Promise.resolve()
@@ -211,6 +218,8 @@ export const register: Register = (on, options) => {
     ctx.lastRequestAt = await $.clock.now()
     located = locate($)
     await located
+    // Not awaited: --detach waits up to 30 seconds for the server to answer.
+    if (ctx.main !== null && ctx.role === 'maestro') void startLiveview($).catch(() => {})
     await measure($)
     await writeReport($)
     await refresh($)

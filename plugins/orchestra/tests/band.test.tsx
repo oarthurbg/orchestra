@@ -711,3 +711,35 @@ test('a FileChanged path in another case and with backslashes still refreshes', 
   expect(await ui.find({ type: 'Text', text: /^waiting$/ })).toBeDefined()
   await ui.unmount()
 })
+
+test('a maestro session starts the liveview once, detached', async ($, on) => {
+  const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+  disk(on, files)
+  session(on, ROOT, 'o')
+  const runs: string[] = []
+  on('process.run', ($, e) => { runs.push(JSON.stringify(e)); return { value: { stdout: '', stderr: '', exitCode: 0 } } as never })
+  on('env.get', ($, e) => ({ value: JSON.stringify(e).includes('CLAUDE_PLUGIN_ROOT') ? '/plug/orchestra' : undefined }) as never)
+  await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
+  // The start is not awaited by the hook: wait for it to land.
+  for (let i = 0; i < 20 && !runs.some(r => r.includes('server.mjs')); i++) await new Promise(r => setTimeout(r, 10))
+  const starts = runs.filter(r => r.includes('liveview/server.mjs'))
+  expect(starts.length).toBe(1)
+  expect(starts[0]).toContain('--detach')
+  expect(starts[0]).toContain(ROOT)
+})
+
+test('a principal session never starts the liveview', async ($, on) => {
+  const WT = '/home/u/repo/.worktrees/reports'
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY,
+    [`${WT}/.git`]: `gitdir: ${ROOT}/.git/worktrees/reports`,
+  }
+  disk(on, files)
+  session(on, WT, 's2')
+  const runs: string[] = []
+  on('process.run', ($, e) => { runs.push(JSON.stringify(e)); return { value: { stdout: '', stderr: '', exitCode: 0 } } as never })
+  on('env.get', () => ({ value: '/plug/orchestra' }) as never)
+  await $.session.start({ cwd: WT, surface: 'desktop', isInteractive: true })
+  await new Promise(r => setTimeout(r, 50))
+  expect(runs.filter(r => r.includes('server.mjs')).length).toBe(0)
+})
