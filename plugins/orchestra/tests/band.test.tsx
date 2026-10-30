@@ -712,6 +712,8 @@ test('a narrow band, as in a split view, keeps one line and adds a red line only
   const mount = (bodyColumns: number) => $.ui.mount({ ...BAND, props: { ...BAND.props, bodyColumns }, surface: 'desktop' })
   await $.session.measure({ context: { tokens: 30_000, window: 1_000_000 }, rateLimits: week(10), changed: [] } as never)
   let ui = await mount(60)
+  // The name stays while it fits, beside the mark.
+  expect(await ui.find({ type: 'Text', text: /^orchestra$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /^10%$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /% used/ })).toBeUndefined()
   expect(await ui.find({ type: 'Text', text: /^\d+\/\d+$/ })).toBeDefined()
@@ -723,6 +725,7 @@ test('a narrow band, as in a split view, keeps one line and adds a red line only
   await ui.unmount()
   // Narrower still: no bars, "Wk", and the short warning.
   ui = await mount(40)
+  expect(await ui.find({ type: 'Text', text: /^orchestra$/ })).toBeUndefined()
   expect(await ui.find({ type: 'Text', text: /^Wk$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /^Runs out / })).toBeDefined()
   for (const s of await ui.findAll({ type: 'Svg' })) expect(String(s.props.alt)).not.toMatch(/limit/)
