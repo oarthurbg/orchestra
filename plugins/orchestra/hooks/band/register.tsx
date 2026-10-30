@@ -322,10 +322,10 @@ export const register: Register = (on, options) => {
 
     const limit = (label: string, l: { pct: number } | null, tail: string, alarm: boolean) => (
       <Box flexDirection="row" alignItems="center" gap={1}>
-        <Text dimColor>{label}</Text>
-        {l === null ? <Text dimColor>-</Text> : pic(bar(l.pct, alarm), `${l.pct}% of the ${label} limit`, 44, 4)}
-        {l !== null && <Text color={alarm ? 'error' : undefined}>{l.pct}% used</Text>}
-        {l !== null && tail !== '' && <Text color={alarm ? 'error' : undefined} dimColor={!alarm}>{tail}</Text>}
+        <Text size="footnote" dimColor>{label}</Text>
+        {l === null ? <Text size="footnote" dimColor>-</Text> : pic(bar(l.pct, alarm), `${l.pct}% of the ${label} limit`, 44, 4)}
+        {l !== null && <Text size="footnote" color={alarm ? 'error' : undefined}>{l.pct}% used</Text>}
+        {l !== null && tail !== '' && <Text size="footnote" color={alarm ? 'error' : undefined} dimColor={!alarm}>{tail}</Text>}
       </Box>
     )
     const runOutAt = v.week?.runOut ?? null
@@ -387,7 +387,7 @@ export const register: Register = (on, options) => {
         </Box>
         <Box width={0} flexGrow={1} />
         <Box flexShrink={0} flexDirection="row" alignItems="center" gap={1}>
-          {maestro && v.total > 0 && <Text dimColor>{v.running} of {v.total} running</Text>}
+          {maestro && v.total > 0 && <Text size="footnote" dimColor>{v.running} of {v.total} running</Text>}
           {maestro && v.rows.length > 2 && <Button key="orchestra-toggle" label={isOpen ? '▾' : '▴'} onPress={toggle} />}
         </Box>
       </Box>
