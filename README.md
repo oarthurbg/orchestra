@@ -132,6 +132,7 @@ A local page for the project: plan limits with a projection to the reset, what n
 - It listens on `127.0.0.1` only, from port 4317.
 - Progress comes from the plan checkboxes. ETAs come from how long past tasks took, measured from the commits that ticked them: tasks with the same agent and risk, else the same agent, else all past tasks, using the first group with 3 finished tasks. Until one has 3, the ETA shows `?`.
 - The limit projection reads token counts (never message content) from Claude Code's transcripts for every project on this machine, because plan limits are per account, and calibrates them on the band's latest limit reading.
+- Its `Inbox` view lists every question a workstream is waiting on you to answer, oldest first, with the options it offers and the pictures, pages and docs on its branch; `Answer in` opens the session, where you answer. Chrome asks once before it opens a `claude://` link.
 
 <img alt="The liveview, light" src="assets/brand/liveview-light.png" width="720">
 <img alt="The liveview, dark" src="assets/brand/liveview-dark.png" width="720">
