@@ -58,7 +58,8 @@ export function parsePlan(md) {
 
 // "Project settings" in CLAUDE.md: the integration and production branch names.
 export function parseBranches(claudeMd) {
-  const pick = re => re.exec(claudeMd ?? '')?.[1]?.replace(/^<|>$/g, '') ?? null
+  // A name starting with '-' would be read by git as an option.
+  const pick = re => { const b = re.exec(claudeMd ?? '')?.[1]?.replace(/^<|>$/g, '') ?? null; return b?.startsWith('-') ? null : b }
   return {
     integration: pick(/Integration branch[^`\n]*`([^`]+)`/),
     production: pick(/Production branch[^`\n]*`([^`]+)`/),

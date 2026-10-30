@@ -4,6 +4,7 @@ import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import { StringDecoder } from 'node:string_decoder'
 
 import { DAY, parseBranches, parsePlan, parseQueued, parseRegistry, planPathFromNote, timedTasks, usageEvent } from './snapshot.mjs'
 
@@ -16,7 +17,7 @@ export function readText(file) {
 // git output, or null when git is missing or the command fails.
 export function git(cwd, args) {
   try {
-    return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 * 1024 * 1024, windowsHide: true })
+    return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 64 * 1024 * 1024, timeout: 10_000, windowsHide: true })
   } catch {
     return null
   }
@@ -49,7 +50,7 @@ export function planVersions(cwd, ref, planPath) {
   return log.trim().split('\n').filter(Boolean).reverse().flatMap(line => {
     const [sha, ct] = line.split(' ')
     const md = git(cwd, ['show', `${sha}:${planPath}`])
-    return md === null ? [] : [{ at: Number(ct) * 1000, md }]
+    return md === null ? [] : [{ at: Number(ct) * 1000, md, sha }]
   })
 }
 
@@ -61,7 +62,8 @@ export function commitTimes(cwd, refArgs) {
 // First-parent commits on a branch since a time: merges on the integration branch, releases on production.
 export function firstParent(cwd, branch, since) {
   if (!branch) return []
-  const log = git(cwd, ['log', '--first-parent', `--since=${Math.floor(since / 1000)}`, '--format=%ct%x09%s', branch])
+  const args = ['log', '--first-parent', `--since=${Math.floor(since / 1000)}`, '--format=%ct%x09%s']
+  const log = git(cwd, [...args, `origin/${branch}`]) ?? git(cwd, [...args, branch])
   return log ? log.trim().split('\n').filter(Boolean).map(l => { const [ct, ...s] = l.split('\t'); return { at: Number(ct) * 1000, subject: s.join('\t') } }) : []
 }
 
@@ -111,6 +113,7 @@ export function appendHistory(main, history, entries) {
   const fresh = entries.filter(e => !known.has(`${e.plan}#${e.task}`))
   if (fresh.length === 0) return history
   const lines = fresh.map(({ plan, task, agent, risk, minutes, finishedAt }) => JSON.stringify({ plan, task, agent, risk, minutes, finishedAt }))
+  fs.mkdirSync(path.join(main, '.orchestra'), { recursive: true })
   fs.appendFileSync(path.join(main, '.orchestra', 'eta-history.jsonl'), `${lines.join('\n')}\n`)
   return [...history, ...fresh]
 }
@@ -122,14 +125,15 @@ export function seedHistory(main) {
   return plans.flatMap(p => {
     const versions = planVersions(main, '--all', p)
     if (versions.length === 0) return []
-    return timedTasks(p, versions, commitTimes(main, ['--all', `--since=${Math.floor(versions[0].at / 1000)}`]))
+    return timedTasks(p, versions, commitTimes(main, ['--first-parent', `--since=${Math.floor(versions[0].at / 1000)}`, versions.at(-1).sha]))
   })
 }
 
 // Reads Claude Code transcripts incrementally: only the bytes appended since the last pass.
 export class TranscriptReader {
-  constructor(dir = path.join(process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude'), 'projects')) {
+  constructor(dir = path.join(process.env.CLAUDE_CONFIG_DIR || path.join(os.homedir(), '.claude'), 'projects'), chunk = 16 * 1024 * 1024) {
     this.dir = dir
+    this.chunk = chunk
     this.files = new Map()
     this.events = new Map()
   }
@@ -154,21 +158,26 @@ export class TranscriptReader {
   readFile(file) {
     let size
     try { size = fs.statSync(file).size } catch { return }
-    let st = this.files.get(file) ?? { offset: 0, rest: '' }
-    if (size < st.offset) st = { offset: 0, rest: '' }
+    let st = this.files.get(file)
+    // The decoder keeps a multibyte character split across chunks or ticks whole.
+    if (!st || size < st.offset) st = { offset: 0, rest: '', decoder: new StringDecoder('utf8') }
     if (size === st.offset) return
-    const fd = fs.openSync(file, 'r')
+    let fd
     try {
-      const buf = Buffer.alloc(size - st.offset)
-      fs.readSync(fd, buf, 0, buf.length, st.offset)
-      const lines = (st.rest + buf.toString('utf8')).split('\n')
-      st = { offset: size, rest: lines.pop() ?? '' }
-      for (const line of lines) {
-        const e = line.includes('"usage"') ? usageEvent(line) : null
-        if (e) this.events.set(e.id, e)
+      fd = fs.openSync(file, 'r')
+      const buf = Buffer.alloc(Math.min(this.chunk, size - st.offset))
+      while (st.offset < size) {
+        const n = fs.readSync(fd, buf, 0, Math.min(buf.length, size - st.offset), st.offset)
+        if (n === 0) break
+        const lines = (st.rest + st.decoder.write(buf.subarray(0, n))).split('\n')
+        st = { ...st, offset: st.offset + n, rest: lines.pop() ?? '' }
+        for (const line of lines) {
+          const e = line.includes('"usage"') ? usageEvent(line) : null
+          if (e) this.events.set(e.id, e)
+        }
       }
-    } finally {
-      fs.closeSync(fd)
+    } catch { /* deleted or locked between stat and read: skip this file for now */ } finally {
+      if (fd !== undefined) fs.closeSync(fd)
       this.files.set(file, st)
     }
   }
@@ -176,7 +185,7 @@ export class TranscriptReader {
 
 // Everything buildSnapshot needs, read fresh.
 export function gather(main, now, reader, history) {
-  const registry = parseRegistry(readText(path.join(main, '.orchestra', 'workstreams.md')) ?? '')
+  const registry = parseRegistry(readText(path.join(main, '.orchestra', 'workstreams.md')) ?? '').map(r => ({ ...r, worktree: path.resolve(main, r.worktree) }))
   const { integration, production } = parseBranches(readText(path.join(main, 'CLAUDE.md')))
   const workstreams = Object.fromEntries(registry.map(r => [r.name, readWorkstream(r, integration)]))
   const since = now - 3 * DAY
