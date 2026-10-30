@@ -22,12 +22,11 @@ Geometry (in `assets/brand/mark.svg`): half circle `M8 92 A 32 32 0 0 1 72 92 Z`
 | Cobalt | `#2450E0` | Circle; "full" mode |
 | Vermilion | `#F0442C` | Rectangle; "ultra" mode; links and accents (`#C8341B` for small text on paper) |
 | Saffron | `#FFC21A` | Triangle; "lite" mode |
-| Pale blue | `#B9C8F2` | Half circle on light backgrounds; "off" mode |
-| Deep blue | `#26335E` | Half circle on dark backgrounds |
+| Pale blue | `#B9C8F2` | Half circle, on light and dark backgrounds; "off" mode |
 | Ink | `#111114` | Text; dark background |
 | Paper | `#FAF8F3` | Light background; text on dark |
 
-On dark backgrounds the half circle switches to deep blue and the wordmark to paper. Everything else stays.
+On dark backgrounds only the wordmark changes, to paper. The half circle stays pale blue: the deep blue it used before (`#26335E`) disappeared on ink.
 
 ## Type
 
@@ -61,7 +60,7 @@ You may not use them, or anything confusingly similar, as the name or logo of a 
 
 - Keep the four shapes, their arrangement and their colors together.
 - Give the mark clear space of at least a quarter of its width.
-- Use the dark version on dark backgrounds.
+- Use the dark version (paper wordmark) on dark backgrounds.
 
 ## Don't
 

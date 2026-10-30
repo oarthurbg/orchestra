@@ -39,6 +39,7 @@ Zero-dependency Node (18 or newer), ES modules, in `plugins/orchestra/liveview/`
 
 ### Lifecycle
 
+- **Routes match the path,** so `/?anything` still serves the page.
 - **One instance per project:** `node server.mjs --root <main checkout> --detach` starts the server in the background and prints its URL. When `.orchestra/liveview.json` already points to a server whose `/api/ping` answers with the same root, it prints that URL and starts nothing. `--stop` ends the process in `pid` and deletes `liveview.json` (on Windows a signal cannot run the server's own cleanup).
 - **Start by the band:** on `session.start` in an orchestrator session, the band runs that `--detach` command through `$.process.run` without waiting for it. When `node` is missing the call fails and nothing happens.
 - **Start and stop by hand:** `/orchestra:liveview` runs the same command; `/orchestra:liveview stop` runs `--stop`.
@@ -102,7 +103,8 @@ The approved prototype was built with taste-skill (app style `achromatic-ledger`
   - The band's four shapes are the only other colour.
   - Vermilion is kept for a figure that breaks: 250k context, a run-out before the reset, 90% or more at the reset.
   - The tokens are `docs/index.html`'s, including its dark palette and `data-theme` override.
-  - Archivo for the wordmark and headings, IBM Plex Sans with tabular figures for everything else. No monospace.
+  - Archivo 800, the wordmark's face, carries the wordmark, the `h1`, the card titles, the headline figures and each row's ETA. IBM Plex Sans with tabular figures carries everything else. No monospace.
+  - The half circle is pale blue on dark too, in the logo and as a status shape; `docs/BRAND.md` changed with it (the deep blue disappeared on ink).
   - 4px radius, 1px borders, no shadows.
 - **Shell:** a 48px top bar with the brand mark, the wordmark, `liveview` and the freshness stamp ("Updated 3 s ago", or "Stale since" in vermilion). No sidebar: one destination for now. The decision inbox (item 3) later adds a second.
 - **Title row:**
@@ -127,9 +129,9 @@ The approved prototype was built with taste-skill (app style `achromatic-ledger`
     - half circle pale blue: idle;
     - outlined half circle: stale, unregistered or no session.
 
-    Every shape has an accessible name, and every row also says its reason in words when it is not running or idle.
-  - **Track:** done tasks solid cobalt at their real times. Estimated tasks pale blue with a 1px cobalt outline, back to back from now. A 1px ink now-line, labelled `now`.
-  - **Opening a row:** the ETA cell is a real disclosure button (`aria-expanded`); a click anywhere else on the row does the same for the mouse. It opens the task list: a dot for each task (filled when done, outlined when current), its title, agent and risk, and the measured time or `est` with the estimate (`?` when uncalibrated). Open rows are remembered in `localStorage`, wrapped in try and catch.
+    Shapes are 16px. Every shape has an accessible name, and every row also says its reason in words when it is not running or idle.
+  - **Track:** one rounded 10px pill per workstream, chosen by the owner from a live preview of three treatments (thin line, pill, beads). It spans the plan from its first task's start to its projected end. The planned span is a cobalt tint; the done part, up to the last finished task, is solid cobalt. There are no per-task blocks; task boundaries live in the opened task list. A 1px ink now-line, labelled `now`.
+  - **Opening a row:** the ETA cell is a real disclosure button (`aria-expanded`); a click anywhere else on the row does the same for the mouse. It opens the task list: a dot for each task (filled when done, outlined when current), its title, agent and risk, and the measured time or `est` with the estimate (`?` when uncalibrated). Open rows are remembered in `localStorage`, wrapped in try and catch. Every redraw keeps keyboard focus on the same control.
   - **Names:** a name links to the session's `claude://` link when its file has one; otherwise it is plain text. Only `claude://` links pass.
   - **Last rows:** the queued workstreams (dashed bars), then the rollout row (filled diamonds for merges and releases, hollow for projected merges).
   - **Legend:** a shape key, the bar fills and the diamonds.
@@ -180,7 +182,7 @@ The page always draws and labels what is missing; nothing takes the server down.
   - the idle exit fires, with an injected clock.
 - **Band addition:** engine tests: an orchestrator session calls `$.process.run` once with `--detach`; a workstream session never does.
 - **Page:** taste-skill's `lint.mjs --app` and `inspect.mjs --app` (0 FAIL), impeccable's detector (no findings), and a Playwright pass:
-  - the disclosure opens and closes by click and keyboard;
+  - the disclosure opens and closes by click and keyboard, and keeps focus across the 5-second redraws;
   - no row is a `role="button"` around a link;
   - light and dark both read;
   - no sideways scroll at 390;
