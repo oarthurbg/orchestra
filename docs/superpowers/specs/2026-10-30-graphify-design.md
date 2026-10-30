@@ -75,8 +75,8 @@ At init, the line is written only after the owner answers; at a wave end, the ch
 In the main checkout, on an up-to-date integration branch (`git pull --ff-only`):
 
 1. Check that `.gitignore` lists `graphify-out/`. `/orchestra:init` now adds it next to `.orchestra/` in its `.gitignore` step, for every project; a project set up before this version gets it in the docs PR that records "Code graph".
-2. Run `graphify extract . --code-only`.
-3. Check its `found N code` line against the number of tracked files (`git ls-files | wc -l`). N can only be larger when the scan swept in copies (a worktree folder graphify did not see as ignored): then delete `graphify-out/`, tell the owner which folders to add to `.graphifyignore`, and stop.
+2. Check that every worktree inside the main checkout is ignored: for each path from `git worktree list` that sits under the main checkout, `git check-ignore -q <path>` must succeed. graphify reads the same `.gitignore` and `info/exclude` files, so a path git ignores is a path graphify skips. If one is not ignored, the scan would sweep in a whole copy of the code: tell the owner to add it to `.gitignore` or `.graphifyignore`, and stop.
+3. Run `graphify extract . --code-only`.
 4. Set "Code graph" to `graphify`.
 
 ### 5. After each merge
