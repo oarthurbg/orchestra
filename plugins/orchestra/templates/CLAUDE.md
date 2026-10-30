@@ -4,10 +4,10 @@
 
 ## How we work
 
-This project uses the orchestra workflow: one maestro session that only coordinates, and one workstream session per feature, each with its own worktree, its own isolated test data and its own PR. The full rules are in `docs/HANDOFF.md` ("How we work" and "Workstream session role"). Start there.
+This project uses the orchestra workflow: one maestro session that only coordinates, and one principal per feature, each with its own worktree, its own isolated test data and its own PR. The full rules are in `docs/HANDOFF.md` ("How we work" and "Principal role"). Start there.
 
 - Maestro session: load the `orchestra:maestro` skill.
-- Workstream session: load the `orchestra:workstream` skill, then read `docs/workstreams/<name>.md` if it exists.
+- Principal: load the `orchestra:principal` skill, then read `docs/workstreams/<name>.md` if it exists.
 
 ## Project settings
 
@@ -43,9 +43,9 @@ The maestro reads this before each action below and acts at its level: `ask` (wa
 - Merge a workstream PR into the integration branch: `ask`
 - Release (integration branch into production branch): `ask`
 - Hotfix into the production branch, and its back-merge: `ask`
-- Clear a workstream session at a natural stop: `ask`
-- Archive a finished workstream session: `ask`
-- Start a new workstream session: `ask`
+- Clear a principal session at a natural stop: `ask`
+- Archive a finished principal session: `ask`
+- Start a new principal session: `ask`
 - Server commands that need no admin rights and touch no production data (send files, read health and logs): `ask`
 
-Always `ask`, whatever is written above, for the maestro, workstream sessions and every subagent: anything that needs admin rights, deletes data or branches, or touches credentials, money or production data.
+Always `ask`, whatever is written above, for the maestro, principals and every subagent: anything that needs admin rights, deletes data or branches, or touches credentials, money or production data.

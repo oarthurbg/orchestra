@@ -4,7 +4,7 @@ Phase 2, item 1 of `docs/ROADMAP.md`. Approved with the owner on 2026-10-30.
 
 ## Goal
 
-A band above the prompt, in every session where orchestra is installed, that shows plan limits, burn pace, the context of each workstream session and which workstreams need the owner. The same mod keeps a session's prompt cache warm while its subagents run. It costs no LLM tokens to stay live, except the keep-warm pings it counts and shows.
+A band above the prompt, in every session where orchestra is installed, that shows plan limits, burn pace, the context of each principal and which workstreams need the owner. The same mod keeps a session's prompt cache warm while its subagents run. It costs no LLM tokens to stay live, except the keep-warm pings it counts and shows.
 
 ## Packaging
 
@@ -79,7 +79,7 @@ A `ui.render` hook on `AbovePrompt`.
 - **Shapes:** drawn as Svg on the desktop, with outlines that keep 3:1 contrast (a dark amber stroke on the triangle, a pale-blue ring on the circle); in the terminal a glyph in a theme colour.
 - **Opening a session:** a row opens its file's `link` with the system opener (`cmd /c start "" <link>` on Windows, `open` on macOS, `xdg-open` on Linux), and the app shows that session. The name shown is the sidebar `title` when there is one, else the workstream name. Without a link the row is plain text.
 - **Liveview button:** in any session of the project, when `.orchestra/liveview.json` exists with a `url` on `localhost` or `127.0.0.1`, the footer shows a `Liveview` button that opens that URL the same way. The dashboard writes this file while it runs and deletes it when it stops.
-- **In a workstream session:** the header without the running count or arrow, plus its own row (`running`, `idle`, `waiting` or `over 250k`, with its stage as the detail), always shown.
+- **In a principal:** the header without the running count or arrow, plus its own row (`running`, `idle`, `waiting` or `over 250k`, with its stage as the detail), always shown.
 - **Outside an orchestra project:** the header's limits only, with the ping count when there is one.
 - **Sharing the slot:** other mods draw above the prompt too (ponytail's band does). The hook draws `next(e)` beneath its own band, as ponytail's does, so every band shows and none replaces another.
 - **ponytail's switch:** shown only when ponytail is installed (`plugins/installed_plugins.json` names `ponytail@`) and its own band is hidden (`/ponytail band` writes `off` to `~/.claude/.ponytail-band`), so the switch never shows twice. A press runs `/ponytail:ponytail <level>`, the command a person types, so ponytail's own skill stays the only logic. The current level is read from `~/.claude/.ponytail-active`.
@@ -136,7 +136,7 @@ The band's 5-second timer drives it.
   - the row hover, the plain cell buttons, the hairlines and the centred limits look right in the desktop app.
 
   If the session server is out of reach or the link does not move the app, names stay plain text. If the timer does not fire while idle, the band refreshes on the next prompt instead and the README says so. If the fork does not read the main cache, keep-warm is dropped from this spec.
-- **Screenshots** of the band in a maestro session and a workstream session, for the README.
+- **Screenshots** of the band in a maestro session and a principal, for the README.
 
 ## Out of scope
 

@@ -18,9 +18,9 @@ You are the maestro (skill `orchestra:maestro`). Open the workstream described i
    | Workstream | Session | Branch and worktree | Test data | Port | Schema change | Stage |
    | --- | --- | --- | --- | --- | --- | --- |
 
-7. **Session:** check the level of "Start a new workstream session" in "Owner authorizations" (`CLAUDE.md`) and act on it. Then, in the desktop app, start a new session in the worktree folder (`start_session`) with this briefing, filled in (leave out the test data and port parts when the project has none):
+7. **Session:** check the level of "Start a new principal session" in "Owner authorizations" (`CLAUDE.md`) and act on it. Then, in the desktop app, start a new session in the worktree folder (`start_session`) with this briefing, filled in (leave out the test data and port parts when the project has none):
 
-   > You are the workstream session for `<name>`: <goal>. Load the `orchestra:workstream` skill and follow it. Worktree `<path>` on branch `<branch>`. Test data `<ENV_VAR>=<value>`. Dev server port `<port>`. Start with `superpowers:brainstorming` with the owner, then the spec. Report to the maestro session `<maestro session id>` in one line on cross-workstream decisions, schema changes, wave ends (with your context size) and when the PR is ready.
+   > You are the principal for `<name>`: <goal>. Load the `orchestra:principal` skill and follow it. Worktree `<path>` on branch `<branch>`. Test data `<ENV_VAR>=<value>`. Dev server port `<port>`. Start with `superpowers:brainstorming` with the owner, then the spec. Report to the maestro session `<maestro session id>` in one line on cross-workstream decisions, schema changes, wave ends (with your context size) and when the PR is ready.
 
    Outside the desktop app, print the briefing for the owner to paste into a new session.
 8. Report: branch, worktree, test data, port and the session link.

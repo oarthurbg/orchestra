@@ -14,9 +14,9 @@
 
 # orchestra
 
-A Claude Code plugin for running one project with several Claude sessions at once: one **maestro** session that only coordinates, and one **workstream** session per feature, each taking its feature from spec to PR with its own worktree, isolated test data and subagents. It works for any kind of app: no database, server or Docker required.
+A Claude Code plugin for running one project with several Claude sessions at once: one **maestro** session that only coordinates, and one **principal** session per feature, each taking its feature from spec to PR with its own worktree, isolated test data and subagents. It works for any kind of app: no database, server or Docker required.
 
-The name follows the plugin's: maestro, the session that conducts the others.
+The name follows the plugin's: maestro, the session that conducts the others; principal, the session that leads one workstream from spec to PR.
 
 It was built while developing an internal media-planning app, and packages the workflow that came out of it: spec first, two-stage and risk-proportional reviews, a third UI review from real screenshots, handoff notes and context clearing, isolated test data per workstream, and a ponytail mode and set of skills for every stage.
 
@@ -30,7 +30,7 @@ plugins/orchestra/
                spec-reviewer, quality-reviewer, screenshotter, verifier
   skills/      maestro (with stages.md: modes, skills and reviews per stage,
                and checklists.md: merge, release and hotfix)
-               workstream, handoff-note, test-databases (test data recipes per data store,
+               principal, handoff-note, test-databases (test data recipes per data store,
                plus an optional, tested Postgres-in-Docker example)
   commands/    /orchestra:init, /orchestra:start-workstream, /orchestra:status,
                /orchestra:close-wave
@@ -102,7 +102,7 @@ orchestra draws a band above the prompt in every session. In an orchestra projec
 - **Rows:** one for each workstream that needs you, most urgent first, each saying what to do: `waiting` on an answer, `over 250k` tokens of context, `stale` (its report is more than 30 minutes old), or `unregistered`, a worktree session that is not in `.orchestra/workstreams.md`, so a forgotten worktree gets noticed. In the desktop app a whole row opens that session. With more than two rows the band shows two and a count; the arrow in the header opens all of them, and the band remembers your choice. With nothing due it says `Nothing needs you.`
 - **Footer:** the keep-warm count and, while the local dashboard runs, a `Liveview` button that opens it.
 
-A workstream session shows the limits and its own row. In other projects the band shows the limits only.
+A principal shows the limits and its own row. In other projects the band shows the limits only.
 
 Each session writes its own report to `.orchestra/sessions/` (not versioned) after each turn. The band watches that folder, with a 5-second check as a fallback, so it redraws within seconds of a report changing. Staying live costs no tokens.
 
@@ -131,9 +131,9 @@ The band shares its slot with other mods and draws theirs beneath it. If you use
   { "autoCompactWindow": 600000 }
   ```
 
-  It applies to new or restarted sessions. The real rule is earlier: a workstream above 250k tokens at the end of a wave writes its handoff note and gets cleared at a natural stop. The 600k net catches the case where nobody checked in time.
-- **Auto-archive on PR close: off** (desktop app setting). Archiving a session kills its process and its background agents, and unarchiving does not bring them back. Workstream sessions open spec and plan PRs and keep working after those merge, so auto-archive would stop them mid-workstream. The maestro archives finished sessions itself, after checking nothing is running.
-- **Ponytail modes per session.** Every session starts in full. The maestro stays in full. The workstream session switches its own mode per stage and states it in every subagent briefing: brainstorm and mockups off, spec lite, plan ultra, backend full, UI lite, infrastructure ultra, reviews off. The full table is in [`stages.md`](plugins/orchestra/skills/maestro/stages.md).
+  It applies to new or restarted sessions. The real rule is earlier: a principal above 250k tokens at the end of a wave writes its handoff note and gets cleared at a natural stop. The 600k net catches the case where nobody checked in time.
+- **Auto-archive on PR close: off** (desktop app setting). Archiving a session kills its process and its background agents, and unarchiving does not bring them back. Principals open spec and plan PRs and keep working after those merge, so auto-archive would stop them mid-workstream. The maestro archives finished sessions itself, after checking nothing is running.
+- **Ponytail modes per session.** Every session starts in full. The maestro stays in full. The principal switches its own mode per stage and states it in every subagent briefing: brainstorm and mockups off, spec lite, plan ultra, backend full, UI lite, infrastructure ultra, reviews off. The full table is in [`stages.md`](plugins/orchestra/skills/maestro/stages.md).
 
 ## Credits
 

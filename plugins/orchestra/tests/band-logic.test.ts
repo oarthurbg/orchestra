@@ -25,7 +25,7 @@ const NOW = Date.parse('2026-10-30T12:00:00Z')
 const iso = (msAgo: number) => new Date(NOW - msAgo).toISOString()
 
 const file = (over: Partial<SessionFile>): SessionFile => ({
-  v: 1, session: 's', role: 'workstream', workstream: 'billing', branch: 'billing', title: '', link: '',
+  v: 1, session: 's', role: 'principal', workstream: 'billing', branch: 'billing', title: '', link: '',
   state: 'running', detail: '', stage: '', pr: '', context: { tokens: 50_000, window: 1_000_000 },
   limits: [], warm: { pings: 0, last: null }, updatedAt: iso(60_000), ...over,
 })
@@ -57,18 +57,18 @@ describe('paths and registry', () => {
     expect(parseRegistry('')).toEqual([])
   })
 
-  test('roleOf: main checkout is the maestro, a known worktree a workstream, anything else unregistered', () => {
+  test('roleOf: main checkout is the maestro, a known worktree a principal, anything else unregistered', () => {
     const rows = parseRegistry(REGISTRY)
     expect(roleOf('/home/u/repo', '/home/u/repo', rows)).toEqual({ role: 'maestro', workstream: null })
-    expect(roleOf('/home/u/repo/.worktrees/auth/', '/home/u/repo', rows)).toEqual({ role: 'workstream', workstream: 'auth' })
+    expect(roleOf('/home/u/repo/.worktrees/auth/', '/home/u/repo', rows)).toEqual({ role: 'principal', workstream: 'auth' })
     expect(roleOf('/home/u/repo/.worktrees/old', '/home/u/repo', rows)).toEqual({ role: 'unregistered', workstream: null })
   })
 
   test('a relative registry path resolves against the main checkout, . and .. included', () => {
     const rel = parseRegistry('| x | s | `x` at `.worktrees/x` | |\n| app | s | `app-x` at `../app-x` | |\n| y | s | `y` at `./.worktrees/a/../y` | |\n')
-    expect(roleOf('/home/u/repo/.worktrees/x', '/home/u/repo', rel)).toEqual({ role: 'workstream', workstream: 'x' })
-    expect(roleOf('/home/u/app-x', '/home/u/repo', rel)).toEqual({ role: 'workstream', workstream: 'app' })
-    expect(roleOf('D:\\repo\\.worktrees\\y', 'D:/repo', rel)).toEqual({ role: 'workstream', workstream: 'y' })
+    expect(roleOf('/home/u/repo/.worktrees/x', '/home/u/repo', rel)).toEqual({ role: 'principal', workstream: 'x' })
+    expect(roleOf('/home/u/app-x', '/home/u/repo', rel)).toEqual({ role: 'principal', workstream: 'app' })
+    expect(roleOf('D:\\repo\\.worktrees\\y', 'D:/repo', rel)).toEqual({ role: 'principal', workstream: 'y' })
     expect(resolvePath('/home/u/repo', '/abs/./p/../q')).toBe('/abs/q')
     expect(resolvePath('d:/repo', '..\\..\\..\\up')).toBe('d:/up')
   })
@@ -173,11 +173,11 @@ describe('view', () => {
     expect(w.rows.slice(0, 2).map(r => [r.name, r.shape, r.status])).toEqual([['reports', 'triangle', 'waiting'], ['billing', 'hollow', 'stale']])
   })
 
-  test('a workstream session always shows its own row', () => {
+  test('a principal session always shows its own row', () => {
     const me = file({ session: 'me', workstream: 'billing', stage: 'plan, task 4 of 9', warm: { pings: 2, last: iso(1000) } })
-    const v = buildView({ inProject: true, role: 'workstream', self: 'me', files: [me], registry: rows, now: NOW, liveview: '' })
+    const v = buildView({ inProject: true, role: 'principal', self: 'me', files: [me], registry: rows, now: NOW, liveview: '' })
     expect(v.rows).toEqual([{ key: 'me', name: 'billing', link: '', shape: 'circle', status: 'running', context: '50k', detail: 'plan, task 4 of 9' }])
-    const own = (over: Partial<SessionFile>) => buildView({ inProject: true, role: 'workstream', self: 'me', files: [{ ...me, ...over }], registry: rows, now: NOW, liveview: '' }).rows[0]
+    const own = (over: Partial<SessionFile>) => buildView({ inProject: true, role: 'principal', self: 'me', files: [{ ...me, ...over }], registry: rows, now: NOW, liveview: '' }).rows[0]
     expect(own({ state: 'idle' })).toMatchObject({ shape: 'half', status: 'idle' })
     expect(own({ state: 'waiting', detail: 'asks: which port?' })).toMatchObject({ shape: 'triangle', status: 'waiting', detail: 'answer: which port?' })
     expect(own({ state: 'waiting', detail: '' })?.detail).toBe('answer the open question')
@@ -203,7 +203,7 @@ describe('view', () => {
   })
 
   test('the session own ping count reaches the view in every role and outside a project', () => {
-    for (const role of ['maestro', 'workstream', 'unregistered'] as const) {
+    for (const role of ['maestro', 'principal', 'unregistered'] as const) {
       expect(buildView({ inProject: true, role, self: 'o', files: [], registry: rows, now: NOW, liveview: '', pings: 3 }).pings).toBe(3)
     }
     expect(buildView({ inProject: false, role: 'maestro', self: 'o', files: [], registry: [], now: NOW, liveview: '', pings: 2 }).pings).toBe(2)
@@ -216,7 +216,7 @@ describe('view', () => {
     expect([v.fiveHour, v.week?.pct]).toEqual([null, 80])
   })
 
-  test('an unregistered session draws only its own row, like a workstream', () => {
+  test('an unregistered session draws only its own row, like a principal', () => {
     const me = file({ session: 'me', role: 'unregistered', workstream: null, branch: 'old-try' })
     const other = file({ session: 'o2', workstream: 'billing', state: 'waiting' })
     const v = buildView({ inProject: true, role: 'unregistered', self: 'me', files: [me, other], registry: rows, now: NOW, liveview: '' })
@@ -225,10 +225,10 @@ describe('view', () => {
 
   test('a link that is not a safe claude:// target is dropped from its row', () => {
     const me = file({ session: 'me', link: 'claude://a&b' })
-    const v = buildView({ inProject: true, role: 'workstream', self: 'me', files: [me], registry: rows, now: NOW, liveview: '' })
+    const v = buildView({ inProject: true, role: 'principal', self: 'me', files: [me], registry: rows, now: NOW, liveview: '' })
     expect(v.rows[0]?.link).toBe('')
     const web = file({ session: 'me', link: 'http://localhost:1/x' })
-    expect(buildView({ inProject: true, role: 'workstream', self: 'me', files: [web], registry: rows, now: NOW, liveview: '' }).rows[0]?.link).toBe('')
+    expect(buildView({ inProject: true, role: 'principal', self: 'me', files: [web], registry: rows, now: NOW, liveview: '' }).rows[0]?.link).toBe('')
   })
 
   test('freshness compares instants, not strings, across time zone offsets', () => {

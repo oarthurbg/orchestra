@@ -1,6 +1,6 @@
 ---
 name: explorer
-description: Searches and summarizes the repository (where X lives, who calls Y, what a large file does) so the maestro or a workstream never reads whole files. Read-only.
+description: Searches and summarizes the repository (where X lives, who calls Y, what a large file does) so the maestro or a principal never reads whole files. Read-only.
 model: haiku
 effort: low
 tools: Read, Grep, Glob, Bash
