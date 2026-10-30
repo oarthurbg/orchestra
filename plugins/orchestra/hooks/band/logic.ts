@@ -49,8 +49,11 @@ export function parseStatus(note: string): StatusLine | null {
 
 export function parseSessionFile(text: string): SessionFile | null {
   try {
-    const f = JSON.parse(text) as SessionFile
-    return f && f.v === 1 && typeof f.session === 'string' ? f : null
+    const f = JSON.parse(text) as SessionFile | null
+    const ok = typeof f === 'object' && f !== null && f.v === 1 && typeof f.session === 'string' && Array.isArray(f.limits) &&
+      typeof f.context === 'object' && f.context !== null && typeof f.warm === 'object' && f.warm !== null &&
+      typeof f.updatedAt === 'string' && !Number.isNaN(Date.parse(f.updatedAt))
+    return ok ? f : null
   } catch {
     return null
   }
@@ -78,7 +81,13 @@ export function isLocalUrl(url: string): boolean {
   }
 }
 
+// cmd /c start re-parses & | ^ % " < >, so only plain characters may reach it.
+export function isSafeTarget(target: string): boolean {
+  return /^claude:\/\/[A-Za-z0-9._\/-]+$/.test(target) || (isLocalUrl(target) && /^[A-Za-z0-9:/._?=-]+$/.test(target))
+}
+
 export function openerArgv(os: 'windows' | 'mac' | 'linux', target: string): string[] {
+  if (!isSafeTarget(target)) throw new Error('unsafe target')
   return os === 'windows' ? ['cmd', '/c', 'start', '', target] : [os === 'mac' ? 'open' : 'xdg-open', target]
 }
 
@@ -93,10 +102,11 @@ export type ViewInput = {
   ownLimits?: Limit[]
 }
 
+const newest = (files: SessionFile[]) => files.reduce<SessionFile | undefined>((a, b) => (!a || Date.parse(b.updatedAt) > Date.parse(a.updatedAt) ? b : a), undefined)
 const pct = (limits: Limit[], kind: string) => limits.find(l => l.kind === kind)?.percentUsed ?? null
 
 export function buildView(i: ViewInput): BandView {
-  const fresh = [...i.files].filter(f => f.limits.length > 0).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0]
+  const fresh = newest(i.files.filter(f => f.limits.length > 0))
   const limits = fresh?.limits ?? i.ownLimits ?? []
   const view: BandView = {
     inProject: i.inProject,
@@ -106,18 +116,18 @@ export function buildView(i: ViewInput): BandView {
     running: 0,
     waiting: 0,
     rows: [],
-    liveview: isLocalUrl(i.liveview) ? i.liveview : '',
+    liveview: isLocalUrl(i.liveview) && isSafeTarget(i.liveview) ? i.liveview : '',
   }
   if (!i.inProject) return view
 
-  const latest = (ws: string) => i.files.filter(f => f.workstream === ws).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0]
-  const open = i.registry.map(r => ({ ws: r.workstream, f: latest(r.workstream) }))
-  view.running = open.filter(o => o.f?.state === 'running').length
-  view.waiting = open.filter(o => o.f?.state === 'waiting').length
+  const open = i.registry.map(r => ({ ws: r.workstream, f: newest(i.files.filter(f => f.workstream === r.workstream)) }))
+  const live = open.filter(o => o.f !== undefined && i.now - Date.parse(o.f.updatedAt) <= STALE_MS)
+  view.running = live.filter(o => o.f?.state === 'running').length
+  view.waiting = live.filter(o => o.f?.state === 'waiting').length
   const row = (f: SessionFile, name: string, shape: BandRow['shape'], reason: string, detail: string): BandRow =>
-    ({ key: f.session, name, link: f.link, shape, reason, context: fmtK(f.context.tokens), detail })
+    ({ key: f.session, name, link: isSafeTarget(f.link) && f.link.startsWith('claude://') ? f.link : '', shape, reason, context: fmtK(f.context.tokens), detail })
 
-  if (i.role === 'workstream') {
+  if (i.role !== 'orchestrator') {
     const me = i.files.find(f => f.session === i.self)
     if (me) {
       const big = (me.context.tokens ?? 0) >= CONTEXT_LIMIT

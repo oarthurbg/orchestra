@@ -7,6 +7,7 @@ import {
   buildView,
   fmtK,
   isLocalUrl,
+  isSafeTarget,
   mainCheckout,
   norm,
   openerArgv,
@@ -76,6 +77,15 @@ describe('status line and session files', () => {
     expect(parseSessionFile('{"v": 1, "sess')).toBeNull()
     expect(parseSessionFile('{"v": 2, "session": "s"}')).toBeNull()
   })
+
+  test('parseSessionFile refuses valid JSON of the wrong shape', () => {
+    const { limits: _l, ...noLimits } = file({})
+    expect(parseSessionFile('0')).toBeNull()
+    expect(parseSessionFile('""')).toBeNull()
+    expect(parseSessionFile('null')).toBeNull()
+    expect(parseSessionFile(JSON.stringify(noLimits))).toBeNull()
+    expect(parseSessionFile(JSON.stringify(file({ updatedAt: 'yesterday' })))).toBeNull()
+  })
 })
 
 describe('pace', () => {
@@ -129,12 +139,43 @@ describe('view', () => {
       ['reports', 'stale', 'no report yet'],
       ['auth', 'stale', 'no report yet'],
     ])
+    expect([v.running, v.waiting]).toEqual([0, 0])
+    const waiting = [file({ session: 'a', workstream: 'billing', state: 'waiting', updatedAt: iso(STALE_MS + 60_000) })]
+    const w = buildView({ inProject: true, role: 'orchestrator', self: 'o', files: waiting, registry: rows, now: NOW, liveview: '' })
+    expect([w.running, w.waiting]).toEqual([0, 0])
   })
 
   test('a workstream session always shows its own row', () => {
     const me = file({ session: 'me', workstream: 'billing', stage: 'plan, task 4 of 9', warm: { pings: 2, last: iso(1000) } })
     const v = buildView({ inProject: true, role: 'workstream', self: 'me', files: [me], registry: rows, now: NOW, liveview: '' })
     expect(v.rows).toEqual([{ key: 'me', name: 'billing', link: '', shape: 'circle', reason: 'plan, task 4 of 9', context: '50k', detail: 'warm 2x' }])
+  })
+
+  test('an unregistered session draws only its own row, like a workstream', () => {
+    const me = file({ session: 'me', role: 'unregistered', workstream: null, branch: 'old-try' })
+    const other = file({ session: 'o2', workstream: 'billing', state: 'waiting' })
+    const v = buildView({ inProject: true, role: 'unregistered', self: 'me', files: [me, other], registry: rows, now: NOW, liveview: '' })
+    expect(v.rows.map(r => r.key)).toEqual(['me'])
+  })
+
+  test('a link that is not a safe claude:// target is dropped from its row', () => {
+    const me = file({ session: 'me', link: 'claude://a&b' })
+    const v = buildView({ inProject: true, role: 'workstream', self: 'me', files: [me], registry: rows, now: NOW, liveview: '' })
+    expect(v.rows[0]?.link).toBe('')
+    const web = file({ session: 'me', link: 'http://localhost:1/x' })
+    expect(buildView({ inProject: true, role: 'workstream', self: 'me', files: [web], registry: rows, now: NOW, liveview: '' }).rows[0]?.link).toBe('')
+  })
+
+  test('freshness compares instants, not strings, across time zone offsets', () => {
+    // 09:00 at -03:00 is 12:00Z, newer than 11:00Z although it sorts lower as text.
+    const a = file({ session: 'a', limits: [{ kind: 'five_hour', percentUsed: 10 }], updatedAt: '2026-10-30T11:00:00Z' })
+    const b = file({ session: 'b', workstream: 'reports', limits: [{ kind: 'five_hour', percentUsed: 30 }], updatedAt: '2026-10-30T09:00:00-03:00' })
+    expect(buildView({ inProject: true, role: 'orchestrator', self: 'o', files: [a, b], registry: [], now: NOW, liveview: '' }).fiveHour).toBe(30)
+    const regs = parseRegistry(REGISTRY)
+    const c = file({ session: 'c', workstream: 'billing', state: 'waiting', title: 'old', updatedAt: '2026-10-30T11:50:00Z' })
+    const d = file({ session: 'd', workstream: 'billing', state: 'waiting', title: 'new', updatedAt: '2026-10-30T08:55:00-03:00' })
+    const v = buildView({ inProject: true, role: 'orchestrator', self: 'o', files: [c, d], registry: regs.slice(0, 1), now: NOW, liveview: '' })
+    expect(v.rows[0]?.name).toBe('new')
   })
 
   test('outside a project: limits only, no rows', () => {
@@ -154,6 +195,7 @@ describe('view', () => {
     const v = buildView({ inProject: true, role: 'orchestrator', self: 'o', files: [], registry: [], now: NOW, liveview: 'http://localhost:4123/' })
     expect(v.liveview).toBe('http://localhost:4123/')
     expect(buildView({ inProject: true, role: 'orchestrator', self: 'o', files: [], registry: [], now: NOW, liveview: 'https://evil.example/' }).liveview).toBe('')
+    expect(buildView({ inProject: true, role: 'orchestrator', self: 'o', files: [], registry: [], now: NOW, liveview: 'http://localhost:1/&calc.exe' }).liveview).toBe('')
   })
 })
 
@@ -188,5 +230,14 @@ describe('small helpers', () => {
     expect(openerArgv('windows', 'claude://x')).toEqual(['cmd', '/c', 'start', '', 'claude://x'])
     expect(openerArgv('mac', 'claude://x')).toEqual(['open', 'claude://x'])
     expect(openerArgv('linux', 'claude://x')).toEqual(['xdg-open', 'claude://x'])
+  })
+
+  test('isSafeTarget accepts plain claude:// and local URLs, and openerArgv refuses the rest', () => {
+    expect(isSafeTarget('claude://claude.ai/epitaxy/local_d07fe721-a1b0')).toBe(true)
+    expect(isSafeTarget('http://localhost:4123/')).toBe(true)
+    for (const bad of ['http://localhost:1/&calc.exe', 'claude://x&y', 'claude://x y', 'https://evil.example/', 'claude://x"y']) {
+      expect(isSafeTarget(bad)).toBe(false)
+      expect(() => openerArgv('windows', bad)).toThrow('unsafe target')
+    }
   })
 })
