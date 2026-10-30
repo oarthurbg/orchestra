@@ -2,7 +2,7 @@
 
 A workstream moves through the same stages every time, from the brainstorm to the PR. At each stage orchestra decides three things: who does the work, which ponytail mode they work in, and which skills they load. This page explains each choice. The short table the sessions themselves read is [`stages.md`](../plugins/orchestra/skills/maestro/stages.md) in the maestro skill.
 
-[README](../README.md) · [Agents](agents.md) · **Stages, modes and skills** · [The band](band.md)
+[README](../README.md) · [Setup](setup.md) · [Agents](agents.md) · **Stages, modes and skills** · [The band](band.md) · [The liveview](liveview.md) · [Benchmarks](benchmarks.md)
 
 ## The four modes
 
@@ -185,4 +185,4 @@ orchestra only decides where each of these skills enters the flow. The skills th
 | [playwright-cli](https://github.com/microsoft/playwright-cli) | Microsoft | Apache-2.0 | Browser checks by the implementers and reviewers, and the screenshotter's captures |
 | `dataviz` | Anthropic | ships with Claude Code | Charts in mockups and UI work |
 
-Install them from the orchestra marketplace as the [README](../README.md#install) shows. Each one is fetched from its own repository and keeps its own license.
+Install them from the orchestra marketplace as [Setup](setup.md#install) shows. Each one is fetched from its own repository and keeps its own license.

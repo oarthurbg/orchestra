@@ -68,6 +68,7 @@ The docs page marks each ponytail mode with one shape: **full** is the circle, *
 | `plugins/orchestra/.claude-plugin/icon.png` | 1024 px | Claude Code `/plugin` listing |
 | `docs/favicon.svg` | vector | Docs page tab |
 | `assets/brand/readme-hero-light.png`, `-dark.png` | 2560 by 800 | README, by GitHub theme |
+| `assets/readme/*-light.png`, `*-dark.png` | 1280 wide, 2x | README and docs: the diagram, the role cards, the liveview, the inbox and the benchmark charts |
 | `assets/brand/social-preview.png` | 1280 by 640 | Link cards; upload under repo Settings, Social preview |
 
 ## Using the name and logo
