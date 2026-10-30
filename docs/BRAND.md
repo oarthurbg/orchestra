@@ -13,7 +13,7 @@ Four flat shapes on a 100-unit grid, after the Bauhaus. Kandinsky and Itten pair
 - **Rectangle**, vermilion.
 - **Triangle**, saffron: the downbeat.
 
-Geometry (in `assets/brand/mark.svg`): half circle `M8 92 A 32 32 0 0 1 72 92 Z`, circle at (32, 34) radius 22, rectangle at (60, 12) 30 by 44, triangle (74,92) (94,92) (84,60).
+Geometry (in `assets/brand/mark.svg`): half circle `M8 92 A 32 32 0 0 1 72 92 Z`, circle at (32, 34) radius 22, rectangle at (60, 12) 30 by 44, triangle (73,92) (99,92) (86,60). The triangle's base is wide enough to read at 16 px.
 
 ## Colors
 
