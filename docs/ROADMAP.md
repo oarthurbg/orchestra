@@ -57,6 +57,8 @@ To investigate: whether the mod can answer inside the app. App sessions are neve
 
 ### 5. A language server for code navigation
 
+Built in 0.6.0: see "Code navigation" in the README and the spec at [`docs/superpowers/specs/2026-10-30-lsp-command-design.md`](superpowers/specs/2026-10-30-lsp-command-design.md).
+
 Two measured trials. A command that prints references with their source line and callers as function names (a thin wrapper around Pyright or the TypeScript language service) cut explorer work tokens about 30% on networkx, the Python standard library and a public TypeScript app, and 65% (75% fewer tool calls) on a 1,960-file public app. The real Claude Code `LSP` tool, whose output is bare positions, saved nothing on that app. With Opus (high effort) as the explorer the saving shrinks to about 16%, but grep alone missed 2 of 8 callers on the trace question in every run and the language server did not. See [`docs/superpowers/specs/2026-10-30-lsp-measurement.md`](superpowers/specs/2026-10-30-lsp-measurement.md).
 
 Idea, to be brainstormed and specced:

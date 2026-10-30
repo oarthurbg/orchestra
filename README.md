@@ -104,6 +104,14 @@ Claude Code installs a new version of orchestra only when its version number cha
 
 A new version loads in your next session, or right away after `/reload-plugins`. A liveview that is already running keeps the old version until you restart it: `/orchestra:liveview stop`, then `/orchestra:liveview`.
 
+## Code navigation
+
+The explorer and planner answer "who calls X", "what breaks if X changes" and "how is X reached" with a language server instead of sweeping files with grep. The command (`lsp/lsp.mjs`) prints each reference with its source line and the function around it, or the callers as a tree. It needs no build step and no index: it reads the working tree, so each worktree sees its own branch.
+
+- **TypeScript and JavaScript:** nothing to install. It uses the project's own `typescript` package.
+- **Python:** needs Pyright on `PATH` (`npm install -g pyright` or `pip install pyright`). `/orchestra:init` checks for it.
+- **Anything else,** or when the server is missing or fails: the agents use grep and say so.
+
 ## Requirements
 
 - **Claude Code desktop app** (Code tab) for the session tools the workflow relies on: starting sessions, messaging between them, reading their context size, clearing and archiving them. In the plain CLI the roles and agents still work, but you start, brief, clear and archive sessions by hand.
