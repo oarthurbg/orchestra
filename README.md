@@ -22,6 +22,12 @@ It was built while developing an internal media-planning app, and packages the w
 
 **See the whole stack on one page:** [docs/index.html](docs/index.html) (published at <https://oarthurbg.github.io/orchestra/>).
 
+## Documentation
+
+- [The nine agents](docs/agents.md): each agent's job, model and effort, ponytail mode, and which role dispatches it.
+- [Stages, modes and skills](docs/stages.md): the ponytail mode and the skills at each stage, why, and credits to their authors.
+- [The band](docs/band.md): what the band above the prompt shows, how it stays live, and keep-warm.
+
 ## What's inside
 
 ```
