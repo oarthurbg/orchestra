@@ -134,6 +134,7 @@ A local page for the project: plan limits with a projection to the reset, what n
 - The limit projection reads token counts (never message content) from Claude Code's transcripts for every project on this machine, because plan limits are per account, and calibrates them on the band's latest limit reading.
 
 <img alt="The liveview, light" src="assets/brand/liveview-light.png" width="720">
+<img alt="The liveview, dark" src="assets/brand/liveview-dark.png" width="720">
 
 ## Recommended settings
 
