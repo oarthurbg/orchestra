@@ -59,4 +59,4 @@ Idea, to be brainstormed and specced:
 - Explorer and planner call a Claude Code LSP plugin (`find references`, call hierarchy) when one is installed, and fall back to grep otherwise.
 - No build step and no update after merges: the server reads the working tree, so it also sees a worktree's own branch.
 
-Still open: a planner task on Opus, and the trial with an installed plugin. The first attempt (Anthropic's `typescript-lsp` plugin, on an app of 1,282 files) was blocked: the plugin's `findReferences` returned same-file references only, 1 of 33. Its tool does expose find-references and call hierarchy. The cause has to be found before the trial can be repeated.
+Still open: a planner task on Opus, and the paired trial with an installed plugin on an app of 1,000+ files. The first attempt found why Anthropic's `typescript-lsp` plugin returned same-file references only (`typescript-language-server` answers early requests from a syntax-only server) and the fix, `initializationOptions: {"tsserver": {"useSyntaxServer": "never"}}`; details in the measurement doc.
