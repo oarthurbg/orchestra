@@ -868,3 +868,43 @@ test('a session outside an orchestra project never starts the liveview', async (
   await new Promise(r => setTimeout(r, 50))
   expect(runs.filter(r => r.includes('server.mjs')).length).toBe(0)
 })
+
+test('an AskUserQuestion writes its options and waitingSince, and closing it clears both', async ($, on) => {
+  const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+  disk(on, files)
+  session(on, ROOT, 'o')
+  type Mine = { state: string; options: string[]; waitingSince: string | null; updatedAt: string }
+  const mine = () => JSON.parse(files[`${ROOT}/.orchestra/sessions/o.json`]!) as Mine
+  let during: Mine | undefined
+  on('tool.call', () => { during = mine(); return { result: { questions: [], answers: {} } } as never })
+  await start($)
+  expect(mine()).toMatchObject({ options: [], waitingSince: null })
+  await $.tool.call({ tool: 'AskUserQuestion', questions: [
+    { question: 'Which chart library?', header: 'Library', multiSelect: false, options: [{ label: 'Recharts', description: 'a' }, { label: 'D3', description: 'b' }] },
+    { question: 'Which colours?', header: 'Colours', multiSelect: false, options: [{ label: 'Brand', description: 'c' }, { label: 'Grey', description: 'd' }] },
+  ] } as never)
+  expect(during).toMatchObject({ state: 'waiting', options: ['Recharts', 'D3'] })
+  expect(during!.waitingSince).toBe(during!.updatedAt)
+  expect(mine()).toMatchObject({ state: 'idle', options: [], waitingSince: null })
+})
+
+test('a Status: wait writes no options and keeps waitingSince across rewrites', async ($, on) => {
+  const WT = `${ROOT}/.worktrees/reports`
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY,
+    [`${WT}/.git`]: `gitdir: ${ROOT}/.git/worktrees/reports`,
+    [`${WT}/docs/workstreams/reports.md`]: 'Status: waiting on owner · spec · waiting on: pick the colours',
+  }
+  disk(on, files)
+  const clock = session(on, WT, 'w')
+  on('session.measure', ($, e) => ({ changed: e.changed }))
+  await $.session.start({ cwd: WT, surface: 'desktop', isInteractive: true })
+  const mine = () => JSON.parse(files[`${ROOT}/.orchestra/sessions/w.json`]!) as { state: string; detail: string; options: string[]; waitingSince: string | null; updatedAt: string }
+  const first = mine()
+  expect(first).toMatchObject({ state: 'waiting', detail: 'pick the colours', options: [] })
+  expect(first.waitingSince).toBe(first.updatedAt)
+  await clock.advance(5 * 60_000)
+  await $.session.measure({ context: { tokens: 30_000, window: 1_000_000 }, rateLimits: [], changed: [] } as never)
+  expect(mine().updatedAt).not.toBe(first.updatedAt)
+  expect(mine().waitingSince).toBe(first.waitingSince)
+})

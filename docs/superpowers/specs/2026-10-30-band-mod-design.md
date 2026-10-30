@@ -38,6 +38,7 @@ File format:
   "title": "<sidebar title or empty>", "link": "<claude:// link or empty>",
   "state": "running | idle | waiting", "detail": "<text or empty>",
   "stage": "<from the Status line or empty>", "pr": "<from the Status line or empty>",
+  "options": ["<label>", "<label>"], "waitingSince": "<iso or null>",
   "context": { "tokens": 182000, "window": 1000000 },
   "limits": [{ "kind": "five_hour", "percentUsed": 42, "resetsAt": "<iso>" },
              { "kind": "seven_day", "percentUsed": 61, "resetsAt": "<iso>" }],
@@ -50,6 +51,8 @@ States, from the most precise source available:
 - **waiting:** live while an `AskUserQuestion` from that session is open, with its question as `detail`; otherwise when the handoff note's `Status:` line says `waiting on owner`, with its `waiting on:` text as `detail`.
 - **running:** between a turn's start and its end.
 - **idle:** everything else.
+
+`options` holds the labels of the open `AskUserQuestion`'s first question, in order: `[]` when there is none or the wait comes from the `Status:` line. `waitingSince` is the time the state last became `waiting`, kept across rewrites while it stays `waiting`, and `null` otherwise. The decision inbox reads both. Readers that do not know them ignore them, so the format stays `v: 1`.
 
 `title` and `link` come from the desktop app once per session start: the mod calls the app's `get_session` tool (`$.mcp.call` on the app's session server, `session_id: "self"`), which returns the sidebar title and a `claude://claude.ai/epitaxy/<session id>` link. Outside the desktop app, or if the call fails, both stay empty.
 

@@ -24,6 +24,8 @@ type Ctx = {
   link: string
   turn: boolean
   question: string
+  options: string[]
+  waitingSince: string | null
   context: { tokens: number | null; window: number }
   limits: Limit[]
   lastRequestAt: number
@@ -39,7 +41,7 @@ type Ctx = {
 }
 
 const fresh = (): Ctx => ({
-  main: null, root: '', id: '', role: 'maestro', workstream: null, branch: '', title: '', link: '', turn: false, question: '',
+  main: null, root: '', id: '', role: 'maestro', workstream: null, branch: '', title: '', link: '', turn: false, question: '', options: [], waitingSince: null,
   context: { tokens: null, window: 0 }, limits: [], lastRequestAt: 0, pings: 0, lastPing: null, misses: 0, missed: false, toasted: false,
   seen: new Map(), reports: new Map(),
 })
@@ -90,11 +92,16 @@ export async function writeReport($: EngineInterface) {
 async function write($: EngineInterface) {
   const status = ctx.workstream ? parseStatus((await read$($, `${ctx.root}/docs/workstreams/${ctx.workstream}.md`)) ?? '') : null
   const state = ctx.question ? 'waiting' : ctx.turn ? 'running' : status?.state === 'waiting' ? 'waiting' : 'idle'
+  const at = new Date(await $.clock.now()).toISOString()
+  // Kept across rewrites while the state stays waiting: the inbox sorts by how long a question has waited.
+  // shortcut: kept in memory, so a restarted session starts its wait again; read it back from the old report if that misleads.
+  ctx.waitingSince = state === 'waiting' ? (ctx.waitingSince ?? at) : null
   const file: SessionFile = {
     v: 1, session: ctx.id, role: ctx.role, workstream: ctx.workstream, branch: ctx.branch, title: ctx.title, link: ctx.link,
     state, detail: ctx.question || (state === 'waiting' ? (status?.waitingOn ?? '') : ''), stage: status?.stage ?? '', pr: status?.pr ?? '',
+    options: ctx.question ? ctx.options : [], waitingSince: ctx.waitingSince,
     context: ctx.context, limits: ctx.limits, warm: { pings: ctx.pings, last: ctx.lastPing, misses: ctx.misses },
-    updatedAt: new Date(await $.clock.now()).toISOString(),
+    updatedAt: at,
   }
   await $.fs.write(`${ctx.main}/.orchestra/sessions/${ctx.id}.json`, JSON.stringify(file))
 }
@@ -315,13 +322,17 @@ export const register: Register = (on, options) => {
 
   // Waiting on the owner, live, for as long as the question is open.
   on('tool.call', { tool: 'AskUserQuestion' }, async ($, e, next) => {
-    const questions = (e as unknown as { questions?: { question?: string }[] }).questions
+    const questions = (e as unknown as { questions?: { question?: string; options?: { label?: unknown }[] }[] }).questions
     try {
       ctx.question = `asks: ${questions?.[0]?.question ?? 'a question'}`
+      // shortcut: only the first of several questions in one AskUserQuestion is shown; show a count if sessions start batching questions.
+      const offered = questions?.[0]?.options
+      ctx.options = Array.isArray(offered) ? offered.map(o => o?.label).filter((l): l is string => typeof l === 'string') : []
       await writeReport($)
       return await next(e)
     } finally {
       ctx.question = ''
+      ctx.options = []
       await writeReport($)
     }
   }).catch(($, e, next) => next(e))
