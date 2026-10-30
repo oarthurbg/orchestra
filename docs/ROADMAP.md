@@ -4,9 +4,9 @@
 
 Maestro and principal roles, 9 agents, handoff notes, isolated test data per workstream, `/orchestra:init`, `/orchestra:start-workstream`, `/orchestra:close-wave`, and a marketplace that lists the third-party plugins from their upstream repositories.
 
-## Phase 2: backlog
+## Phase 2: workstream tooling (done, released as 1.0.0)
 
-To be brainstormed with the owner before any spec. Nothing here is decided yet.
+Items 1, 2, 3 and 5 are built and shipped in 1.0.0, along with the maestro's capacity rules (it sizes how much runs at once to the machine and the token limits). Item 4 is parked.
 
 ### 1. A Claude Code mod for the session band
 
