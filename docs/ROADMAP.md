@@ -48,3 +48,14 @@ To investigate: whether the mod can answer inside the app. App sessions are neve
 - When `graphify-out/` exists, the explorer and planner query it first, and treat it as a map of the integration branch, not of their own branch.
 - Building late is cheaper than building early for the paid semantic pass: a young project rewrites files often, and each version is paid again. The free structural pass could run from the start, if graphify can run it alone (to check).
 - The thresholds (a first guess: 500 files or 50k lines) are calibrated in the real-project trial: the same task with and without the graph, tokens compared.
+
+### 5. A language server for code navigation
+
+A measured trial (9 questions on networkx, the Python standard library and a public TypeScript app, Haiku explorers, one run per cell) found that Pyright and the TypeScript language service cut explorer work tokens about 30% with no loss of accuracy, including on Python, where graphify missed most callers. See [`docs/superpowers/specs/2026-10-30-lsp-measurement.md`](superpowers/specs/2026-10-30-lsp-measurement.md).
+
+Idea, to be brainstormed and specced:
+- Explorer and planner call a Claude Code LSP plugin (`find references`, call hierarchy) when one is installed, and fall back to grep otherwise.
+- Decide whether graphify (item 4) stays for TypeScript or is dropped; for Python the language server replaces it.
+- No build step and no update after merges: the server reads the working tree, so it also sees a worktree's own branch.
+
+Still open: a planner task on Opus, an app over 1,000 files, and an installed LSP plugin instead of the hand-made wrapper used in the trial.
