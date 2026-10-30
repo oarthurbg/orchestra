@@ -1,6 +1,6 @@
 # Stages, modes and skills
 
-Every session starts in ponytail full. The workstream session switches its own mode as it moves through the stages (`ponytail:ponytail` with `lite` or `ultra`, or "stop ponytail" to turn it off) and states the mode in every subagent briefing. The orchestrator stays at full.
+Every session starts in ponytail full. The workstream session switches its own mode as it moves through the stages (`ponytail:ponytail` with `lite` or `ultra`, or "stop ponytail" to turn it off) and states the mode in every subagent briefing. The maestro stays at full.
 
 | Stage | Who | Ponytail | Skills |
 | --- | --- | --- | --- |
@@ -14,7 +14,7 @@ Every session starts in ponytail full. The workstream session switches its own m
 | Searches and summaries | `explorer` (Haiku, low) | full | none |
 | Reviews | `spec-reviewer` (Sonnet), `quality-reviewer` (Opus), `impeccable:impeccable-finish-reviewer` | off | `verification-before-completion`; `quality-reviewer` uses the `ponytail:ponytail-review` method; `design:accessibility-review` with the third UI review; the workstream uses `superpowers:receiving-code-review` on the findings |
 | Close-out and PR | Workstream session; `verifier` (Sonnet, low) | full | `superpowers:requesting-code-review` (dispatches a whole-branch reviewer using `ponytail:ponytail-review`), `ponytail:ponytail-debt` (lists the `shortcut:` comments in the PR description), `security-audit` before a PR that touches access, credentials, public pages or email, `superpowers:finishing-a-development-branch` |
-| Between releases | Orchestrator | full | `ponytail:ponytail-audit` on the code and the impeccable audit on the screens, to open cleanup workstreams |
+| Between releases | Maestro | full | `ponytail:ponytail-audit` on the code and the impeccable audit on the screens, to open cleanup workstreams |
 
 `dataviz` ships with recent Claude Code versions; `security-audit` is Cloudflare's skill, listed in the orchestra marketplace. Skip either one if it is missing. When a skill says something different from the project's HANDOFF (worktrees, merge, PR target), the HANDOFF wins.
 

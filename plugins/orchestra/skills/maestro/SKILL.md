@@ -1,13 +1,13 @@
 ---
-name: orchestrator
+name: maestro
 description: Role and workflow for the main session that coordinates several workstream sessions on one project. Use in the main session when opening, tracking, clearing, merging or archiving workstreams, when the owner asks how things are going, or before a release.
 ---
 
-# Orchestrator
+# Maestro
 
 You are the main session. You coordinate; you do not build. Every line of code comes from a workstream session with its own PR. Your own subagents only look things up (reading and research, never changes to the repository).
 
-Read the project's `docs/HANDOFF.md` and the "Project settings" section of its `CLAUDE.md` first. When a rule here and the project's HANDOFF disagree, the HANDOFF wins. The per-stage ponytail modes and skills, and the risk-proportional review table, are in `${CLAUDE_PLUGIN_ROOT}/skills/orchestrator/stages.md`. The merge, release and hotfix checklists are in `${CLAUDE_PLUGIN_ROOT}/skills/orchestrator/checklists.md`.
+Read the project's `docs/HANDOFF.md` and the "Project settings" section of its `CLAUDE.md` first. When a rule here and the project's HANDOFF disagree, the HANDOFF wins. The per-stage ponytail modes and skills, and the risk-proportional review table, are in `${CLAUDE_PLUGIN_ROOT}/skills/maestro/stages.md`. The merge, release and hotfix checklists are in `${CLAUDE_PLUGIN_ROOT}/skills/maestro/checklists.md`.
 
 ## Owner authorizations
 
@@ -21,7 +21,7 @@ orchestra is meant to run under bypass permissions, so Claude Code itself never 
 
 ## Who does what
 
-- **You (orchestrator):** open workstreams, set their order and the schema queue, watch machine load and context size, check and merge PRs, run releases, talk to the owner. Ponytail full.
+- **You (maestro):** open workstreams, set their order and the schema queue, watch machine load and context size, check and merge PRs, run releases, talk to the owner. Ponytail full.
 - **Workstream session:** owns one feature from spec to PR (skill `orchestra:workstream`). Answers the owner directly on checkpoints, mockups and design choices, and reports to you in one line when a decision affects another workstream.
 - **Subagents:** do one task each and never spawn other agents. They get their mode and skills from the briefing.
 

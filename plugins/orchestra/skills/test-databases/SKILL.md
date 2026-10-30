@@ -16,7 +16,7 @@ Each workstream gets its own isolated test data, and tests never touch real or d
 
 If the project keeps no data (a CLI, a library, a static site), "Test data" is `none` and agents skip all of this.
 
-A reviewer without the test data skips the tests that need it and says so. The orchestrator runs the full suite after merging.
+A reviewer without the test data skips the tests that need it and says so. The maestro runs the full suite after merging.
 
 Workstream names use `[a-z0-9_]`. Every name a test command builds carries a fixed `test` or `capture` marker plus the workstream name (`app_test_<ws>`, `test_<ws>.sqlite`, `test:<ws>:`), so no command can ever resolve to the dev data.
 

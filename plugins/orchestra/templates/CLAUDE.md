@@ -4,9 +4,9 @@
 
 ## How we work
 
-This project uses the orchestra workflow: one orchestrator session that only coordinates, and one workstream session per feature, each with its own worktree, its own isolated test data and its own PR. The full rules are in `docs/HANDOFF.md` ("How we work" and "Workstream session role"). Start there.
+This project uses the orchestra workflow: one maestro session that only coordinates, and one workstream session per feature, each with its own worktree, its own isolated test data and its own PR. The full rules are in `docs/HANDOFF.md` ("How we work" and "Workstream session role"). Start there.
 
-- Orchestrator session: load the `orchestra:orchestrator` skill.
+- Maestro session: load the `orchestra:maestro` skill.
 - Workstream session: load the `orchestra:workstream` skill, then read `docs/workstreams/<name>.md` if it exists.
 
 ## Project settings
@@ -24,7 +24,7 @@ The orchestra agents read this section for every project-specific value. Keep it
 - Build: `none` | `<command>`
 - Format (touched files only): `none` | `<command> <files>`
 - Migrations: `none` | `<command>`
-- Dev server: `none` | `<command with <port>>`. With a dev server, the orchestrator gives each workstream its own port, starting at `<3001>`.
+- Dev server: `none` | `<command with <port>>`. With a dev server, the maestro gives each workstream its own port, starting at `<3001>`.
 - Test data: `none` | the lines below (skill `orchestra:test-databases` has recipes per data store)
   - Create: `<command> <workstream>`
   - Drop: `<command> <workstream>`
@@ -38,7 +38,7 @@ The orchestra agents read this section for every project-specific value. Keep it
 
 ## Owner authorizations
 
-The orchestrator reads this before each action below and acts at its level: `ask` (wait for the owner's yes), `tell` (do it, then report right away) or `auto` (do it, report in the next status round). orchestra runs under bypass permissions, so this list is the gate. Change a level only on the owner's own word, and date the change in `docs/HANDOFF.md`.
+The maestro reads this before each action below and acts at its level: `ask` (wait for the owner's yes), `tell` (do it, then report right away) or `auto` (do it, report in the next status round). orchestra runs under bypass permissions, so this list is the gate. Change a level only on the owner's own word, and date the change in `docs/HANDOFF.md`.
 
 - Merge a workstream PR into the integration branch: `ask`
 - Release (integration branch into production branch): `ask`
@@ -48,4 +48,4 @@ The orchestrator reads this before each action below and acts at its level: `ask
 - Start a new workstream session: `ask`
 - Server commands that need no admin rights and touch no production data (send files, read health and logs): `ask`
 
-Always `ask`, whatever is written above, for the orchestrator, workstream sessions and every subagent: anything that needs admin rights, deletes data or branches, or touches credentials, money or production data.
+Always `ask`, whatever is written above, for the maestro, workstream sessions and every subagent: anything that needs admin rights, deletes data or branches, or touches credentials, money or production data.

@@ -14,7 +14,9 @@
 
 # orchestra
 
-A Claude Code plugin for running one project with several Claude sessions at once: one **orchestrator** session that only coordinates, and one **workstream** session per feature, each taking its feature from spec to PR with its own worktree, isolated test data and subagents. It works for any kind of app: no database, server or Docker required.
+A Claude Code plugin for running one project with several Claude sessions at once: one **maestro** session that only coordinates, and one **workstream** session per feature, each taking its feature from spec to PR with its own worktree, isolated test data and subagents. It works for any kind of app: no database, server or Docker required.
+
+The name follows the plugin's: maestro, the session that conducts the others.
 
 It was built while developing an internal media-planning app, and packages the workflow that came out of it: spec first, two-stage and risk-proportional reviews, a third UI review from real screenshots, handoff notes and context clearing, isolated test data per workstream, and a ponytail mode and set of skills for every stage.
 
@@ -26,7 +28,7 @@ It was built while developing an internal media-planning app, and packages the w
 plugins/orchestra/
   agents/      explorer, planner, implementer, implementer-advanced, mechanic,
                spec-reviewer, quality-reviewer, screenshotter, verifier
-  skills/      orchestrator (with stages.md: modes, skills and reviews per stage,
+  skills/      maestro (with stages.md: modes, skills and reviews per stage,
                and checklists.md: merge, release and hotfix)
                workstream, handoff-note, test-databases (test data recipes per data store,
                plus an optional, tested Postgres-in-Docker example)
@@ -82,14 +84,38 @@ Skip any you already have from another marketplace (for example `superpowers@cla
 Then, in your project:
 
 1. Run `/orchestra:init`. It looks at the project, proposes the "Project settings" (including test data commands that match your data store, or `none`), and scaffolds `CLAUDE.md` settings, `docs/HANDOFF.md` and `docs/workstreams/`.
-2. In your main session, load the `orchestra:orchestrator` skill. Its "First session" steps confirm the settings and owner authorizations with you, write the first backlog and open the first workstreams with `/orchestra:start-workstream <name> <goal>`.
-3. Ask "how is it going?" any time: the orchestrator answers with `/orchestra:status`, one table of every workstream plus what needs you.
+2. In your main session, load the `orchestra:maestro` skill. Its "First session" steps confirm the settings and owner authorizations with you, write the first backlog and open the first workstreams with `/orchestra:start-workstream <name> <goal>`.
+3. Ask "how is it going?" any time: the maestro answers with `/orchestra:status`, one table of every workstream plus what needs you.
 
 ## Requirements
 
 - **Claude Code desktop app** (Code tab) for the session tools the workflow relies on: starting sessions, messaging between them, reading their context size, clearing and archiving them. In the plain CLI the roles and agents still work, but you start, brief, clear and archive sessions by hand.
 - **Docker** only if you pick the optional Postgres-in-Docker test data example.
 - **git** with worktrees, and the **GitHub CLI** (`gh`) for PRs.
+- **Claude Code 2.1.309 or newer** for the band. Older versions were not tested.
+
+## The band
+
+orchestra draws a band above the prompt in every session. In an orchestra project the maestro's band has three parts:
+
+- **Header:** the 5-hour and weekly plan limits with their reset times, and how many workstreams are running. When the week runs out before it resets at the current pace, the weekly limit turns red and says when.
+- **Rows:** one for each workstream that needs you, most urgent first, each saying what to do: `waiting` on an answer, `over 250k` tokens of context, `stale` (its report is more than 30 minutes old), or `unregistered`, a worktree session that is not in `.orchestra/workstreams.md`, so a forgotten worktree gets noticed. In the desktop app a whole row opens that session. With more than two rows the band shows two and a count; the arrow in the header opens all of them, and the band remembers your choice. With nothing due it says `Nothing needs you.`
+- **Footer:** the keep-warm count and, while the local dashboard runs, a `Liveview` button that opens it.
+
+A workstream session shows the limits and its own row. In other projects the band shows the limits only.
+
+Each session writes its own report to `.orchestra/sessions/` (not versioned) after each turn. The band watches that folder, with a 5-second check as a fallback, so it redraws within seconds of a report changing. Staying live costs no tokens.
+
+**Keep-warm.** While one of a session's own subagents runs, the band sends a one-line request just before the prompt cache would expire, so the session does not pay to write its whole context to the cache again when the subagent returns. It runs in every project, not only orchestra ones, and covers background and foreground subagents and long tool calls. It never pings while the main thread is itself making requests, since those keep the cache warm. The footer counts the pings (`kept warm 2x`). A cache read costs about 0.1x the input price; rewriting an expired cache costs 1.25x (5-minute cache) or 2x (1-hour cache). How cache reads count against plan limits is not published. Two settings, in the plugin's config menu:
+
+- `cacheMinutes` (default 60): your cache lifetime. Use 5 for API keys and overage.
+- `warmMaxHours` (default 2): stop keeping the cache warm for a subagent that has run this long. Pings stop once every running subagent is older than this.
+
+A subagent's age counts from when the band first saw it running, so one that was already running when the session started gets the full limit.
+
+If a ping finds the cache already gone, it is not counted as a ping, pings stop until the main thread makes its next request, and the band shows this once per session: `orchestra band: keep-warm missed the cache; set cacheMinutes lower (5 for API keys and overage)`.
+
+The band shares its slot with other mods and draws theirs beneath it. If you use ponytail and prefer one band, run `/ponytail band` to hide ponytail's own: orchestra's footer then shows ponytail's level switch (`off lite full ultra`), which runs the same `/ponytail` command you would type. ponytail's level is one flag for every session (`~/.claude/.ponytail-active`): switching it in one session switches all of them, while each orchestra agent's per-stage mode stays in its own prompt.
 
 ## Recommended settings
 
@@ -106,8 +132,8 @@ Then, in your project:
   ```
 
   It applies to new or restarted sessions. The real rule is earlier: a workstream above 250k tokens at the end of a wave writes its handoff note and gets cleared at a natural stop. The 600k net catches the case where nobody checked in time.
-- **Auto-archive on PR close: off** (desktop app setting). Archiving a session kills its process and its background agents, and unarchiving does not bring them back. Workstream sessions open spec and plan PRs and keep working after those merge, so auto-archive would stop them mid-workstream. The orchestrator archives finished sessions itself, after checking nothing is running.
-- **Ponytail modes per session.** Every session starts in full. The orchestrator stays in full. The workstream session switches its own mode per stage and states it in every subagent briefing: brainstorm and mockups off, spec lite, plan ultra, backend full, UI lite, infrastructure ultra, reviews off. The full table is in [`stages.md`](plugins/orchestra/skills/orchestrator/stages.md).
+- **Auto-archive on PR close: off** (desktop app setting). Archiving a session kills its process and its background agents, and unarchiving does not bring them back. Workstream sessions open spec and plan PRs and keep working after those merge, so auto-archive would stop them mid-workstream. The maestro archives finished sessions itself, after checking nothing is running.
+- **Ponytail modes per session.** Every session starts in full. The maestro stays in full. The workstream session switches its own mode per stage and states it in every subagent briefing: brainstorm and mockups off, spec lite, plan ultra, backend full, UI lite, infrastructure ultra, reviews off. The full table is in [`stages.md`](plugins/orchestra/skills/maestro/stages.md).
 
 ## Credits
 

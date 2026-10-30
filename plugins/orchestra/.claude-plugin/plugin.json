@@ -1,7 +1,7 @@
 {
   "name": "orchestra",
-  "version": "0.1.0",
-  "description": "Multi-session agent orchestration: an orchestrator session that only coordinates, workstream sessions that each own a feature from spec to PR, 9 subagents with set models and ponytail modes, handoff notes and isolated test data per workstream. No database, server or Docker required.",
+  "version": "0.2.0",
+  "description": "Multi-session agent orchestration: a maestro session that only coordinates, workstream sessions that each own a feature from spec to PR, 9 subagents with set models and ponytail modes, handoff notes and isolated test data per workstream. No database, server or Docker required.",
   "author": {
     "name": "oarthurbg",
     "url": "https://github.com/oarthurbg"
@@ -9,5 +9,20 @@
   "homepage": "https://github.com/oarthurbg/orchestra",
   "repository": "https://github.com/oarthurbg/orchestra",
   "license": "Apache-2.0",
-  "keywords": ["orchestration", "multi-session", "workflow", "subagents", "spec-first"]
+  "keywords": ["orchestration", "multi-session", "workflow", "subagents", "spec-first"],
+  "types": "./hooks/band/types.d.ts",
+  "userConfig": {
+    "cacheMinutes": {
+      "type": "number",
+      "title": "Cache lifetime (minutes)",
+      "description": "How long the prompt cache lives for your account: 60 on a subscription, 5 for API keys and overage. The band keeps it warm just before it ends while a subagent runs.",
+      "default": 60
+    },
+    "warmMaxHours": {
+      "type": "number",
+      "title": "Keep-warm limit (hours)",
+      "description": "Stop keeping the cache warm for a subagent that has run this long.",
+      "default": 2
+    }
+  }
 }

@@ -1,19 +1,19 @@
 ---
 description: Close a wave of tasks: check context, update the handoff note, and clear the session at a natural stop when it is above 250k tokens
-argument-hint: "[workstream-name, when run from the orchestrator]"
+argument-hint: "[workstream-name, when run from the maestro]"
 ---
 
-Close a wave of tasks. First decide which role this session has: a workstream session (skill `orchestra:workstream`) or the orchestrator (skill `orchestra:orchestrator`).
+Close a wave of tasks. First decide which role this session has: a workstream session (skill `orchestra:workstream`) or the maestro (skill `orchestra:maestro`).
 
 ## In a workstream session
 
 1. Make sure no subagent or command is still running. If one is, wait for it; never close a wave mid-task.
 2. Check your own context size (`get_usage` on this session in the desktop app).
 3. Update your handoff note `docs/workstreams/<name>.md` with the `orchestra:handoff-note` template (the status line and all 8 sections), and commit it with `git add <path>` only.
-4. Send the orchestrator one line: wave done, what landed, next task, context size, and whether you need a clear (above 250k tokens).
-5. Below 250k, carry on with the next wave. Above 250k, stop dispatching and wait for the orchestrator.
+4. Send the maestro one line: wave done, what landed, next task, context size, and whether you need a clear (above 250k tokens).
+5. Below 250k, carry on with the next wave. Above 250k, stop dispatching and wait for the maestro.
 
-## In the orchestrator ($ARGUMENTS names the workstream)
+## In the maestro ($ARGUMENTS names the workstream)
 
 1. Check the workstream's usage (`get_usage`) and its last events (`list_events`): it must be at a natural stop (PR merged, wave done or checkpoint) with no agent or command running.
 2. Below 250k tokens, do nothing: clearing does not pay off.
