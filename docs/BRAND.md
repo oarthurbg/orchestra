@@ -23,10 +23,11 @@ Geometry (in `assets/brand/mark.svg`): half circle `M8 92 A 32 32 0 0 1 72 92 Z`
 | Vermilion | `#F0442C` | Rectangle; "ultra" mode; links and accents (`#C8341B` for small text on paper) |
 | Saffron | `#FFC21A` | Triangle; "lite" mode |
 | Pale blue | `#B9C8F2` | Half circle, on light and dark backgrounds; "off" mode |
-| Ink | `#111114` | Text; dark background |
+| Ink | `#111114` | Text |
+| Black | `#000000` | Dark background |
 | Paper | `#FAF8F3` | Light background; text on dark |
 
-On dark backgrounds only the wordmark changes, to paper. The half circle stays pale blue: the deep blue it used before (`#26335E`) disappeared on ink.
+On dark backgrounds only the wordmark changes, to paper. The half circle stays pale blue: the deep blue it used before (`#26335E`) disappeared on dark backgrounds. The dark background is true black, chosen over ink in a live preview of the liveview dashboard.
 
 ## Type
 

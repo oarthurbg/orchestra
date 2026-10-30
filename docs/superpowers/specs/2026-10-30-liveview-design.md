@@ -108,8 +108,8 @@ The approved prototype was built with taste-skill (app style `achromatic-ledger`
   - Cobalt is the one data hue: done work, the actual limit line.
   - The band's four shapes are the only other colour.
   - Vermilion is kept for a figure that breaks: 250k context, a run-out before the reset, 90% or more at the reset.
-  - The light tokens are `docs/index.html`'s.
-  - The dark ground is true black (`#000000`), with surface `#0E0E10`, raised `#18181B`, border `#232327`, rule `#1A1A1D` and grid `#202024`. The owner chose it over ink, graphite, warm charcoal and cobalt night in a live preview.
+  - The tokens are `docs/index.html`'s, light and dark.
+  - The dark ground is true black (`#000000`), with surface `#0E0E10`, raised `#18181B`, border `#232327`, rule `#1A1A1D` and grid `#202024`. The owner chose it over ink, graphite, warm charcoal and cobalt night in a live preview, and the brand followed: `docs/BRAND.md`, the docs page and the dark README hero now use black too.
   - A System, Light and Dark switch in the top bar sets `data-theme` on `<html>`. System follows the operating system. The choice is kept in `localStorage`, wrapped in try and catch.
   - Archivo 800, the wordmark's face, carries the wordmark, the `h1`, the card titles, the headline figures and each row's ETA. IBM Plex Sans with tabular figures carries everything else. No monospace.
   - The half circle is pale blue on dark too, in the logo and as a status shape; `docs/BRAND.md` changed with it (the deep blue disappeared on ink).
@@ -125,7 +125,7 @@ The approved prototype was built with taste-skill (app style `achromatic-ledger`
   - 5-hour limit %, with the run-out time or the reset time;
   - weekly limit %, with the run-out time or the projected % at the reset;
 - **Middle row:** "Needs you" (1fr) beside "Weekly limit" (2fr), both the same height.
-  - "Needs you" lists every session that is waiting, at 250k or more, stale, unregistered, or registered with no session. Each has its shape, name, an "Open" link when it has one, and a plain reason ("254k context: clear it at the next stop"). When nothing needs the owner, it keeps its frame and says so.
+  - "Needs you" lists every session that is waiting, at 250k or more, stale, unregistered, or registered with no session. Each has its shape, name and a plain reason ("254k context: clear it at the next stop"). A row whose session has a link is one link: the whole row highlights on hover, shows "Open" on its right, and opens the session; its accessible name is "Open <name>: <reason>". A row without a link stays plain. When nothing needs the owner, it keeps its frame and says so.
   - The chart shows cumulative weekly % across the 7-day window:
     - a y-scale at 0, 25, 50, 75 and 100% with faint gridlines;
     - the actual line solid cobalt, the projection dashed to the run-out (100%) or to the reset, with its end labelled;
