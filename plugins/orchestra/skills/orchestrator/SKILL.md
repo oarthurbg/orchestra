@@ -62,6 +62,10 @@ Use `/orchestra:start-workstream`. In short:
 - The integration and production branches are permanent: nobody commits or pushes to them directly, and release and hotfix-return PRs are merged with a merge commit (`gh pr merge --merge`), never squash or rebase, and never with `--delete-branch`, which would delete one of them.
 - Between releases: `ponytail:ponytail-audit` on the code and the impeccable audit on the screens, to open cleanup workstreams.
 
+## Lessons
+
+`docs/lessons.md` is the project's only shared memory between sessions: one line per problem that must not happen twice. Agents keep no memory of their own, so their briefings stay reproducible. When a workstream or a reviewer proposes a lesson, add it through a docs PR (newest first, dated, with its area), and delete lessons that turn out wrong. Point to the relevant lessons when you brief a new workstream.
+
 ## Context and clearing
 
 - The auto-compact safety net sits at 600k tokens (`autoCompactWindow: 600000` in `~/.claude/settings.json`; it applies to new or restarted sessions). It is the net for when nobody checked in time, not the plan.

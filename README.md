@@ -32,7 +32,7 @@ plugins/orchestra/
                plus an optional, tested Postgres-in-Docker example)
   commands/    /orchestra:init, /orchestra:start-workstream, /orchestra:status,
                /orchestra:close-wave
-  templates/   CLAUDE.md (project settings, owner authorizations), HANDOFF.md,
+  templates/   CLAUDE.md (project settings, owner authorizations), HANDOFF.md, lessons.md,
                handoff-note.md, githooks/pre-push (branch guard)
 docs/index.html  the stack at a glance
 docs/BRAND.md    mark, colors and type

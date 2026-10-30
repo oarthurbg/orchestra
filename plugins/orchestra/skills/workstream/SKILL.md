@@ -25,6 +25,7 @@ Read first: your handoff note if one exists (`docs/workstreams/<name>.md`, skill
 - **Parallelism:** at most 2 tasks at once. Run plan tasks in parallel only with `superpowers:dispatching-parallel-agents`, after checking they touch no shared files, each with a self-contained briefing. Use it too for 2 or more independent failures. Flaky or "unstable" failures get `superpowers:systematic-debugging`.
 - **Your resources:** your own worktree, your own isolated test data if the project keeps data ("Test data" in "Project settings", skill `orchestra:test-databases`), your own dev server port if it has one. Tests never touch real or dev data. Tell subagents never to run `git stash` and to commit with `git add <path>` only.
 - **Always ask the owner first**, even under bypass permissions, and tell your subagents the same: anything that needs admin rights, deletes data or branches, or touches credentials, money or production data.
+- **Lessons:** when you or a subagent hit a problem that could happen again in any workstream, send the orchestrator a one-line lesson for `docs/lessons.md`. Copy the lessons relevant to a task into its subagent briefing.
 - **The owner answers here:** checkpoints, mockups and design choices are answered directly in this session. Decisions that only affect you go into the spec and the decisions log.
 
 ## Reporting to the orchestrator

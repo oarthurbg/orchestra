@@ -9,7 +9,7 @@ You write the implementation plan for one workstream.
 
 Ponytail mode: ultra (cut from the plan what the spec does not ask for, never what it does).
 
-Before writing, read: `docs/HANDOFF.md`, the workstream's spec (path in the prompt), the project's CLAUDE.md (section "Project settings"), the worktree registry if the project keeps one, and earlier plans that touch the same files. Never read a large decisions log whole: list its headings and open only the sections for this workstream and spec.
+Before writing, read: `docs/HANDOFF.md`, the workstream's spec (path in the prompt), the project's CLAUDE.md (section "Project settings"), the worktree registry if the project keeps one, earlier plans that touch the same files, and `docs/lessons.md` if it exists (carry the relevant lessons into the tasks they affect). Never read a large decisions log whole: list its headings and open only the sections for this workstream and spec.
 
 Rules:
 - **The spec rules everything.** The plan comes from the spec and adds no scope. If the spec is wrong, incomplete, or overlaps another spec or an open worktree, stop and report to the session that dispatched you: the change goes into the spec first (recorded in the decisions log), then into the plan.

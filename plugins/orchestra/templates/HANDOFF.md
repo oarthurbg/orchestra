@@ -30,6 +30,7 @@ The live registry of open workstreams (session, branch and worktree, test data, 
 - **Test data:** each workstream gets its own isolated test data ("Test data" in `CLAUDE.md`); tests never touch real or dev data, even if a plan points them there. Screenshots use the capture copy when the project has one. Projects that keep no data write `none`.
 - **Agents in worktrees:** never `git stash` (the stash list is shared across worktrees); `git add <path>` only; `git diff --cached --stat` before each commit; never commit on the integration or production branch, and never `--no-verify`.
 - **Bypass permissions and the gates:** sessions run under bypass permissions, so two things stand in for approval prompts: "Owner authorizations" in `CLAUDE.md`, which the orchestrator reads before every merge, release, clear or archive, and the `pre-push` branch guard, which refuses direct pushes to the integration and production branches. Branch protection on GitHub backs the guard up, since a hook only runs in clones that installed it. Always ask the owner first, in every session and subagent: anything that needs admin rights, deletes data or branches, or touches credentials, money or production data.
+- **Lessons:** `docs/lessons.md` holds one dated line per problem that must not happen twice; the orchestrator adds them through docs PRs. Agents keep no other memory.
 - **Status round:** `/orchestra:status` writes the live table to `.orchestra/status.md` (not versioned); each workstream keeps the status line of its handoff note current.
 
 ## Workstream session role
