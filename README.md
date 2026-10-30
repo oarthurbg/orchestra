@@ -133,6 +133,9 @@ The band shares its slot with other mods and draws theirs beneath it. If you use
 
   It applies to new or restarted sessions. The real rule is earlier: a principal above 250k tokens at the end of a wave writes its handoff note and gets cleared at a natural stop. The 600k net catches the case where nobody checked in time.
 - **Auto-archive on PR close: off** (desktop app setting). Archiving a session kills its process and its background agents, and unarchiving does not bring them back. Principals open spec and plan PRs and keep working after those merge, so auto-archive would stop them mid-workstream. The maestro archives finished sessions itself, after checking nothing is running.
+- **Session models.** Subagents carry their own model and effort (the agent table above); the sessions run on what you pick:
+  - **maestro:** Opus at medium effort. Its turns are short (status rounds, checklists, merges): judgment matters, long thinking mostly spends plan limits.
+  - **principals:** Opus at high effort, for brainstorming, specs and judging reviews. Raise it to xhigh for a hard spec or a long debugging stretch, then lower it again.
 - **Ponytail modes per session.** Every session starts in full. The maestro stays in full. The principal switches its own mode per stage and states it in every subagent briefing: brainstorm and mockups off, spec lite, plan ultra, backend full, UI lite, infrastructure ultra, reviews off. The full table is in [`stages.md`](plugins/orchestra/skills/maestro/stages.md).
 
 ## Credits
