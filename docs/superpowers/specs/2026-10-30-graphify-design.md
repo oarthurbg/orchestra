@@ -87,7 +87,7 @@ The merge checklist's "After merging" list gets one item, run by the maestro: wh
 Both agent files get the same short rule:
 
 - The graph, if any, is `<main checkout>/graphify-out/graph.json`; the main checkout is the first line of `git worktree list`. If the file or the `graphify` command is missing, search with grep as usual and do not mention it.
-- For "who calls X", "what breaks if X changes" and "how does A reach B", start with `graphify affected "<name>()" --graph <path>` (and `explain` for one node, `path` between two). When a name exists twice, graphify finds no unique node: list the node IDs from `graph.json` with grep and pass the one whose path matches the file. Do not use free-text `graphify query`.
+- For "who calls X", "what breaks if X changes" and "how does A reach B", start with `graphify affected "<name>()" --graph <path>` (and `explain` for one node, `path` between two). When a name exists twice, graphify finds no unique node: list the node IDs from `graph.json` with a case-insensitive grep (graphify lowercases them) and pass the one whose path matches the file. Do not use free-text `graphify query`.
 - The graph maps the integration branch, not your branch, and it misses calls through a module attribute or dynamic dispatch. Confirm every line you report with grep or Read, and grep for what the graph might miss.
 
 Implementers, reviewers and the other agents do not change.
