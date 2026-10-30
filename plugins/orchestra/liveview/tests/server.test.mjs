@@ -120,6 +120,42 @@ test('the command line detaches, reuses a live server and stops it', async () =>
   }
 })
 
+// The starter joins a new job that kills every process in it when the starter exits, the way an app can end a session's job.
+const IN_KILL_JOB = `Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class Job {
+  [DllImport("kernel32.dll")] public static extern IntPtr CreateJobObject(IntPtr a, string n);
+  [DllImport("kernel32.dll")] public static extern bool SetInformationJobObject(IntPtr j, int c, byte[] i, int l);
+  [DllImport("kernel32.dll")] public static extern bool AssignProcessToJobObject(IntPtr j, IntPtr p);
+  [DllImport("kernel32.dll")] public static extern IntPtr GetCurrentProcess();
+}
+'@
+$j = [Job]::CreateJobObject([IntPtr]::Zero, $null)
+# JOBOBJECT_EXTENDED_LIMIT_INFORMATION (class 9) on x64: LimitFlags at byte 16, KILL_ON_JOB_CLOSE = 0x2000.
+$info = New-Object byte[] 144
+[BitConverter]::GetBytes([uint32]0x2000).CopyTo($info, 16)
+if (-not [Job]::SetInformationJobObject($j, 9, $info, 144) -or -not [Job]::AssignProcessToJobObject($j, [Job]::GetCurrentProcess())) { exit 2 }
+& $env:LIVEVIEW_NODE $env:LIVEVIEW_SERVER --root $env:LIVEVIEW_ROOT --detach`
+
+test('the detached server outlives the Windows job of the process that started it', { skip: process.platform !== 'win32' && 'Windows job objects only' }, async () => {
+  const root = fixture()
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: fs.mkdtempSync(path.join(os.tmpdir(), 'liveview-cfg-')), LIVEVIEW_NODE: process.execPath, LIVEVIEW_SERVER: SERVER, LIVEVIEW_ROOT: root }
+  try {
+    const url = await new Promise(resolve => {
+      const p = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', IN_KILL_JOB], { stdio: ['ignore', 'pipe', 'pipe'], env, windowsHide: true })
+      let out = ''
+      p.stdout.on('data', c => { out += c })
+      p.on('close', code => resolve(code === 0 ? out.trim() : `exit ${code}`))
+    })
+    assert.match(url, /^http:\/\/localhost:\d+\/$/)
+    await new Promise(r => setTimeout(r, 1000))
+    assert.equal((await fetch(`${url}api/ping`.replace('//localhost:', '//127.0.0.1:'), { signal: AbortSignal.timeout(5000) })).status, 200, 'the server survived the job')
+  } finally {
+    await stop(root)
+  }
+})
+
 test('SIGTERM removes liveview.json', { skip: process.platform === 'win32' && 'Windows cannot deliver SIGTERM to a handler; --stop covers it' }, async () => {
   const root = fixture()
   const env = { ...process.env, CLAUDE_CONFIG_DIR: fs.mkdtempSync(path.join(os.tmpdir(), 'liveview-cfg-')) }

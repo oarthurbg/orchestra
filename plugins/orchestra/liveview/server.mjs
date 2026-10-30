@@ -165,7 +165,16 @@ async function main(argv) {
   const running = await liveUrl(root)
   if (running) { console.log(running); return }
   if (argv.includes('--detach')) {
-    spawn(process.execPath, [fileURLToPath(import.meta.url), '--root', root], { detached: true, stdio: 'ignore', windowsHide: true }).unref()
+    const args = [fileURLToPath(import.meta.url), '--root', root]
+    if (process.platform === 'win32') {
+      // A child stays in this process's Windows job, which the Claude app can end with the session that started it.
+      // WMI creates the server outside any job, hidden, with this environment. Paths cannot hold '"'; a trailing '\' is doubled so it does not escape the closing quote.
+      const line = [process.execPath, ...args].map(a => `"${a.replace(/\\+$/, '$&$&')}"`).join(' ')
+      const create = '$s = New-CimInstance Win32_ProcessStartup -ClientOnly -Property @{ ShowWindow = [uint16]0; EnvironmentVariables = [string[]](Get-ChildItem env: | ForEach-Object { "$($_.Name)=$($_.Value)" }) }; Invoke-CimMethod Win32_Process -MethodName Create -Arguments @{ CommandLine = $env:LIVEVIEW_LINE; ProcessStartupInformation = $s }'
+      spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', create], { env: { ...process.env, LIVEVIEW_LINE: line }, stdio: 'ignore', windowsHide: true }).unref()
+    } else {
+      spawn(process.execPath, args, { detached: true, stdio: 'ignore' }).unref()
+    }
     // About 30 s, PING_MS (plus one last ping of up to 1 s): the first scan of the transcripts can take several seconds, and the server cannot answer ping meanwhile.
     const deadline = Date.now() + PING_MS
     while (Date.now() < deadline) {
