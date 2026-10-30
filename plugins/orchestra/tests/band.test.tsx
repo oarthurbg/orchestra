@@ -38,14 +38,14 @@ function disk(on: On, files: Record<string, string>, failWrites = false) {
   }) as never)
 }
 
-function session(on: On, root: string, id: string) {
+function session(on: On, root: string, id: string, agents: () => unknown[] = () => []) {
   const clock = mock.clock(on, { now: Date.now() })
   on('session.root', () => ({ value: root }))
   on('session.cwd', () => ({ value: root }))
   on('session.id', () => ({ value: id }))
   on('session.usage', () => ({ value: { startedAt: 0, context: { tokens: 30_000, window: 1_000_000 }, rateLimits: [{ kind: 'five_hour', percentUsed: 42 }] } }) as never)
   on('mcp.call', () => ({ value: { content: [{ type: 'text', text: JSON.stringify({ title: 'Orchestrator', link: 'claude://claude.ai/epitaxy/local_o' }) }] } }) as never)
-  on('agent.list', () => ({ value: [] }))
+  on('agent.list', () => ({ value: agents() }) as never)
   on('session.start', ($, e) => ({ cwd: e.cwd }))
   return clock
 }
@@ -188,4 +188,36 @@ test('a Liveview press that exits non-zero toasts instead of failing quietly', a
   await ui.press({ key: 'liveview' })
   expect(toasts).toHaveLength(1)
   await ui.unmount()
+})
+
+test('keep-warm pings once while a subagent runs and the cache is about to end', { options: { cacheMinutes: 5, warmMaxHours: 2 } }, async ($, on) => {
+  const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+  disk(on, files)
+  let running = true
+  const clock = session(on, ROOT, 'o', () => (running ? [{ id: 'a1', description: 'long task', type: 'implementer', status: 'running' }] : []))
+  let forks = 0
+  let answered = true
+  on('model.fork', () => {
+    forks += 1
+    return { value: answered ? { isAnswered: true, text: 'ok', usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 30_000, cache_creation_input_tokens: 0 } } : { isAnswered: false, reason: 'nothing-to-fork' } } as never
+  })
+
+  await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
+  // The last request was at start; a 5-minute cache gets its ping 30 seconds before it ends.
+  await clock.advance(4 * 60_000)
+  expect(forks).toBe(0)
+  await clock.advance(40_000)
+  expect(forks).toBe(1)
+  expect(JSON.parse(files[`${ROOT}/.orchestra/sessions/o.json`]!).warm.pings).toBe(1)
+  // The ping counts as a request: the next one waits for the next cache window.
+  await clock.advance(60_000)
+  expect(forks).toBe(1)
+  // An unanswered fork is not a ping.
+  answered = false
+  await clock.advance(4 * 60_000)
+  expect(forks).toBe(2)
+  expect(JSON.parse(files[`${ROOT}/.orchestra/sessions/o.json`]!).warm.pings).toBe(1)
+  running = false
+  await clock.advance(10 * 60_000)
+  expect(forks).toBe(2)
 })

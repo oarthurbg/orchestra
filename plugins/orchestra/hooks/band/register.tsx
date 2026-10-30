@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import { REFRESH_MS, buildView, isSafeTarget, mainCheckout, norm, openerArgv, parseRegistry, parseSessionFile, parseStatus, roleOf } from './logic'
+import { REFRESH_MS, buildView, isSafeTarget, mainCheckout, norm, openerArgv, parseRegistry, parseSessionFile, parseStatus, pingDue, roleOf } from './logic'
 import type { BandView, Limit, Role, SessionFile } from './types'
 
 // The desktop app's session server, as Task 1 of the plan found it.
@@ -132,6 +132,7 @@ export const register: Register = (on, options) => {
     const result = await next(e)
     $.clock.every(REFRESH_MS, () => void tick($, options).catch(() => {}))
     Object.assign(ctx, fresh())
+    ctx.lastRequestAt = await $.clock.now()
     await locate($)
     await measure($)
     await writeReport($)
@@ -208,8 +209,27 @@ export const register: Register = (on, options) => {
   }).catch(($, e, next) => next(e))
 }
 
-// Every REFRESH_MS: redraw when a report changed. Task 4 adds the keep-warm check here.
+// Every REFRESH_MS: redraw, and keep the cache warm while one of this session's subagents runs.
 async function tick($: EngineInterface, options: Readonly<Record<string, unknown>>) {
-  void options
   await refresh($)
+  const now = await $.clock.now()
+  const running = (await $.agent.list().catch(() => [])).filter(a => a.status === 'running' || a.status === 'pending')
+  for (const a of running) if (!ctx.seen.has(a.id)) ctx.seen.set(a.id, now)
+  for (const id of [...ctx.seen.keys()]) if (!running.some(a => a.id === id)) ctx.seen.delete(id)
+  const due = pingDue({
+    now,
+    lastRequestAt: ctx.lastRequestAt,
+    cacheMinutes: Number(options.cacheMinutes ?? 60),
+    warmMaxHours: Number(options.warmMaxHours ?? 2),
+    youngestRunningSince: ctx.seen.size === 0 ? null : Math.max(...ctx.seen.values()),
+  })
+  if (!due) return
+  // Set before the call: a slow fork must not let the next tick ping again; the ping is a request for the next schedule.
+  ctx.lastRequestAt = now
+  const r = await $.model.fork({ prompt: 'Reply with: ok' }).catch(() => undefined)
+  if (r?.isAnswered) {
+    ctx.pings += 1
+    ctx.lastPing = new Date(now).toISOString()
+    await writeReport($)
+  }
 }
