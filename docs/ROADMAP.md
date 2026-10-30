@@ -35,7 +35,9 @@ Everything comes from files on disk: the band's session files carry the plan-lim
 
 ### 3. A single decision inbox
 
-- Pending questions from every session, read from the transcripts.
+Designed: [`docs/superpowers/specs/2026-10-30-inbox-design.md`](superpowers/specs/2026-10-30-inbox-design.md).
+
+- Pending questions from every session, read from the band's reports.
 - Links to the files each workstream produced: mockups, screenshots, PDFs, PRs, specs.
 - An "open session" deep link per item.
 

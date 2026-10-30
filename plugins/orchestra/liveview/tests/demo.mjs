@@ -1,5 +1,6 @@
 // Builds a fake orchestra project with made-up data and serves it, for screenshots and manual checks.
 //   node plugins/orchestra/liveview/tests/demo.mjs
+//   node plugins/orchestra/liveview/tests/demo.mjs --inbox ten    (or none): ten waiting questions, or none
 import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
@@ -49,6 +50,20 @@ for (const [name, s] of Object.entries(streams)) {
   registry += `| ${name} | s-${name} | \`${name}\` at \`${wt}\` | none | none | no | build |\n`
 }
 write('.orchestra/workstreams.md', registry)
+// billing's branch commits what its question points at; the origin remote makes its #14 a link.
+const inboxMode = process.argv.includes('--inbox') ? process.argv[process.argv.indexOf('--inbox') + 1] : 'three'
+const billing = path.join(root, '.worktrees', 'billing')
+const brand = new URL('../../../../assets/brand/', import.meta.url)
+const put = (rel, body) => { fs.mkdirSync(path.dirname(path.join(billing, rel)), { recursive: true }); fs.writeFileSync(path.join(billing, rel), body) }
+put('docs/mockups/invoice-light.png', fs.readFileSync(new URL('liveview-light.png', brand)))
+put('docs/mockups/invoice-dark.png', fs.readFileSync(new URL('liveview-dark.png', brand)))
+put('docs/mockups/invoice.html', '<!doctype html><title>Invoice mockup</title><h1>Invoice mockup</h1><p id="o">Scripts are sandboxed.</p><script>document.getElementById("o").textContent = `Origin: ${window.origin}`</script>')
+put('docs/invoice-sample.pdf', '%PDF-1.4\n% made-up sample\n')
+for (const s of ['billing-design', 'billing-emails', 'billing-webhooks']) put(`docs/superpowers/specs/2026-10-28-${s}.md`, `# ${s}\n`)
+git(billing, ['add', 'docs/mockups', 'docs/invoice-sample.pdf', 'docs/superpowers/specs'], now - 140 * MIN)
+git(billing, ['commit', '-q', '-m', 'Invoice mockups'], now - 140 * MIN)
+git(root, ['remote', 'add', 'origin', 'https://github.com/example/shop.git'], now)
+const iso = t => new Date(t).toISOString()
 const week = { kind: 'seven_day', percentUsed: 96, resetsAt: new Date(now + 2.5 * 24 * 60 * MIN).toISOString() }
 const five = { kind: 'five_hour', percentUsed: 78, resetsAt: new Date(now + 2 * 60 * MIN).toISOString() }
 const session = (id, over) => write(`.orchestra/sessions/${id}.json`, JSON.stringify({
@@ -56,10 +71,19 @@ const session = (id, over) => write(`.orchestra/sessions/${id}.json`, JSON.strin
   context: { tokens: 90_000, window: 1_000_000 }, limits: [five, week], warm: { pings: 0, last: null }, updatedAt: new Date(now).toISOString(), ...over,
 }))
 session('o', { role: 'maestro', title: 'Maestro', state: 'idle', stage: '', context: { tokens: 64_000, window: 1_000_000 } })
-session('s-billing', { workstream: 'billing', link: 'claude://claude.ai/epitaxy/demo-billing', state: 'waiting', detail: 'asks: approve the invoice mockup', context: { tokens: 182_000, window: 1_000_000 } })
+session('s-billing', { workstream: 'billing', link: 'claude://claude.ai/epitaxy/demo-billing', pr: '#14', context: { tokens: 182_000, window: 1_000_000 },
+  ...(inboxMode === 'none' ? {} : { state: 'waiting', detail: 'asks: Approve the invoice mockup, or change how the totals sit?', options: ['Approve as it is', 'Move totals above the line items', 'Show tax on its own row'], waitingSince: iso(now - 130 * MIN) }) })
 session('s-reports', { workstream: 'reports', context: { tokens: 96_000, window: 1_000_000 } })
 session('s-search', { workstream: 'search', link: 'claude://claude.ai/epitaxy/demo-search', stage: 'review', pr: '#12 open', context: { tokens: 254_000, window: 1_000_000 } })
 session('u', { role: 'unregistered', branch: 'fix-typo', state: 'idle', stage: '', context: { tokens: 12_000, window: 1_000_000 } })
+if (inboxMode !== 'none') {
+  // A question with six options whose report is 42 minutes old, and one with no link, no options and nothing on its branch.
+  session('x-search', { role: 'unregistered', branch: 'search-filters', state: 'waiting', stage: 'review', link: 'claude://claude.ai/epitaxy/demo-search-filters', detail: 'asks: Which filters stay next to the new search box?', options: ['Category', 'Price', 'Brand', 'Rating', 'Size', 'Colour'], waitingSince: iso(now - 50 * MIN), updatedAt: iso(now - 42 * MIN) })
+  session('x-exports', { role: 'unregistered', branch: 'exports', state: 'waiting', stage: 'plan', detail: 'Send a sample export file to test the parser against.', waitingSince: iso(now - 9 * MIN) })
+}
+if (inboxMode === 'ten') {
+  for (let i = 1; i <= 7; i++) session(`x-topic-${i}`, { role: 'unregistered', branch: `topic-${i}`, state: 'waiting', stage: 'spec', link: `claude://claude.ai/epitaxy/demo-topic-${i}`, detail: `asks: Question ${i}: is this wording long enough that the index has to cut it to a single line?`, options: ['Yes', 'No'], waitingSince: iso(now - i * 3 * MIN) })
+}
 
 const tx = fs.mkdtempSync(path.join(os.tmpdir(), 'liveview-demo-tx-'))
 const lines = []

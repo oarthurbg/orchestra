@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { spawn } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import fs from 'node:fs'
 import http from 'node:http'
 import net from 'node:net'
@@ -26,9 +26,9 @@ const reader = () => new TranscriptReader(fs.mkdtempSync(path.join(os.tmpdir(), 
 function get(port, url, host, method = 'GET') {
   return new Promise((resolve, reject) => {
     http.request({ host: '127.0.0.1', port, path: url, method, headers: host ? { host } : {} }, res => {
-      let body = ''
-      res.on('data', c => { body += c })
-      res.on('end', () => resolve({ status: res.statusCode, body }))
+      const chunks = []
+      res.on('data', c => chunks.push(c))
+      res.on('end', () => { const raw = Buffer.concat(chunks); resolve({ status: res.statusCode, headers: res.headers, raw, body: raw.toString() }) })
     }).on('error', reject).end()
   })
 }
@@ -288,5 +288,119 @@ test('stop does not kill a live pid whose url does not answer, and removes the f
     assert.equal(d.signalCode, null)
   } finally {
     d.kill()
+  }
+})
+
+const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 255])
+
+// A main checkout with a billing worktree whose branch commits three files, and billing waiting on the owner.
+function inboxFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'liveview-inbox-'))
+  const g = (cwd, ...args) => execFileSync('git', args, { cwd, stdio: 'ignore' })
+  g(root, 'init', '-q', '-b', 'develop')
+  g(root, 'config', 'user.email', 'test@example.com')
+  g(root, 'config', 'user.name', 'test')
+  fs.writeFileSync(path.join(root, 'CLAUDE.md'), 'Integration branch: `develop`\n')
+  g(root, 'add', 'CLAUDE.md')
+  g(root, 'commit', '-q', '-m', 'base')
+  g(root, 'worktree', 'add', '-q', '-b', 'billing', '.worktrees/billing')
+  const wt = path.join(root, '.worktrees', 'billing')
+  fs.mkdirSync(path.join(wt, 'docs', 'mockups'), { recursive: true })
+  fs.writeFileSync(path.join(wt, 'docs', 'mockups', 'invoice.png'), PNG)
+  fs.writeFileSync(path.join(wt, 'docs', 'mockups', 'logo.svg'), '<svg xmlns="http://www.w3.org/2000/svg"><script>fetch("/api/snapshot")</script></svg>')
+  fs.writeFileSync(path.join(wt, 'docs', 'mockups', 'page.html'), '<script>fetch("/api/snapshot")</script>')
+  g(wt, 'add', 'docs/mockups/invoice.png', 'docs/mockups/logo.svg', 'docs/mockups/page.html')
+  g(wt, 'commit', '-q', '-m', 'mockups')
+  fs.mkdirSync(path.join(root, '.orchestra', 'sessions'), { recursive: true })
+  fs.writeFileSync(path.join(root, '.orchestra', 'workstreams.md'), '| Workstream | Session | Branch and worktree | Test data | Port | Schema change | Stage |\n| --- | --- | --- | --- | --- | --- | --- |\n| billing | s1 | `billing` at `.worktrees/billing` | none | none | no | build |\n')
+  const at = new Date().toISOString()
+  fs.writeFileSync(path.join(root, '.orchestra', 'sessions', 's1.json'), JSON.stringify({
+    v: 1, session: 's1', role: 'principal', workstream: 'billing', branch: 'billing', title: '', link: '', state: 'waiting', detail: 'asks: Approve the mockup?',
+    options: ['Yes', 'No'], waitingSince: at, stage: 'build', pr: '', context: { tokens: 1000, window: 1_000_000 }, limits: [], warm: { pings: 0, last: null }, updatedAt: at,
+  }))
+  return { root, wt }
+}
+
+test('the file route serves a listed file\'s committed bytes, sandboxes html and svg, and serves nothing else', async () => {
+  const { root, wt } = inboxFixture()
+  const s = await startServer({ root, port: PORT + 80, reader: reader(), auto: false, onIdle: () => {} })
+  try {
+    assert.equal((await get(s.port, '/inbox')).status, 200)
+    const { inbox } = JSON.parse((await get(s.port, '/api/snapshot')).body)
+    assert.deepEqual(inbox[0].files.map(f => [f.n, f.path]), [[0, 'docs/mockups/invoice.png'], [1, 'docs/mockups/logo.svg'], [2, 'docs/mockups/page.html']])
+    // What is on disk but not committed is never served.
+    fs.writeFileSync(path.join(wt, 'docs', 'mockups', 'invoice.png'), 'edited, not committed')
+    const png = await get(s.port, '/api/file?s=s1&n=0')
+    assert.equal(png.status, 200)
+    assert.deepEqual(png.raw, PNG)
+    assert.equal(png.headers['content-type'], 'image/png')
+    assert.equal(png.headers['x-content-type-options'], 'nosniff')
+    assert.equal(png.headers['cache-control'], 'no-store')
+    assert.equal(png.headers['content-security-policy'], undefined)
+    const svg = await get(s.port, '/api/file?s=s1&n=1')
+    assert.deepEqual([svg.headers['content-type'], svg.headers['content-security-policy']], ['image/svg+xml', 'sandbox allow-scripts'])
+    const html = await get(s.port, '/api/file?s=s1&n=2')
+    assert.deepEqual([html.headers['content-type'], html.headers['content-security-policy']], ['text/html; charset=utf-8', 'sandbox allow-scripts'])
+    for (const bad of ['/api/file?s=s1&n=3', '/api/file?s=s2&n=0', '/api/file?s=s1&n=-1', '/api/file?s=s1&n=0x0', '/api/file?s=s1', '/api/file?s=s1&n=0&path=CLAUDE.md', '/api/file?path=CLAUDE.md']) {
+      assert.equal((await get(s.port, bad)).status, 404, bad)
+    }
+    assert.equal((await get(s.port, '/api/file?s=s1&n=0', 'evil.example')).status, 403)
+  } finally {
+    await s.close()
+  }
+})
+
+test('the file route answers 413 above the size cap', async () => {
+  const { root } = inboxFixture()
+  const s = await startServer({ root, port: PORT + 84, reader: reader(), auto: false, onIdle: () => {}, fileMax: PNG.length - 1 })
+  try {
+    assert.equal((await get(s.port, '/api/file?s=s1&n=0')).status, 413)
+  } finally {
+    await s.close()
+  }
+})
+
+test('the file route reads from the registry row its files came from, never an earlier row with the same name', async () => {
+  const { root } = inboxFixture()
+  // A git repository git does not list as a worktree, holding the same path with other bytes.
+  const decoy = fs.mkdtempSync(path.join(os.tmpdir(), 'liveview-decoy-'))
+  const g = (...args) => execFileSync('git', args, { cwd: decoy, stdio: 'ignore' })
+  g('init', '-q')
+  fs.mkdirSync(path.join(decoy, 'docs', 'mockups'), { recursive: true })
+  fs.writeFileSync(path.join(decoy, 'docs', 'mockups', 'invoice.png'), 'decoy')
+  g('add', '.')
+  g('-c', 'user.email=test@example.com', '-c', 'user.name=test', 'commit', '-q', '-m', 'decoy')
+  const md = path.join(root, '.orchestra', 'workstreams.md')
+  const [head, sep, row] = fs.readFileSync(md, 'utf8').trimEnd().split('\n')
+  fs.writeFileSync(md, [head, sep, `| billing | s0 | \`billing\` at \`${decoy}\` | none | none | no | build |`, row, ''].join('\n'))
+  const s = await startServer({ root, port: PORT + 86, reader: reader(), auto: false, onIdle: () => {} })
+  try {
+    assert.deepEqual((await get(s.port, '/api/file?s=s1&n=0')).raw, PNG)
+  } finally {
+    await s.close()
+  }
+})
+
+test('an unnamed registry row gives a session with no workstream no files, so its title never picks a worktree', async () => {
+  const { root } = inboxFixture()
+  const decoy = fs.mkdtempSync(path.join(os.tmpdir(), 'liveview-decoy-'))
+  const g = (...args) => execFileSync('git', args, { cwd: decoy, stdio: 'ignore' })
+  g('init', '-q')
+  fs.mkdirSync(path.join(decoy, 'docs', 'mockups'), { recursive: true })
+  fs.writeFileSync(path.join(decoy, 'docs', 'mockups', 'invoice.png'), 'decoy')
+  g('add', '.')
+  g('-c', 'user.email=test@example.com', '-c', 'user.name=test', 'commit', '-q', '-m', 'decoy')
+  const md = path.join(root, '.orchestra', 'workstreams.md')
+  const [head, sep] = fs.readFileSync(md, 'utf8').split('\n')
+  fs.writeFileSync(md, [head, sep, '|  | s1 | `billing` at `.worktrees/billing` | none | none | no | build |', `| X | s9 | \`x\` at \`${decoy}\` | none | none | no | build |`, ''].join('\n'))
+  const file = path.join(root, '.orchestra', 'sessions', 's1.json')
+  fs.writeFileSync(file, JSON.stringify({ ...JSON.parse(fs.readFileSync(file, 'utf8')), workstream: '', title: 'X' }))
+  const s = await startServer({ root, port: PORT + 88, reader: reader(), auto: false, onIdle: () => {} })
+  try {
+    const res = await get(s.port, '/api/file?s=s1&n=0')
+    assert.notEqual(res.body, 'decoy')
+    assert.equal(res.status, 404)
+  } finally {
+    await s.close()
   }
 })

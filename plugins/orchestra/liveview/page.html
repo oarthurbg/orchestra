@@ -34,13 +34,20 @@ a{color:inherit}
 :focus-visible{outline:2px solid var(--text);outline-offset:2px}
 .bar-top{height:48px;display:flex;align-items:center;gap:12px;padding:0 var(--gutter);border-bottom:1px solid var(--border)}
 .word{font-family:var(--display);font-weight:800;font-size:21px;letter-spacing:-.02em}
-.scope{color:var(--muted)}
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .fresh{margin-left:auto;color:var(--muted);font-size:12px}
 .themes{display:flex;gap:2px;padding:2px;border:1px solid var(--border);border-radius:999px}
-.themes button{font:500 12px var(--body);color:var(--muted);background:none;border:0;border-radius:999px;padding:4px 10px;cursor:pointer}
+.themes button{font:500 12px var(--body);color:var(--muted);background:none;border:0;border-radius:999px;padding:4px 10px;min-height:24px;cursor:pointer}
 .themes button:hover{color:var(--text)}
 .themes button[aria-pressed="true"]{background:var(--primary);color:var(--on-primary)}
+.bar-top > svg{flex:none}
+.views{display:flex;gap:4px;margin-left:12px}
+.views a{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:var(--radius);color:var(--muted);text-decoration:none;font-weight:500}
+.views a:hover{color:var(--text)}
+.views a[aria-current="page"]{background:var(--raised);color:var(--text)}
+.count{font:800 13px/18px var(--display);min-width:20px;padding:0 6px;border-radius:999px;background:var(--triangle);color:#111114;text-align:center}
+.theme-cycle{display:none;font:500 12px var(--body);color:var(--text);background:none;border:1px solid var(--border);border-radius:999px;padding:4px 12px;min-height:28px;cursor:pointer}
+main[hidden]{display:none}
 main{padding:28px var(--gutter) 48px;display:grid;grid-template-columns:minmax(0,1fr);gap:var(--gap)}
 .title{display:flex;align-items:flex-start;gap:16px;margin-bottom:8px}
 #action{margin-left:auto;flex:none}
@@ -117,6 +124,61 @@ h2{font-family:var(--display);font-weight:800;font-size:17px;line-height:24px;le
 .pill{position:absolute;top:5px;height:10px;border-radius:5px}
 .wait{position:absolute;top:-12px;bottom:-12px;background:var(--pause)}
 
+/* The inbox: one card per question, 5fr ask + 7fr evidence, 32px between.
+   The question is set at 22px, above the overview's 17px card titles: here it is the content, not a card label. */
+#view-inbox p{text-wrap:pretty}
+#questions{display:contents}
+.fresh-m{display:none;margin:4px 0 0;color:var(--muted);font-size:13px}
+.q, .inbox-empty{--pad:24px}
+.q .btn, .inbox-empty .btn{height:36px}
+.btn.quiet{background:none;color:var(--text);border:1px solid var(--border)}
+.btn.quiet:hover{opacity:1;background:var(--raised)}
+/* Desktop: the ask on the left with its button under it, the evidence on the right.
+   One column: ask, evidence, then the button, so the files are seen before answering. */
+.q{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);grid-template-areas:"ask ev" "act ev";grid-template-rows:auto 1fr;column-gap:32px;padding:var(--pad)}
+.ask{grid-area:ask}
+.ev{grid-area:ev}
+.act{grid-area:act;align-self:start;margin-top:20px;display:flex;align-items:center;gap:12px}
+.who{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;color:var(--muted)}
+.who b{color:var(--text);font-weight:600}
+.who b, .who > span{white-space:nowrap}
+.who time{margin-left:auto;text-align:right}
+.who time.long{color:var(--negative)}
+.q h2{font-family:var(--display);font-weight:800;font-size:22px;line-height:28px;letter-spacing:-.015em;margin:12px 0 0;max-width:36ch;text-wrap:balance;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+.opts{margin:16px 0 0;font-size:16px;line-height:24px;color:var(--muted);max-width:60ch}
+.opts b{color:var(--text);font-weight:500}
+p.opts + ul.opts{margin-top:4px}
+ul.opts{padding-left:20px}
+ul.opts li{color:var(--text)}
+.opened{color:var(--muted)}
+.q.is-opened{--text:var(--muted);color:var(--text)}
+.q.is-opened img{opacity:.55}
+.shots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.ev.one{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 24px;align-items:start}
+.ev.one .shots{grid-template-columns:minmax(0,1fr)}
+.ev.one .files{margin-top:0}
+.shot{display:block;text-decoration:none;color:inherit}
+.shot img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top center;border-radius:var(--radius);background:var(--raised)}
+.shot span{display:block;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shot:hover span{text-decoration:underline}
+.files{list-style:none;margin:16px 0 0;padding:0}
+.files li{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:12px;align-items:baseline;padding:8px 0;border-top:1px solid var(--rule)}
+.files li:first-child{border-top:0}
+.files .kind, .files .chg{color:var(--muted)}
+.files a{font-weight:500;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.files a:hover{text-decoration:underline}
+.none{align-self:start;margin:0;padding:16px;border-radius:var(--radius);background:var(--raised);color:var(--muted)}
+.none b{color:var(--text);font-weight:500}
+.inbox-empty{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:32px var(--pad)}
+.inbox-empty p{margin:0 0 16px;color:var(--muted);font-size:16px;line-height:24px}
+/* Above four questions: one line per question, each linking to its card. */
+.index{list-style:none;margin:16px 0 0;padding:0;max-width:960px}
+.index a{display:grid;grid-template-columns:minmax(0,160px) minmax(0,1fr) auto;gap:16px;padding:6px 0;border-top:1px solid var(--rule);color:inherit;text-decoration:none}
+.index li:first-child a{border-top:0}
+.index b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.index .line{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.index a:hover .line{text-decoration:underline}
+.index .long{color:var(--negative)}
 @media (max-width:1105px){
   /* The score folds into two-line rows: name and ETA, then context and stage, then the track. */
   .score-inner{min-width:0}
@@ -137,21 +199,31 @@ h2{font-family:var(--display);font-weight:800;font-size:17px;line-height:24px;le
   .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
   .kpi:nth-child(3){border-left:0;border-top:1px solid var(--border);grid-column:1 / -1}
   .middle{grid-template-columns:minmax(0,1fr)}
+  .q{grid-template-columns:minmax(0,1fr);grid-template-areas:"ask" "ev" "act";grid-template-rows:auto;row-gap:20px}
+  .act{margin-top:0}
 }
 @media (max-width:640px){
   :root{--gutter:16px;--pad:16px}
-  .scope{display:none}
-  .fresh{display:none}
-  /* The freshness line is hidden here, except when it holds an error: that wraps under the bar. */
-  .bar-top:has(.fresh .error){height:auto;min-height:48px;flex-wrap:wrap;padding-bottom:8px}
-  .fresh:has(.error){display:block;order:9;flex-basis:100%;margin-left:0}
-  .themes{margin-left:auto}
+  .fresh, .word, .themes{display:none}
+  .theme-cycle{display:inline-block;margin-left:auto}
+  .views{margin-left:0}
+  /* The overview's freshness line is hidden here, except when it holds an error: that wraps under the bar. The inbox shows it under its title. */
+  body:not([data-view="inbox"]) .bar-top:has(.fresh .error){height:auto;min-height:48px;flex-wrap:wrap;padding-bottom:8px}
+  body:not([data-view="inbox"]) .fresh:has(.error){display:block;order:9;flex-basis:100%;margin-left:0}
+  .fresh-m{display:block}
   .title{flex-wrap:wrap}
   #action{margin-left:0}
   .days span:nth-child(even){display:none}
   .month{grid-template-columns:minmax(0,1fr);border-left:0;border-top:0}
   .month .dow, .cell.empty{display:none}
   .cell{min-height:0;border-right:0;border-bottom:1px solid var(--rule)}
+  .q, .inbox-empty{--pad:16px}
+  .q h2{font-size:20px;line-height:26px}
+  .ev.one{grid-template-columns:minmax(0,1fr)}
+  .files li{grid-template-columns:minmax(0,1fr) auto}
+  .files .kind{grid-column:1 / -1;font-size:12px;line-height:16px}
+  .index a{grid-template-columns:minmax(0,1fr) auto}
+  .index .line{grid-column:1 / -1;grid-row:2}
 }
 </style>
 </head>
@@ -159,7 +231,10 @@ h2{font-family:var(--display);font-weight:800;font-size:17px;line-height:24px;le
 <header class="bar-top">
   <svg width="28" height="28" viewBox="0 0 100 100" aria-hidden="true"><path d="M10 90 A 27 27 0 0 1 64 90 Z" fill="var(--half)"/><circle cx="34" cy="34" r="24" fill="#2450E0"/><rect x="62" y="10" width="28" height="42" fill="#F0442C"/><polygon points="66,90 90,90 78,56" fill="#FFC21A"/></svg>
   <span class="word">orchestra</span>
-  <span class="scope">liveview</span>
+  <nav class="views" aria-label="Views">
+    <a href="/" id="nav-overview">Overview</a>
+    <a href="/inbox" id="nav-inbox">Inbox <span class="count" id="count" aria-hidden="true" hidden></span><span class="sr-only" id="count-sr"></span></a>
+  </nav>
   <span class="fresh" id="fresh"></span>
   <p id="status" class="sr-only" role="status"></p>
   <div class="themes" role="group" aria-label="Theme">
@@ -167,8 +242,9 @@ h2{font-family:var(--display);font-weight:800;font-size:17px;line-height:24px;le
     <button type="button" data-theme-pick="light" aria-pressed="false">Light</button>
     <button type="button" data-theme-pick="dark" aria-pressed="false">Dark</button>
   </div>
+  <button type="button" class="theme-cycle" id="cycle">Theme: System</button>
 </header>
-<main>
+<main id="view-overview">
   <div class="title">
     <div><h1 id="project">Liveview</h1><p class="finding" id="finding">Reading the project…</p></div>
     <span id="action"></span>
@@ -194,6 +270,16 @@ h2{font-family:var(--display);font-weight:800;font-size:17px;line-height:24px;le
     <div id="cal"></div>
   </section>
 </main>
+<main id="view-inbox" hidden>
+  <div class="title">
+    <div>
+      <h1 id="inbox-h1">Inbox</h1><p class="finding" id="inbox-finding">Reading the project…</p>
+      <p class="fresh-m" id="fresh-m"></p>
+      <ul class="index" id="index" aria-label="Questions" hidden></ul>
+    </div>
+  </div>
+  <div id="questions"></div>
+</main>
 <script>
 const $ = (tag, attrs = {}, ...kids) => {
   const el = tag.startsWith('svg:') ? document.createElementNS('http://www.w3.org/2000/svg', tag.slice(4)) : document.createElement(tag)
@@ -217,6 +303,17 @@ const dur = m => (m == null ? '–' : m >= 60 ? `${Math.floor(m / 60)} h${m % 60
 const ktok = n => (n == null ? '–' : `${Math.round(n / 1000)}k`)
 const when = t => new Date(t).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' })
 const clock = t => new Date(t).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+// One page, two views: the server serves it at / and /inbox.
+const VIEW = location.pathname === '/inbox' ? 'inbox' : 'overview'
+document.body.dataset.view = VIEW
+document.getElementById(`nav-${VIEW}`).setAttribute('aria-current', 'page')
+if (VIEW === 'inbox') {
+  document.getElementById('view-overview').hidden = true
+  document.getElementById('view-inbox').hidden = false
+  document.title = 'orchestra inbox'
+}
+// The freshness line sits in the top bar, and under the inbox title on a phone.
+const setFresh = make => { for (const id of ['fresh', 'fresh-m']) document.getElementById(id).replaceChildren(make()) }
 
 // Theme: System follows the OS; Light and Dark set data-theme on <html>, which the tokens already honour.
 let theme = 'system'
@@ -226,10 +323,14 @@ function applyTheme(next) {
   if (theme === 'system') document.documentElement.removeAttribute('data-theme')
   else document.documentElement.setAttribute('data-theme', theme)
   for (const b of document.querySelectorAll('[data-theme-pick]')) b.setAttribute('aria-pressed', String(b.dataset.themePick === theme))
+  document.getElementById('cycle').textContent = `Theme: ${theme[0].toUpperCase()}${theme.slice(1)}`
   try { localStorage.setItem('liveview-theme', theme) } catch { /* private window */ }
   if (last) render(last)
 }
 for (const b of document.querySelectorAll('[data-theme-pick]')) b.addEventListener('click', () => applyTheme(b.dataset.themePick))
+// On a phone one button cycles System, Light and Dark.
+const THEMES = ['system', 'light', 'dark']
+document.getElementById('cycle').addEventListener('click', () => applyTheme(THEMES[(THEMES.indexOf(theme) + 1) % THEMES.length]))
 let open = new Set()
 try { open = new Set(JSON.parse(localStorage.getItem('liveview-open') || '[]')) } catch { /* private window */ }
 const saveOpen = () => { try { localStorage.setItem('liveview-open', JSON.stringify([...open])) } catch { /* private window */ } }
@@ -250,11 +351,23 @@ const waitLabel = p => `Waiting for the ${p.kind === 'five_hour' ? '5-hour' : 'w
 const waitMs = (snap, a, b) => snap.pauses.reduce((s, p) => s + Math.max(0, Math.min(b, p.to) - Math.max(a, p.from)), 0)
 const lastEnd = snap => { const ends = [...snap.rows.filter(r => r.end != null).map(r => r.end), ...snap.queued.map(q => q.end)]; return ends.length ? Math.max(...ends) : null }
 
+function freshness(snap) {
+  const age = Math.max(0, Math.round((Date.now() - snap.builtAt) / 1000))
+  setFresh(() => (offline ? $('span', { class: 'error' }, OFFLINE) : $('span', {},
+    snap.staleSince ? $('span', { class: 'error' }, `Stale since ${clock(snap.staleSince)} · `) : null, `Updated ${age} s ago`)))
+}
+
+// The saffron count on the Inbox link, hidden at zero, read as ", 3 waiting".
+function waitingCount(snap) {
+  const n = snap.inbox?.length ?? 0
+  const count = document.getElementById('count')
+  count.textContent = n || ''
+  count.hidden = !n
+  document.getElementById('count-sr').textContent = n ? `, ${n} waiting` : ''
+}
+
 function title(snap) {
   document.getElementById('project').textContent = snap.project
-  const age = Math.max(0, Math.round((Date.now() - snap.builtAt) / 1000))
-  document.getElementById('fresh').replaceChildren(offline ? $('span', { class: 'error' }, OFFLINE) : $('span', {},
-    snap.staleSince ? $('span', { class: 'error' }, `Stale since ${clock(snap.staleSince)} · `) : null, `Updated ${age} s ago`))
   const waiting = snap.rows.filter(r => r.reason === 'waiting')
   const last = lastEnd(snap)
   const parts = []
@@ -472,19 +585,107 @@ function calendar(snap) {
   box.replaceChildren($('div', { class: 'month' }, cells))
 }
 
+// The inbox: every question a session waits on the owner to answer, oldest first, as the server sorts them.
+const FILES_SHOWN = 5
+const qid = s => `q-${s.replace(/[^A-Za-z0-9_-]/g, '_')}`
+const mins = t => Math.max(0, Math.round((Date.now() - t) / MIN))
+const waited = t => { const m = mins(t); return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} m` : `${m} m` }
+const spoken = t => { const m = mins(t), h = Math.floor(m / 60), r = m % 60; return [h && `${h} hour${h > 1 ? 's' : ''}`, r && `${r} minute${r > 1 ? 's' : ''}`].filter(Boolean).join(' ') || 'less than a minute' }
+const long = q => q.since != null && Date.now() - q.since > 2 * HOUR
+const fileName = p => p.split('/').pop()
+const fileUrl = (q, f) => `/api/file?s=${encodeURIComponent(q.session)}&n=${f.n}`
+
+// Opened cards, per session and waitingSince, so a reload keeps them and a new question does not inherit one.
+let opened = new Set()
+try { opened = new Set(JSON.parse(sessionStorage.getItem('inbox-opened') || '[]')) } catch { /* private window */ }
+const openedKey = q => `${q.session}|${q.since ?? q.question}`
+const markOpened = q => { opened.add(openedKey(q)); try { sessionStorage.setItem('inbox-opened', JSON.stringify([...opened])) } catch { /* private window */ } }
+
+// Thumbnails are kept across redraws: the file route is no-store, so a new <img> would download again every 5 seconds.
+// shortcut: a picture changed in a new commit under the same path shows after a reload; key on the commit if that matters.
+const thumbs = new Map()
+const thumb = (q, f) => {
+  const key = `${q.session}|${f.n}|${f.path}`
+  if (!thumbs.has(key)) thumbs.set(key, $('img', { src: fileUrl(q, f), alt: `${f.kind} ${fileName(f.path)}, opens in a new tab`, loading: 'lazy' }))
+  return thumbs.get(key)
+}
+
+function offers(q) {
+  if (!q.options.length) return $('p', { class: 'opts' }, 'No options offered: it needs your own words.')
+  // Up to three read as one sentence; more become a list.
+  if (q.options.length > 3) return [$('p', { class: 'opts' }, 'It offers:'), $('ul', { class: 'opts' }, q.options.map(o => $('li', {}, o)))]
+  return $('p', { class: 'opts' }, 'It offers ', ...q.options.flatMap((o, i) => [i ? (i === q.options.length - 1 ? ', or ' : ', ') : '', $('b', {}, o)]), '.')
+}
+
+function evidence(q) {
+  if (!q.files.length && !q.pr) return $('p', { class: 'none ev' }, $('b', {}, `Nothing on the ${q.workstream} branch yet.`), ' The question is all there is; the session has the rest.')
+  const shots = q.files.filter(f => f.picture).slice(0, 2)
+  const rest = q.files.filter(f => !shots.includes(f))
+  const more = rest.length - FILES_SHOWN
+  const fileLink = (f, attrs, ...kids) => $('a', { href: fileUrl(q, f), target: '_blank', rel: 'noopener', 'data-focus': `file:${q.session}:${f.n}`, ...attrs }, ...kids)
+  return $('div', { class: shots.length === 1 ? 'ev one' : 'ev' },
+    shots.length ? $('div', { class: 'shots' }, shots.map(f => fileLink(f, { class: 'shot' }, thumb(q, f), $('span', {}, fileName(f.path))))) : null,
+    $('ul', { class: 'files' },
+      rest.slice(0, FILES_SHOWN).map(f => $('li', {}, $('span', { class: 'kind' }, f.kind), fileLink(f, { title: f.path }, fileName(f.path)), $('span', { class: 'chg' }, f.change))),
+      more > 0 ? $('li', {}, $('span', { class: 'kind' }, ''), $('span', { class: 'chg' }, `${more} more on the branch`), '') : null,
+      q.pr ? $('li', {}, $('span', { class: 'kind' }, 'Pull request'),
+        q.pr.href ? $('a', { href: q.pr.href, target: '_blank', rel: 'noopener' }, q.pr.label) : $('span', {}, q.pr.label),
+        $('span', { class: 'chg' }, /^https:\/\/github\.com\//.test(q.pr.href) ? 'on GitHub' : '')) : null))
+}
+
+function card(q, first) {
+  const id = qid(q.session)
+  const isOpened = opened.has(openedKey(q))
+  const wait = q.since != null ? $('time', { class: long(q) ? 'long' : null, datetime: new Date(q.since).toISOString(), }, $('span', { 'aria-hidden': 'true' }, `Waiting ${waited(q.since)}`), $('span', { class: 'sr-only' }, `waiting ${spoken(q.since)}`)) : null
+  // Redrawn after the click, so the link is still in the page when it navigates.
+  const answer = $('a', { class: first ? 'btn' : 'btn quiet', href: q.link, 'data-focus': `answer:${q.session}`, onclick: () => { markOpened(q); setTimeout(() => last && render(last)) } }, `Answer in ${q.workstream}`)
+  return $('section', { class: `q${isOpened ? ' is-opened' : ''}`, id, 'aria-labelledby': `h-${id}` },
+    $('div', { class: 'ask' },
+      $('div', { class: 'who' }, shape('triangle', ''), $('b', {}, q.workstream), q.stage ? $('span', {}, `${q.stage} stage`) : null, wait),
+      $('h2', { id: `h-${id}`, title: q.question }, $('span', { class: 'sr-only' }, `${q.workstream} asks: `), q.question),
+      offers(q)),
+    evidence(q),
+    $('div', { class: 'act' }, !q.link ? $('span', { class: 'opened' }, "No link to this session. Open it from the app's sidebar.")
+      : isOpened ? $('span', { class: 'opened', tabindex: '-1', 'data-focus': `answer:${q.session}` }, `Opened in ${q.workstream}. It leaves the inbox once answered.`) : answer))
+}
+
+function inbox(snap) {
+  const list = snap.inbox ?? []
+  const first = list[0]
+  document.getElementById('inbox-h1').textContent = list.length ? `${list.length} ${list.length === 1 ? 'decision' : 'decisions'} waiting on you` : 'Nothing is waiting on you'
+  document.getElementById('inbox-finding').replaceChildren(...(first
+    ? [$('b', {}, `${first.workstream} has waited longest${first.since != null ? `, ${waited(first.since)}` : ''}.`), ' Oldest first. Each answer goes in its own session.']
+    : ['Every workstream is working on its own.']))
+  const index = document.getElementById('index')
+  index.hidden = list.length <= 4
+  index.replaceChildren(...(list.length > 4 ? list.map(q => $('li', {}, $('a', { href: `#${qid(q.session)}`, 'data-focus': `index:${q.session}` },
+    $('b', {}, q.workstream), $('span', { class: 'line' }, q.question),
+    $('span', { class: long(q) ? 'long' : null }, q.since != null ? waited(q.since) : '')))) : []))
+  document.getElementById('questions').replaceChildren(...(list.length ? list.map((q, i) => card(q, i === 0)) : [
+    $('section', { class: 'inbox-empty', 'aria-label': 'Inbox is empty' },
+      $('p', {}, 'When a workstream asks you something, its question and the files to look at show up here.'),
+      $('a', { class: 'btn quiet', href: '/' }, 'Go to the overview')),
+  ]))
+  const live = new Set(list.flatMap(q => q.files.map(f => `${q.session}|${f.n}|${f.path}`)))
+  for (const k of thumbs.keys()) if (!live.has(k)) thumbs.delete(k)
+}
+
 // Redraws replace the DOM every 5 seconds; keep keyboard focus on the same control.
 function render(snap) {
   const focused = document.activeElement?.dataset?.focus
   draw(snap)
-  if (focused) document.querySelector(`[data-focus="${CSS.escape(focused)}"]`)?.focus()
+  if (focused) document.querySelector(`[data-focus="${CSS.escape(focused)}"]`)?.focus({ preventScroll: true })
 }
 
 function draw(snap) {
+  waitingCount(snap)
   if (snap.error) {
-    document.getElementById('fresh').replaceChildren(offline ? $('span', { class: 'error' }, OFFLINE) : '')
-    document.getElementById('finding').replaceChildren($('span', { class: 'error' }, `The snapshot failed: ${snap.error}`))
+    setFresh(() => (offline ? $('span', { class: 'error' }, OFFLINE) : ''))
+    document.getElementById(VIEW === 'inbox' ? 'inbox-finding' : 'finding').replaceChildren($('span', { class: 'error' }, `The snapshot failed: ${snap.error}`))
     return
   }
+  freshness(snap)
+  if (VIEW === 'inbox') { inbox(snap); return }
   title(snap)
   kpis(snap)
   chart(snap)
@@ -502,7 +703,7 @@ async function poll() {
     snap = await r.json()
   } catch {
     offline = true
-    document.getElementById('fresh').replaceChildren($('span', { class: 'error' }, OFFLINE))
+    setFresh(() => $('span', { class: 'error' }, OFFLINE))
     fail(OFFLINE)
     return
   }
@@ -515,7 +716,7 @@ async function poll() {
   } catch (err) {
     console.error(err)
     const msg = `This page failed to draw the snapshot: ${err.message}`
-    document.getElementById('fresh').replaceChildren($('span', { class: 'error' }, msg))
+    setFresh(() => $('span', { class: 'error' }, msg))
     fail(msg)
     return
   }

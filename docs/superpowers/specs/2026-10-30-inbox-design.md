@@ -46,7 +46,7 @@ The band's session file (format `v: 1`, `docs/superpowers/specs/2026-10-30-band-
 { "session": "<id>", "workstream": "billing", "stage": "build",
   "question": "Approve the invoice mockup, or change how the totals sit?",
   "options": ["Approve as it is", "Move totals above the line items"],
-  "since": 1793450000000, "reportedAt": 1793457000000, "link": "claude://...", "stale": false,
+  "since": 1793450000000, "link": "claude://...",
   "files": [{ "n": 0, "path": "docs/mockups/invoice-light.png", "kind": "Mockup", "change": "added", "picture": true }],
   "pr": { "label": "#14", "href": "https://github.com/<owner>/<repo>/pull/14" } }
 ```
@@ -54,7 +54,7 @@ The band's session file (format `v: 1`, `docs/superpowers/specs/2026-10-30-band-
 - `question` is `detail` without its `asks: ` prefix.
 - `files` comes from `branchFiles` for a registered workstream; an unregistered session or a missing worktree gets `[]`.
 - `pr` comes from the report's `pr`. It links when it is an `https://` URL, or `#N` with an `origin` remote on `github.com`; otherwise it is text. `none` or empty gives no PR row.
-- `reportedAt` is the report's `updatedAt`; `stale` is true when it is older than 30 minutes (the band's stale rule).
+- No entry is ever stale. The band writes nothing while a question is open, so a report older than 30 minutes does not mean the session is gone, and the overview never marks a waiting session stale either. The one-day cutoff above drops the reports nobody will come back to.
 
 ## The file route
 
@@ -68,7 +68,7 @@ The band's session file (format `v: 1`, `docs/superpowers/specs/2026-10-30-band-
 
 ## The page
 
-The prototype is the reference for every value it shows; the index, the stale and no-link cards, and the kept "opened" state are specified here only.
+The prototype is the reference for every value it shows; the index, the no-link card, and the kept "opened" state are specified here only.
 
 - **Title row:** `h1` "3 decisions waiting on you" ("decision" for one; requests count as decisions). The line under it: "**billing has waited longest, 2 h 10 m.** Oldest first. Each answer goes in its own session." No button in the title row.
 - **Index:** above 4 questions, a compact list under the title: workstream, the question cut to one line, the wait, each linking to its card.
@@ -80,7 +80,7 @@ The prototype is the reference for every value it shows; the index, the stale an
   - "Answer in billing", opening the session's `link`. The first card's button is filled; the others are outlined. One primary action per view.
 - **After a click:** the card dims and its button becomes "Opened in billing. It leaves the inbox once answered." Kept in `sessionStorage` per session and `waitingSince`, so a reload keeps it and a new question does not inherit it.
 - **No link:** the button becomes the text "No link to this session. Open it from the app's sidebar."
-- **Stale:** the band's outlined half circle replaces the triangle, and the wait line reads "No report for 42 min; the question may be answered already."
+- **A long wait:** no stale card. However old its report, a waiting question keeps the triangle and its wait, in vermilion past 2 hours, because the band writes nothing while a question is open.
 - **Empty:** `h1` "Nothing is waiting on you", the line "Every workstream is working on its own.", and a card: "When a workstream asks you something, its question and the files to look at show up here." with an outlined "Go to the overview".
 - **One column** below 900px: ask, evidence, then the button, so the files are seen before answering.
 - **Phone** below 640px: the wordmark, the freshness stamp and the three-way theme switch leave the top bar; one "Theme: System" button cycles System, Light and Dark; the freshness stamp moves under the title. Both thumbnails stay, side by side.
@@ -97,9 +97,9 @@ The prototype is the reference for every value it shows; the index, the stale an
 
 - **Band:** an open `AskUserQuestion` writes its options and `waitingSince`; closing it clears both; a `Status:` wait writes `[]` and keeps `waitingSince` across rewrites.
 - **branchFiles:** a seeded repository with a branch that adds a mockup, a screenshot, a spec, a plan, a source file and a deleted image gives exactly the four kept files, in order, with their kinds and changes.
-- **Snapshot:** waiting sessions only, oldest first; the `asks: ` prefix stripped; `stale` past 30 minutes; the PR link rules.
+- **Snapshot:** waiting sessions only, oldest first; the `asks: ` prefix stripped; a question waiting 3 hours with no report since stays, and a report a day old leaves; the PR link rules.
 - **File route:** serves a listed file's committed bytes; 404 for an unknown session or index and for any `path` parameter; the sandbox header on `html` and `svg`; 403 on a foreign `Host`.
-- **Page:** checked in a browser at 1440, 768 and 390, light and dark, with three questions, ten questions (the index), six options, eight files, a stale card, a card without a link, and none.
+- **Page:** checked in a browser at 1440, 768 and 390, light and dark, with three questions, ten questions (the index), six options, eight files, a card without a link, and none.
 
 ## Out of scope
 

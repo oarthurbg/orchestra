@@ -15,6 +15,10 @@ export type SessionFile = {
   detail: string
   stage: string
   pr: string
+  // The open AskUserQuestion's first question's labels; [] otherwise. Older files lack both fields.
+  options?: string[]
+  // When the state last became waiting; null while not waiting.
+  waitingSince?: string | null
   context: { tokens: number | null; window: number }
   limits: Limit[]
   // misses: forks that did not read the cache, so they were not counted as pings.

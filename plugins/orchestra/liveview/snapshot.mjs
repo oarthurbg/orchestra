@@ -20,7 +20,8 @@ export function parseRegistry(md) {
     const c = cells(line)
     if (c.length < 7 || c[0] === 'Workstream') continue
     const [branch = '', worktree = ''] = ticks(c[2])
-    if (!worktree) continue // separator and header rows have none
+    // Separator and header rows have no worktree; an unnamed row is no workstream, and the inbox trusts a registered name is non-empty.
+    if (!c[0] || !worktree) continue
     rows.push({ name: c[0], session: c[1], branch, worktree: worktree.replace(/\\/g, '/'), stage: c[6] })
   }
   return rows
@@ -254,17 +255,41 @@ export function placeQueued(names, openEnds, typical, now) {
   })
 }
 
+// Only a plain claude:// link reaches the page.
+const safeLink = link => (/^claude:\/\/[A-Za-z0-9._\/-]+$/.test(link ?? '') ? link : '')
+
 const sessionRow = (s, now) => ({
-  key: s.session, name: s.title || s.workstream || s.branch || s.session, link: /^claude:\/\/[A-Za-z0-9._\/-]+$/.test(s.link ?? '') ? s.link : '',
+  key: s.session, name: s.title || s.workstream || s.branch || s.session, link: safeLink(s.link),
   role: s.role, state: s.state, detail: s.detail ?? '', context: s.context?.tokens ?? null, stage: s.stage ?? '', pr: s.pr ?? '',
   ...attention(s, now), plan: null, tasks: [], done: 0, total: 0, eta: null, etaCalibrated: true, start: null, end: null,
 })
 
 const newest = xs => xs.reduce((a, b) => (!a || Date.parse(b.updatedAt) > Date.parse(a.updatedAt) ? b : a), null)
 
+const GITHUB = /(?:^|[@/])github\.com[/:]([\w.-]+\/[\w.-]+?)(?:\.git)?\/?$/
+
+// Every question a session waits on the owner to answer, oldest first; a missing waitingSince sorts last.
+function inboxOf(sessions, registry, workstreams, origin, now) {
+  const repo = GITHUB.exec(origin ?? '')?.[1]
+  const ms = iso => { const t = Date.parse(iso ?? ''); return Number.isFinite(t) ? t : null }
+  // A waiting report a day old belongs to a session nobody will come back to: it leaves the inbox.
+  // Never stale before that: the band writes nothing while a question is open, so an old report is no sign the session is gone.
+  return sessions.filter(s => s.state === 'waiting' && !(now - (ms(s.updatedAt) ?? now) > DAY)).map(s => {
+    const registered = registry.some(r => r.name === s.workstream)
+    const pr = !s.pr || s.pr === 'none' ? null
+      : { label: s.pr, href: /^https:\/\/\S+$/.test(s.pr) ? s.pr : repo && /^#\d+$/.test(s.pr) ? `https://github.com/${repo}/pull/${s.pr.slice(1)}` : '' }
+    return {
+      session: s.session, workstream: s.workstream || s.title || s.branch || s.session, stage: s.stage ?? '',
+      question: typeof s.detail === 'string' ? s.detail.replace(/^asks: /, '') : '', options: Array.isArray(s.options) ? s.options.filter(o => typeof o === 'string') : [],
+      since: ms(s.waitingSince), link: safeLink(s.link),
+      files: ((registered && workstreams[s.workstream]?.files) || []).map((f, n) => ({ n, ...f })), pr,
+    }
+  }).sort((a, b) => (a.since ?? Infinity) - (b.since ?? Infinity) || 0)
+}
+
 // Everything the page draws, from what sources.mjs gathered.
 export function buildSnapshot(input) {
-  const { now, project, sessions, registry, workstreams, history, events, merges, releases, queued } = input
+  const { now, project, sessions, registry, workstreams, history, events, merges, releases, queued, origin } = input
   const rows = []
   const listed = new Set()
   // Old maestro files and unregistered files no one updates would sit in "Needs you" forever.
@@ -329,5 +354,6 @@ export function buildSnapshot(input) {
     window, rows, queued: queue,
     rollout: { merges: inWindow(merges), releases: inWindow(releases), projected: planned.map(r => ({ name: r.name, at: r.end })) },
     etaBasis: history.length,
+    inbox: inboxOf(sessions, registry, workstreams, origin, now),
   }
 }
