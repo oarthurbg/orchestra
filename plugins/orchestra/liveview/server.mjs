@@ -31,9 +31,12 @@ const key = p => (process.platform === 'win32' ? path.resolve(p).toLowerCase() :
 const sameRoot = (a, b) => key(a) === key(b)
 const alive = pid => { try { process.kill(pid, 0); return true } catch (err) { return err.code === 'EPERM' } }
 
+// Only a loopback http url is ever fetched: liveview.json is in the project and may be planted.
+const loopback = url => /^http:\/\/(localhost|127\.0\.0\.1):\d+\/$/.test(url)
+
 // True when the server recorded in liveview.json is alive and answers ping for this root with that same pid.
 async function answers(info, root) {
-  if (!info?.pid || !info.url || !alive(info.pid)) return false
+  if (!info?.pid || !loopback(info.url) || !alive(info.pid)) return false
   try {
     const body = await (await fetch(new URL('api/ping', info.url), { signal: AbortSignal.timeout(PING_MS) })).json()
     return body.pid === info.pid && sameRoot(body.root, root)
@@ -45,7 +48,7 @@ async function answers(info, root) {
 // The URL of a live server for this root, or null.
 export async function liveUrl(root) {
   const info = readInfo(root)
-  if (!info?.url) return null
+  if (!loopback(info?.url)) return null
   try {
     const r = await fetch(new URL('api/ping', info.url), { signal: AbortSignal.timeout(1000) })
     const body = await r.json()

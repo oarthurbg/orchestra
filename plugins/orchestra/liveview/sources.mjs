@@ -70,7 +70,9 @@ export function firstParent(cwd, branch, since) {
 // Which plan a workstream follows: its note's Plan line, else the one plan file its branch adds.
 export function findPlan(worktree, name, integration) {
   const fromNote = planPathFromNote(readText(path.join(worktree, 'docs', 'workstreams', `${name}.md`)))
-  if (fromNote) return fromNote
+  // The note is versioned, so a cloned repo controls it: a plan path must stay inside the worktree.
+  const rel = fromNote && path.relative(worktree, path.resolve(worktree, fromNote))
+  if (fromNote && !path.isAbsolute(fromNote) && rel && !rel.startsWith('..') && !path.isAbsolute(rel)) return fromNote
   for (const base of integration ? [`origin/${integration}`, integration] : []) {
     const added = git(worktree, ['diff', '--name-only', '--diff-filter=A', `${base}...HEAD`, '--', PLANS])
     if (added === null) continue

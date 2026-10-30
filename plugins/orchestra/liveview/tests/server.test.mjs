@@ -183,6 +183,28 @@ test('a leftover liveview.json naming a live unrelated pid with a dead url is ov
   }
 })
 
+test('a liveview.json with a non-loopback url is stale and never fetched', async () => {
+  const root = fixture()
+  const d = decoy()
+  const realFetch = globalThis.fetch
+  const hosts = []
+  globalThis.fetch = (u, ...rest) => { hosts.push(new URL(u).host); return realFetch(u, ...rest) }
+  try {
+    fs.writeFileSync(infoPath(root), JSON.stringify({ url: 'http://example.com/', pid: d.pid }))
+    assert.equal(await liveUrl(root), null)
+    const s = await startServer({ root, port: PORT + 74, reader: reader(), auto: false, onIdle: () => {} })
+    try {
+      assert.deepEqual(JSON.parse(fs.readFileSync(infoPath(root), 'utf8')), { url: s.url, pid: process.pid })
+    } finally {
+      await s.close()
+    }
+    assert.ok(!hosts.includes('example.com'), hosts.join())
+  } finally {
+    globalThis.fetch = realFetch
+    d.kill()
+  }
+})
+
 test('two overlapping starts over a stale liveview.json leave one server', async () => {
   const root = fixture()
   const d = decoy()

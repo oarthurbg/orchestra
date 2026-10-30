@@ -5,7 +5,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
-import { TranscriptReader, appendHistory, findPlan, firstParent, gather, planVersions, readHistory, readSessions, seedHistory } from '../sources.mjs'
+import { TranscriptReader, appendHistory, findPlan, firstParent, gather, planVersions, readHistory, readSessions, readWorkstream, seedHistory } from '../sources.mjs'
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'liveview-'))
 const line = (id, at, input) => JSON.stringify({ type: 'assistant', timestamp: new Date(at).toISOString(), message: { id, model: 'claude-haiku-5-5', usage: { input_tokens: input } } })
@@ -78,6 +78,18 @@ test('planVersions and findPlan read a real git repository', () => {
   fs.mkdirSync(path.join(repo, 'docs', 'workstreams'))
   fs.writeFileSync(path.join(repo, 'docs', 'workstreams', 'billing.md'), 'Plan: `docs/superpowers/plans/other.md`, task 1')
   assert.equal(findPlan(repo, 'billing', 'develop'), 'docs/superpowers/plans/other.md')
+})
+
+test('a note plan path outside the worktree is not read', () => {
+  const base = tmp()
+  const repo = path.join(base, 'repo')
+  fs.mkdirSync(path.join(repo, 'docs', 'workstreams'), { recursive: true })
+  fs.writeFileSync(path.join(base, 'outside.md'), '### Task 1: A\n\n- [ ] step\n')
+  for (const p of ['../outside.md', path.join(base, 'outside.md')]) {
+    fs.writeFileSync(path.join(repo, 'docs', 'workstreams', 'billing.md'), `Plan: \`${p}\``)
+    assert.equal(findPlan(repo, 'billing', null), null)
+    assert.deepEqual(readWorkstream({ name: 'billing', worktree: repo }, null), {})
+  }
 })
 
 const repoAt = (dir, env = {}) => (...args) => execFileSync('git', args, { cwd: dir, stdio: 'ignore', env: { ...process.env, ...env } })
