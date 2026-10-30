@@ -140,9 +140,15 @@ describe('view', () => {
       ['auth', 'stale', 'no report yet'],
     ])
     expect([v.running, v.waiting]).toEqual([0, 0])
-    const waiting = [file({ session: 'a', workstream: 'billing', state: 'waiting', updatedAt: iso(STALE_MS + 60_000) })]
-    const w = buildView({ inProject: true, role: 'orchestrator', self: 'o', files: waiting, registry: rows, now: NOW, liveview: '' })
-    expect([w.running, w.waiting]).toEqual([0, 0])
+    // A session waiting on the owner is idle and stops writing: it is never stale.
+    const old = iso(2 * 3_600_000)
+    const files2 = [
+      file({ session: 'a', workstream: 'billing', state: 'running', updatedAt: old }),
+      file({ session: 'b', workstream: 'reports', state: 'waiting', updatedAt: old }),
+    ]
+    const w = buildView({ inProject: true, role: 'orchestrator', self: 'o', files: files2, registry: rows, now: NOW, liveview: '' })
+    expect([w.running, w.waiting]).toEqual([0, 1])
+    expect(w.rows.slice(0, 2).map(r => [r.name, r.shape, r.reason])).toEqual([['billing', 'half', 'stale'], ['reports', 'triangle', 'waiting on you']])
   })
 
   test('a workstream session always shows its own row', () => {

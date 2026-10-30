@@ -121,9 +121,9 @@ export function buildView(i: ViewInput): BandView {
   if (!i.inProject) return view
 
   const open = i.registry.map(r => ({ ws: r.workstream, f: newest(i.files.filter(f => f.workstream === r.workstream)) }))
-  const live = open.filter(o => o.f !== undefined && i.now - Date.parse(o.f.updatedAt) <= STALE_MS)
-  view.running = live.filter(o => o.f?.state === 'running').length
-  view.waiting = live.filter(o => o.f?.state === 'waiting').length
+  view.running = open.filter(o => o.f?.state === 'running' && i.now - Date.parse(o.f.updatedAt) <= STALE_MS).length
+  // A session waiting on the owner is idle and stops writing, so it never goes stale.
+  view.waiting = open.filter(o => o.f?.state === 'waiting').length
   const row = (f: SessionFile, name: string, shape: BandRow['shape'], reason: string, detail: string): BandRow =>
     ({ key: f.session, name, link: isSafeTarget(f.link) && f.link.startsWith('claude://') ? f.link : '', shape, reason, context: fmtK(f.context.tokens), detail })
 
