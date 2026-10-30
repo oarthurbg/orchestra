@@ -758,7 +758,7 @@ test('any cell of a row opens its session, and the week shows its reset or its r
   await ui.unmount()
 })
 
-test('a narrow band, as in a split view, keeps one line and adds a red line only while the week runs out', async ($, on) => {
+test('a narrow band, as in a split view, keeps one line, with the run-out time inline', async ($, on) => {
   const files: Record<string, string> = {
     [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY,
     [`${ROOT}/.orchestra/sessions/s2.json`]: report('s2', { workstream: 'reports', state: 'waiting' }),
@@ -773,20 +773,21 @@ test('a narrow band, as in a split view, keeps one line and adds a red line only
   let ui = await mount(60)
   // The name stays while it fits, beside the mark.
   expect(await ui.find({ type: 'Text', text: /^orchestra$/ })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /^10%$/ })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /% used/ })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /^10% used$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^resets / })).toBeUndefined()
   expect(await ui.find({ type: 'Text', text: /^\d+\/\d+$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /runs out/i })).toBeUndefined()
   await ui.unmount()
   await $.session.measure({ context: { tokens: 30_000, window: 1_000_000 }, rateLimits: week(95), changed: [] } as never)
   ui = await mount(60)
-  expect(await ui.find({ type: 'Text', text: /^Weekly limit runs out .+, before it resets$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^95% used$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^runs out \w{3} \d{2}:\d{2}$/ })).toBeDefined()
   await ui.unmount()
-  // Narrower still: no bars, "Wk", and the short warning.
+  // Narrower still: no bars and "Wk"; the run-out time stays.
   ui = await mount(40)
   expect(await ui.find({ type: 'Text', text: /^orchestra$/ })).toBeUndefined()
   expect(await ui.find({ type: 'Text', text: /^Wk$/ })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /^Runs out / })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^runs out / })).toBeDefined()
   for (const s of await ui.findAll({ type: 'Svg' })) expect(String(s.props.alt)).not.toMatch(/limit/)
   await ui.unmount()
 })

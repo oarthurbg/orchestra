@@ -228,15 +228,18 @@ export function freshestReading(sessions, kind) {
   return best
 }
 
-// Shape and reason, with the band's rules. An outlined half circle marks what is idle by accident: stale, unregistered, no session.
+// Role, mark and reason, with the band's rules (docs/BRAND.md): the role picks the shape, the mark how it is drawn.
+// Over 250k has no mark of its own: the page flags the context number. The reason says why a row needs the owner.
 export function attention(session, now) {
-  if (!session) return { shape: 'half-open', reason: 'no session' }
-  if (session.state === 'waiting') return { shape: 'triangle', reason: 'waiting' }
-  if ((session.context?.tokens ?? 0) >= BIG_CONTEXT) return { shape: 'square', reason: 'over 250k' }
-  if (now - Date.parse(session.updatedAt) > STALE_MS) return { shape: 'half-open', reason: 'stale' }
-  if (session.role === 'unregistered') return { shape: 'half-open', reason: 'unregistered' }
-  if (session.state === 'running') return { shape: 'circle', reason: 'running' }
-  return { shape: 'half', reason: 'idle' }
+  if (!session) return { role: 'principal', mark: 'stale', reason: 'no session' }
+  const role = session.role === 'maestro' ? 'maestro' : 'principal'
+  const stale = session.role === 'unregistered' || now - Date.parse(session.updatedAt) > STALE_MS
+  const mark = session.state === 'waiting' ? 'waiting' : stale ? 'stale' : session.state === 'running' ? 'running' : 'idle'
+  const reason = session.state === 'waiting' ? 'waiting'
+    : (session.context?.tokens ?? 0) >= BIG_CONTEXT ? 'over 250k'
+    : now - Date.parse(session.updatedAt) > STALE_MS ? 'stale'
+    : session.role === 'unregistered' ? 'unregistered' : mark
+  return { role, mark, reason }
 }
 
 // Calendar: from the oldest open start (at most 3 days back) to the latest end, at least one day wide.

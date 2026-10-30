@@ -151,12 +151,14 @@ test('freshestReading picks the newest session file', () => {
 
 test('attention follows the band rules', () => {
   const s = over => ({ role: 'principal', state: 'idle', context: { tokens: 1000 }, updatedAt: new Date(NOW).toISOString(), ...over })
-  assert.equal(attention(s({ state: 'waiting', context: { tokens: 300_000 } }), NOW).shape, 'triangle')
-  assert.equal(attention(s({ context: { tokens: 250_000 } }), NOW).reason, 'over 250k')
+  assert.equal(attention(s({ state: 'waiting', context: { tokens: 300_000 } }), NOW).mark, 'waiting')
+  // Over 250k is a reason, not a mark: the shape still shows the state.
+  assert.deepEqual(attention(s({ context: { tokens: 250_000 } }), NOW), { role: 'principal', mark: 'idle', reason: 'over 250k' })
   assert.equal(attention(s({ updatedAt: new Date(NOW - 31 * MIN).toISOString() }), NOW).reason, 'stale')
-  assert.deepEqual(attention(s({ role: 'unregistered' }), NOW), { shape: 'half-open', reason: 'unregistered' })
-  assert.equal(attention(s({}), NOW).shape, 'half')
-  assert.equal(attention(s({ state: 'running' }), NOW).shape, 'circle')
+  assert.deepEqual(attention(s({ role: 'unregistered' }), NOW), { role: 'principal', mark: 'stale', reason: 'unregistered' })
+  assert.equal(attention(s({}), NOW).mark, 'idle')
+  assert.equal(attention(s({ state: 'running' }), NOW).mark, 'running')
+  assert.equal(attention(s({ role: 'maestro' }), NOW).role, 'maestro')
   assert.equal(attention(null, NOW).reason, 'no session')
 })
 
@@ -186,7 +188,7 @@ test('buildSnapshot puts the maestro first, then workstreams with tasks and ETA,
   })
   assert.deepEqual(snap.rows.map(r => r.name), ['Maestro', 'billing', 'reports', 'fix-typo'])
   const billing = snap.rows[1]
-  assert.equal(billing.shape, 'triangle')
+  assert.equal(billing.mark, 'waiting')
   assert.equal(billing.link, '', 'only claude:// links pass')
   assert.equal(snap.rows[0].link, 'claude://claude.ai/epitaxy/o')
   assert.equal(snap.rows[3].link, '', 'a claude:// string with quotes is dropped')
@@ -209,7 +211,7 @@ test('buildSnapshot reads the newest session file of a workstream', () => {
     now: NOW, project: 'repo', sessions: [mk('old', NOW - HOUR, 'idle', 260_000), mk('new', NOW, 'running', 70_000)], registry: parseRegistry(REGISTRY).slice(0, 1),
     workstreams: {}, history: [], events: [], merges: [], releases: [], queued: [],
   })
-  assert.deepEqual([snap.rows[0].shape, snap.rows[0].context], ['circle', 70_000])
+  assert.deepEqual([snap.rows[0].role, snap.rows[0].mark, snap.rows[0].context], ['principal', 'running', 70_000])
 })
 
 test('buildSnapshot shows only the newest maestro file and drops stale unregistered files', () => {

@@ -23,22 +23,22 @@ orchestra draws a band above the prompt in every Claude Code session. In the mae
 ## Header
 
 - **The orchestra mark and name.**
-- **5h** and **Weekly**: the plan limits, each with a bar, the percentage used and the reset time. When the week will run out before it resets at the current pace, the weekly limit turns red and says when (`runs out Sat 18:20`).
+- **5h** and **Weekly**: the plan limits, each with a bar, the percentage used and the reset time. When the week will run out before it resets at the current pace, the weekly limit turns red and says when (`runs out Sat 18:20`). In a narrow window, as in a split view, the line keeps the percentages and the run-out time and drops the reset times.
 - **`3 of 5 running`**: how many workstreams are running, out of how many are registered.
 - **The arrow** shows when more than two rows are due. It opens all of them and closes them again, and the band remembers your choice.
 
 ## Rows
 
-One row per workstream that needs you, most urgent first. Each row says what to do:
+One row per workstream that needs you, most urgent first. Every row is a principal's session, so its symbol is the vermilion square, drawn to show its state (see [Symbols](BRAND.md#symbols)):
 
-| Shape | Status | When | Detail |
+| Square | Status | When | Detail |
 | --- | --- | --- | --- |
-| ▲ yellow triangle | `waiting` | The session asked a question and is waiting on the owner | `answer:` and the question it asked |
-| ■ red square | `over 250k` | Its context passed 250k tokens | `clear context at the next wave end` |
-| ◠ hollow half circle | `stale` | Its report is more than 30 minutes old | `no report for 42 min; open it to check` |
-| ◠ hollow half circle | `unregistered` | A worktree session that is not in `.orchestra/workstreams.md` | `not in workstreams.md; register or close it` |
+| Over a heavy rule | `waiting` | The session asked a question and is waiting on the owner | `answer:` and the question it asked |
+| Solid or outlined, context in bold red | `running` or `idle` | Its context passed 250k tokens | `over 250k: clear context at the next wave end` |
+| Grey outline | `stale` | Its report is more than 30 minutes old | `no report for 42 min; open it to check` |
+| Grey outline | `unregistered` | A worktree session that is not in `.orchestra/workstreams.md` | `not in workstreams.md; register or close it` |
 
-Columns: workstream (the session's title), status, context size and detail. A `waiting` row is bold. In the desktop app every cell of a row opens that session.
+Columns: workstream (the session's title), status, context size and detail. A `waiting` row is bold. In the desktop app every cell of a row opens that session. The terminal draws the square as `■` or `□`, underlined while waiting.
 
 The band shows two rows and a count of the rest (`+2 more: stale, unregistered`). With nothing due it says `Nothing needs you.`, and before the first workstream it says `No workstreams yet. Start one with /orchestra:start-workstream.`
 

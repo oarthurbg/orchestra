@@ -143,10 +143,10 @@ describe('view', () => {
     const v = buildView({ inProject: true, role: 'maestro', self: 'o', files, registry: rows, now: NOW, liveview: '' })
     expect([v.fiveHour?.pct, v.week?.pct, v.week?.runOut]).toEqual([42, 80, NOW + 86_400_000])
     expect([v.role, v.running, v.waiting, v.total]).toEqual(['maestro', 1, 1, 3])
-    expect(v.rows.map(r => [r.name, r.shape, r.status, r.detail])).toEqual([
-      ['Reports', 'triangle', 'waiting', 'answer: pick chart library'],
-      ['auth', 'square', 'over 250k', 'clear context at the next wave end'],
-      ['old-try', 'hollow', 'unregistered', 'not in workstreams.md; register or close it'],
+    expect(v.rows.map(r => [r.name, r.mark, r.status, r.big, r.detail])).toEqual([
+      ['Reports', 'waiting', 'waiting', false, 'answer: pick chart library'],
+      ['auth', 'idle', 'idle', true, 'over 250k: clear context at the next wave end'],
+      ['old-try', 'stale', 'unregistered', false, 'not in workstreams.md; register or close it'],
     ])
     expect(v.rows[0]?.link).toBe('claude://claude.ai/epitaxy/local_b')
     expect(v.rows[1]?.context).toBe('254k')
@@ -170,18 +170,18 @@ describe('view', () => {
     const w = buildView({ inProject: true, role: 'maestro', self: 'o', files: files2, registry: rows, now: NOW, liveview: '' })
     expect([w.running, w.waiting]).toEqual([0, 1])
     // Waiting sorts first, ahead of the registry's order.
-    expect(w.rows.slice(0, 2).map(r => [r.name, r.shape, r.status])).toEqual([['reports', 'triangle', 'waiting'], ['billing', 'hollow', 'stale']])
+    expect(w.rows.slice(0, 2).map(r => [r.name, r.mark, r.status])).toEqual([['reports', 'waiting', 'waiting'], ['billing', 'stale', 'stale']])
   })
 
   test('a principal session always shows its own row', () => {
     const me = file({ session: 'me', workstream: 'billing', stage: 'plan, task 4 of 9', warm: { pings: 2, last: iso(1000) } })
     const v = buildView({ inProject: true, role: 'principal', self: 'me', files: [me], registry: rows, now: NOW, liveview: '' })
-    expect(v.rows).toEqual([{ key: 'me', name: 'billing', link: '', shape: 'circle', status: 'running', context: '50k', detail: 'plan, task 4 of 9' }])
+    expect(v.rows).toEqual([{ key: 'me', name: 'billing', link: '', mark: 'running', status: 'running', context: '50k', big: false, detail: 'plan, task 4 of 9' }])
     const own = (over: Partial<SessionFile>) => buildView({ inProject: true, role: 'principal', self: 'me', files: [{ ...me, ...over }], registry: rows, now: NOW, liveview: '' }).rows[0]
-    expect(own({ state: 'idle' })).toMatchObject({ shape: 'half', status: 'idle' })
-    expect(own({ state: 'waiting', detail: 'asks: which port?' })).toMatchObject({ shape: 'triangle', status: 'waiting', detail: 'answer: which port?' })
+    expect(own({ state: 'idle' })).toMatchObject({ mark: 'idle', status: 'idle' })
+    expect(own({ state: 'waiting', detail: 'asks: which port?' })).toMatchObject({ mark: 'waiting', status: 'waiting', detail: 'answer: which port?' })
     expect(own({ state: 'waiting', detail: '' })?.detail).toBe('answer the open question')
-    expect(own({ context: { tokens: 260_000, window: 1_000_000 } })).toMatchObject({ shape: 'square', status: 'over 250k' })
+    expect(own({ context: { tokens: 260_000, window: 1_000_000 } })).toMatchObject({ mark: 'running', status: 'running', big: true })
   })
 
   test('rows sort waiting, then over 250k, then stale, then unregistered', () => {
@@ -192,7 +192,7 @@ describe('view', () => {
       file({ session: 'c', workstream: 'auth', state: 'waiting' }),
     ]
     const v = buildView({ inProject: true, role: 'maestro', self: 'o', files, registry: rows, now: NOW, liveview: '' })
-    expect(v.rows.map(r => r.status)).toEqual(['waiting', 'over 250k', 'stale', 'unregistered'])
+    expect(v.rows.map(r => [r.name, r.status])).toEqual([['auth', 'waiting'], ['reports', 'running'], ['billing', 'stale'], ['stray', 'unregistered']])
   })
 
   test('the week carries its reset, and a run-out only when it lands before the reset', () => {

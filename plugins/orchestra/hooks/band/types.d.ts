@@ -30,16 +30,19 @@ export type RegistryRow = { workstream: string; worktree: string }
 
 export type StatusLine = { state: State | null; stage: string; pr: string; waitingOn: string }
 
-// half: idle (filled); hollow: stale, unregistered or no report (outlined).
-export type Shape = 'circle' | 'triangle' | 'square' | 'half' | 'hollow'
+// How a row's role shape is drawn (docs/BRAND.md): solid, outlined, over a heavy rule, or outlined in grey.
+// stale also covers unregistered and no report.
+export type Mark = 'running' | 'idle' | 'waiting' | 'stale'
 
 export type BandRow = {
   key: string
   name: string
   link: string
-  shape: Shape
+  mark: Mark
   status: string
   context: string
+  // 250k tokens or more: the context number is flagged.
+  big: boolean
   detail: string
 }
 
