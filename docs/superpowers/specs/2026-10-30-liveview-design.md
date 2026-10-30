@@ -130,7 +130,7 @@ The approved prototype was built with taste-skill (app style `achromatic-ledger`
     - a y-scale at 0, 25, 50, 75 and 100% with faint gridlines;
     - the actual line solid cobalt, the projection dashed to the run-out (100%) or to the reset, with its end labelled;
     - a "Now N%" line and the reading as a dot. A run-out close to now is labelled to the right of its point, clear of "Now N%".
-- **Workstreams card:** one row per session or registered workstream (the maestro, the session that conducts the others and writes role `maestro`, first; unregistered last). Columns: shape, name, context, stage, PR ("none" when a plan has no PR yet), a "done of total · ETA" button, and the timeline track, 24px apart.
+- **Workstreams card:** one row per session or registered workstream (the maestro, the session that conducts the others and writes role `maestro`, first; then each registered workstream, whose session writes role `principal`; unregistered last). Columns: shape, name, context, stage, PR ("none" when a plan has no PR yet), a "done of total · ETA" button, and the timeline track, 24px apart.
   - **Shapes, as in the band:**
     - triangle saffron: waiting;
     - square vermilion: 250k or more;
@@ -196,7 +196,7 @@ The page always draws and labels what is missing; nothing takes the server down.
   - a busy port moves to the next;
   - `liveview.json` is written and removed on SIGTERM;
   - the idle exit fires, with an injected clock.
-- **Band addition:** engine tests: a maestro session calls `$.process.run` once with `--detach`; a workstream session never does.
+- **Band addition:** engine tests: a maestro session calls `$.process.run` once with `--detach`; a principal session never does.
 - **Page:** taste-skill's `lint.mjs --app` and `inspect.mjs --app` (0 FAIL), impeccable's detector (no findings), and a Playwright pass:
   - the disclosure opens and closes by click and keyboard, and keeps focus across the 5-second redraws;
   - no row is a `role="button"` around a link;
