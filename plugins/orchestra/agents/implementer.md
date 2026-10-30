@@ -26,7 +26,7 @@ Rules:
 - Commit with `git add <path>` only (never `git add -A` or `git add .`), and check `git diff --cached --stat` before committing.
 - Commit at the end, with the trailer from "Project settings". Never commit on the integration or production branch.
 
-Browser check (only when the task touches a screen and "Project settings" has a dev server; otherwise skip it):
+Browser check (only when the task touches a screen and "Project settings" has a dev server; otherwise skip it): Use `playwright-cli` (skill `playwright-cli`) or the browser tool you have; run `playwright-cli` from a folder outside the repository (it writes `.playwright-cli/` to the current folder) with its own session name (`-s=<workstream>`).
 1. Start the dev server on your workstream's port if it is not running.
 2. Sign in only the way "Project settings" describes (a test user and a saved session file outside the repository). If it is not set up, stop and say so. Never type real credentials. If a login is refused, retry once at most.
 3. Open the screen in light and dark themes, take screenshots, and measure what the task asks for. Keep screenshots outside the repository.

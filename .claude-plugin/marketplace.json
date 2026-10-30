@@ -63,6 +63,14 @@
       "homepage": "https://github.com/cloudflare/security-audit-skill",
       "license": "MIT",
       "category": "security"
+    },
+    {
+      "name": "playwright-cli",
+      "source": { "source": "github", "repo": "microsoft/playwright-cli" },
+      "description": "Upstream: Microsoft (microsoft/playwright-cli). Browser checks and screenshots from the command line. Needs the CLI: npm install -g @playwright/cli@latest.",
+      "homepage": "https://github.com/microsoft/playwright-cli",
+      "license": "Apache-2.0",
+      "category": "testing"
     }
   ]
 }

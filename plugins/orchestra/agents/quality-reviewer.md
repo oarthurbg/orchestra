@@ -21,7 +21,7 @@ Look for, in order of importance:
 4. Tests that do not test what they claim.
 5. Maintenance: oversized files, mixed responsibilities, misleading names, divergence from the rest of the code.
 
-Browser check (only when the task touches a screen and "Project settings" has a dev server; you still do not edit the repository, you only open the app and look):
+Browser check (only when the task touches a screen and "Project settings" has a dev server; you still do not edit the repository, you only open the app and look): Use `playwright-cli` (skill `playwright-cli`) or the browser tool you have; run `playwright-cli` from a folder outside the repository (it writes `.playwright-cli/` to the current folder) with its own session name (`-s=<workstream>`).
 1. Start the dev server on the workstream's port if it is not running.
 2. Sign in only the way "Project settings" describes. If it is not set up, stop and say so. Never type real credentials. If a login is refused, retry once at most.
 3. Open the screen in light and dark themes, take screenshots outside the repository, and measure what the task asks for.

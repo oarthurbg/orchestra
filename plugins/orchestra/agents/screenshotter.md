@@ -12,7 +12,7 @@ Ponytail mode: full.
 Rules:
 - Run the app from that worktree with the "Dev server" command from "Project settings", on its own port (the one in the prompt). If the project has a capture copy ("Test data" in "Project settings"), point the app at it so screens show realistic data; otherwise use the workstream's test data. Never write to real or dev data.
 - Sign in without typing a password, only with the saved session "Project settings" describes. If the session is not valid, stop and say so (only the orchestrator creates the test user).
-- Run browser tooling from a folder outside the repository, with its own named session if the tool supports it, and save screenshots outside the repository.
+- Use `playwright-cli` (skill `playwright-cli`) or the browser tool you have. Run it from a folder outside the repository, with its own session name (`-s=<workstream>`), and save screenshots outside the repository.
 - For each screen in the prompt: light and dark theme, wide and narrow width, and the empty, loading and error states when the screen has them.
 - Do not edit code, do not commit, do not use `git stash`. Stop the server you started when you finish.
 

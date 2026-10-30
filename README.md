@@ -53,11 +53,12 @@ Then install the plugins the workflow uses. This marketplace lists them, fetched
 /plugin install frontend-design@orchestra
 /plugin install design@orchestra
 /plugin install security-audit@orchestra
+/plugin install playwright-cli@orchestra
 ```
 
 Skip any you already have from another marketplace (for example `superpowers@claude-plugins-official`): two copies of one plugin load duplicate skills. From a shell, the same steps are `claude plugin marketplace add oarthurbg/orchestra` and `claude plugin install <name>@orchestra`.
 
-`dataviz` (chart and dashboard design) is built into recent Claude Code versions, so there is nothing to install. If you already added `security-audit` by hand to `~/.claude/skills`, skip its plugin. `claude-security` is an optional deep scan of finished code before a release.
+`dataviz` (chart and dashboard design) is built into recent Claude Code versions, so there is nothing to install. If you already added `security-audit` or `playwright-cli` by hand to `~/.claude/skills`, skip their plugins. `playwright-cli` is only for apps with a web UI, and it also needs the CLI itself: `npm install -g @playwright/cli@latest`. `claude-security` is an optional deep scan of finished code before a release.
 
 Then, in your project:
 
@@ -93,6 +94,7 @@ orchestra only decides where each of these enters the flow. All credit for the s
 - [frontend-design](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/frontend-design) by Anthropic: visual direction for mockups. Apache-2.0.
 - [design](https://github.com/anthropics/knowledge-work-plugins/tree/main/design) by Anthropic (knowledge-work plugins): design critique and accessibility review. Apache-2.0.
 - [security-audit](https://github.com/cloudflare/security-audit-skill) by Cloudflare: multi-phase security audits with verified findings. MIT.
+- [playwright-cli](https://github.com/microsoft/playwright-cli) by Microsoft: browser checks and screenshots from the command line. Apache-2.0.
 
 ## License
 
