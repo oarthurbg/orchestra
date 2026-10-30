@@ -125,6 +125,16 @@ If a ping finds the cache already gone, it is not counted as a ping, pings stop 
 
 The band shares its slot with other mods and draws theirs beneath it. If you use ponytail and prefer one band, run `/ponytail band` to hide ponytail's own: orchestra's footer then shows ponytail's level switch (`off lite full ultra`), which runs the same `/ponytail` command you would type. ponytail's level is one flag for every session (`~/.claude/.ponytail-active`): switching it in one session switches all of them, while each orchestra agent's per-stage mode stays in its own prompt.
 
+## The liveview
+
+A local page for the project: plan limits with a projection to the reset, what needs you, and every workstream's progress, ETA and timeline. It runs as a plain Node process (Node 18 or newer) and uses no LLM tokens. The band starts it when a maestro session opens and shows a `Liveview` button; `/orchestra:liveview` starts it by hand and `/orchestra:liveview stop` stops it. It stops on its own after 30 minutes with no session activity.
+
+- It listens on `127.0.0.1` only, from port 4317.
+- Progress comes from the plan checkboxes. ETAs come from how long past tasks with the same agent and risk took, measured from the commits that ticked them, and are marked `?` until there are 3 such tasks.
+- The limit projection reads token counts (never message content) from Claude Code's transcripts for every project on this machine, because plan limits are per account, and calibrates them on the band's latest limit reading.
+
+<img alt="The liveview, light" src="assets/brand/liveview-light.png" width="720">
+
 ## Recommended settings
 
 - **Bypass permissions, per project.** With 4 to 6 sessions and their subagents, approval prompts would stall the work all day, so orchestra is meant to run with the permission mode set to bypass, in the project only: the desktop app's permission-mode picker per session, or `"permissions": { "defaultMode": "bypassPermissions" }` in the project's `.claude/settings.local.json` (not in your global settings). Claude Code then never stops to ask, so these take over as the gates:

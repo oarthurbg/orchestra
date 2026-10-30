@@ -22,6 +22,8 @@ First step: confirm what a mod can read directly (with the plugin-authoring skil
 
 ### 2. A localhost dashboard
 
+Designed: [`docs/superpowers/specs/2026-10-30-liveview-design.md`](superpowers/specs/2026-10-30-liveview-design.md).
+
 A plain local process that uses zero LLM tokens to stay live. Shows:
 - active sessions;
 - each workstream's plan progress, parsed from the plan checkboxes;
@@ -29,7 +31,7 @@ A plain local process that uses zero LLM tokens to stay live. Shows:
 - a timeline and the rollout plan;
 - a weekly-limit projection from the token usage in Claude Code's on-disk transcripts, calibrated by the last plan-limit % snapshot.
 
-The only data not on disk (plan-limit % and the official session list) comes from a `status.json` the maestro writes when it already checks progress. Writing it never costs an extra call.
+Everything comes from files on disk: the band's session files carry the plan-limit readings and the session list.
 
 ### 3. A single decision inbox
 

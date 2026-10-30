@@ -25,6 +25,7 @@ All nine, shared with the maestro: `explorer`, `planner`, `implementer`, `implem
 ## Rules
 
 - **Spec first.** If you or a subagent find the spec wrong or incomplete, stop: fix the spec (and record it in the decisions log), then the plan, then the code.
+- **Tick the plan.** When a task passes its reviews, tick its checkboxes in the plan file in that task's last commit. The liveview reads progress from the ticks and learns task durations from the commits that made them.
 - **Modes:** switch your own ponytail mode per stage (`ponytail:ponytail` with `lite` or `ultra`, or "stop ponytail") and state the mode, model and skills in every subagent briefing.
 - **Parallelism:** at most 2 tasks at once. Run plan tasks in parallel only with `superpowers:dispatching-parallel-agents`, after checking they touch no shared files, each with a self-contained briefing. Use it too for 2 or more independent failures. Flaky or "unstable" failures get `superpowers:systematic-debugging`.
 - **Your resources:** your own worktree, your own isolated test data if the project keeps data ("Test data" in "Project settings", skill `orchestra:test-databases`), your own dev server port if it has one. Tests never touch real or dev data. Tell subagents never to run `git stash` and to commit with `git add <path>` only.
