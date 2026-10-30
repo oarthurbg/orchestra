@@ -373,7 +373,43 @@ export const register: Register = (on, options) => {
       </Box>
     )
 
-    const header = (
+    const show5 = v.fiveHour !== null || v.inProject
+    const showWeek = v.week !== null || v.inProject
+    const counted = maestro && v.total > 0
+    const toggleButton = maestro && v.rows.length > 2 && <Button key="orchestra-toggle" label={isOpen ? '▾' : '▴'} onPress={toggle} />
+    // Roughly the cells the one-line header takes (a bar is about 6); below that, as in a split view, it goes compact.
+    const cells = (label: string, l: { pct: number } | null, tail: string) => label.length + (l === null ? 2 : 8 + `${l.pct}% used`.length + (tail ? tail.length + 1 : 0))
+    const wide = 16 + (show5 ? cells('5h', v.fiveHour, fiveTail) : 0) + (showWeek ? 3 + cells('Weekly', v.week, weekTail) : 0)
+      + (counted ? `${v.running} of ${v.total} running`.length + 1 : 0) + (toggleButton ? 4 : 0)
+    const narrow = e.props.bodyColumns < wide
+    // Narrower still, the bars go and "Weekly" shortens.
+    const tight = e.props.bodyColumns < 48
+    const short = (label: string, l: { pct: number } | null, alarm: boolean) => (
+      <Box flexDirection="row" alignItems="center" gap={1}>
+        <Text size="footnote" dimColor>{label}</Text>
+        {l === null ? <Text size="footnote" dimColor>-</Text> : !tight && pic(bar(l.pct, alarm), `${l.pct}% of the ${label} limit`, 44, 4)}
+        {l !== null && <Text size="footnote" color={alarm ? 'error' : undefined}>{l.pct}%</Text>}
+      </Box>
+    )
+
+    const header = narrow ? (
+      <Box flexDirection="column">
+        <Box flexDirection="row" alignItems="center" gap={2}>
+          {desktop ? pic(MARK, 'orchestra mark', 20, 20) : <Text bold>orchestra</Text>}
+          {show5 && short('5h', v.fiveHour, false)}
+          {showWeek && short(tight ? 'Wk' : 'Weekly', v.week, runOutAt !== null)}
+          <Box width={0} flexGrow={1} />
+          {counted && <Text size="footnote" dimColor>{v.running}/{v.total}</Text>}
+          {toggleButton}
+        </Box>
+        {/* The run-out warning keeps its time on a line of its own, only while the week runs out. */}
+        {runOutAt !== null && (
+          <Box paddingLeft={desktop ? 4 : 0}>
+            <Text size="footnote" color="error">{tight ? `Runs out ${dayTime(runOutAt)}` : `Weekly limit runs out ${dayTime(runOutAt)}, before it resets`}</Text>
+          </Box>
+        )}
+      </Box>
+    ) : (
       <Box flexDirection="row" alignItems="center">
         {/* The ends keep their text's width and two equal spacers centre the limits between them. */}
         <Box flexShrink={0} flexDirection="row" alignItems="center" gap={1}>
@@ -382,13 +418,13 @@ export const register: Register = (on, options) => {
         </Box>
         <Box width={0} flexGrow={1} />
         <Box flexDirection="row" alignItems="center" gap={3} flexShrink={1} flexWrap="wrap" justifyContent="center">
-          {(v.fiveHour !== null || v.inProject) && limit('5h', v.fiveHour, fiveTail, false)}
-          {(v.week !== null || v.inProject) && limit('Weekly', v.week, weekTail, runOutAt !== null)}
+          {show5 && limit('5h', v.fiveHour, fiveTail, false)}
+          {showWeek && limit('Weekly', v.week, weekTail, runOutAt !== null)}
         </Box>
         <Box width={0} flexGrow={1} />
         <Box flexShrink={0} flexDirection="row" alignItems="center" gap={1}>
-          {maestro && v.total > 0 && <Text size="footnote" dimColor>{v.running} of {v.total} running</Text>}
-          {maestro && v.rows.length > 2 && <Button key="orchestra-toggle" label={isOpen ? '▾' : '▴'} onPress={toggle} />}
+          {counted && <Text size="footnote" dimColor>{v.running} of {v.total} running</Text>}
+          {toggleButton}
         </Box>
       </Box>
     )
