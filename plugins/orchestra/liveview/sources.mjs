@@ -24,6 +24,21 @@ export function git(cwd, args) {
   }
 }
 
+// A committed file's size at HEAD, or null when git cannot read it.
+export function committedSize(worktree, file) {
+  const out = git(worktree, ['cat-file', '-s', `HEAD:${file}`])
+  return out === null ? null : Number(out.trim())
+}
+
+// A committed file's bytes at HEAD, or null. Never the copy on disk, which may hold uncommitted work.
+export function committedBytes(worktree, file, max) {
+  try {
+    return execFileSync('git', ['show', `HEAD:${file}`], { cwd: worktree, stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: max + 1, timeout: 10_000, windowsHide: true })
+  } catch {
+    return null
+  }
+}
+
 // Session files with the band's format. A file that fails to parse keeps its last good reading.
 const lastGood = new Map()
 export function readSessions(main) {

@@ -10,7 +10,7 @@ import http from 'node:http'
 import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
-import { TranscriptReader, appendHistory, gather, readHistory, readSessions, seedHistory } from './sources.mjs'
+import { TranscriptReader, appendHistory, committedBytes, committedSize, gather, readHistory, readSessions, seedHistory } from './sources.mjs'
 import { MIN, buildSnapshot, timedTasks } from './snapshot.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
@@ -18,6 +18,8 @@ export const FIRST_PORT = 4317
 export const PORT_TRIES = 21
 export const TICK_MS = 5000
 export const IDLE_MS = 30 * MIN
+export const FILE_MAX = 20 * 1024 * 1024
+const TYPES = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif', webp: 'image/webp', svg: 'image/svg+xml', pdf: 'application/pdf', html: 'text/html; charset=utf-8', md: 'text/plain; charset=utf-8' }
 // Outlasts a first scan of the transcripts, during which a server cannot answer ping.
 const PING_MS = 30_000
 
@@ -73,9 +75,9 @@ function listen(server, port, last) {
   })
 }
 
-// Starts the server. Options exist for tests: port, clock, tick, idle limit, transcript folder, idle action.
+// Starts the server. Options exist for tests: port, clock, tick, idle limit, file size cap, transcript folder, idle action.
 export async function startServer({
-  root, port = FIRST_PORT, now = Date.now, tickMs = TICK_MS, idleMs = IDLE_MS,
+  root, port = FIRST_PORT, now = Date.now, tickMs = TICK_MS, idleMs = IDLE_MS, fileMax = FILE_MAX,
   reader = new TranscriptReader(), onIdle = () => process.exit(0), auto = true,
 }) {
   root = path.resolve(root)
@@ -83,6 +85,7 @@ export async function startServer({
   const startedAt = now()
   let history = appendHistory(root, readHistory(root), seedHistory(root))
   let snapshot = null
+  let registry = []
   let bound = 0
   let idle = false
 
@@ -93,6 +96,7 @@ export async function startServer({
       history = appendHistory(root, history, live)
       input.history = history
       snapshot = buildSnapshot(input)
+      registry = input.registry
     } catch (err) {
       if (snapshot) snapshot.staleSince ??= now()
       else snapshot = { v: 1, error: String(err?.message ?? err), staleSince: now(), rows: [] }
@@ -104,6 +108,28 @@ export async function startServer({
     }
   }
 
+  // File n of a waiting session's list in the latest snapshot. No path ever comes from the request.
+  const serveFile = (query, res) => {
+    const n = query.get('n') ?? ''
+    const known = [...query.keys()].every(k => k === 's' || k === 'n') && /^\d+$/.test(n)
+    const entry = known ? snapshot?.inbox?.find(q => q.session === query.get('s')) : undefined
+    const f = entry?.files[Number(n)]
+    // Files exist only for a registered workstream, so entry.workstream is its registry name.
+    // gather keeps the last row of a repeated name, so findLast reads from the worktree the files came from.
+    const worktree = f ? registry.findLast(r => r.name === entry.workstream)?.worktree : undefined
+    const size = worktree ? committedSize(worktree, f.path) : null
+    if (size === null) { res.writeHead(404).end('not found'); return }
+    if (size > fileMax) { res.writeHead(413).end('too large'); return }
+    const bytes = committedBytes(worktree, f.path, fileMax)
+    if (!bytes) { res.writeHead(404).end('not found'); return }
+    const ext = f.path.slice(f.path.lastIndexOf('.') + 1).toLowerCase()
+    // A sandboxed page or drawing runs in an opaque origin, so its scripts cannot read the liveview's API.
+    res.writeHead(200, {
+      'content-type': TYPES[ext] ?? 'application/octet-stream', 'x-content-type-options': 'nosniff', 'cache-control': 'no-store',
+      ...(ext === 'html' || ext === 'svg' ? { 'content-security-policy': 'sandbox allow-scripts' } : {}),
+    }).end(bytes)
+  }
+
   const server = http.createServer((req, res) => {
     const host = req.headers.host ?? ''
     if (host !== `localhost:${bound}` && host !== `127.0.0.1:${bound}`) {
@@ -111,12 +137,14 @@ export async function startServer({
       return
     }
     const send = (type, body) => res.writeHead(200, { 'content-type': type, 'cache-control': 'no-store' }).end(body)
-    let route
-    try { route = new URL(req.url ?? '/', 'http://localhost').pathname } catch { res.writeHead(400).end('bad request'); return }
+    let url
+    try { url = new URL(req.url ?? '/', 'http://localhost') } catch { res.writeHead(400).end('bad request'); return }
+    const route = url.pathname
     if (req.method !== 'GET') res.writeHead(405).end()
-    else if (route === '/') send('text/html; charset=utf-8', page)
+    else if (route === '/' || route === '/inbox') send('text/html; charset=utf-8', page)
     else if (route === '/api/snapshot') send('application/json', JSON.stringify(snapshot))
     else if (route === '/api/ping') send('application/json', JSON.stringify({ root, pid: process.pid }))
+    else if (route === '/api/file') serveFile(url.searchParams, res)
     else res.writeHead(404).end('not found')
   })
 
