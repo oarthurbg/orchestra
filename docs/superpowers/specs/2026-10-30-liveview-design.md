@@ -4,7 +4,7 @@ Phase 2, item 2 of `docs/ROADMAP.md`. Brainstormed with the owner on 2026-10-30.
 
 ## Goal
 
-A localhost page that shows, for one orchestra project: the active sessions, each workstream's plan progress, an ETA per task and per workstream, a timeline with the rollout, and a projection of the weekly plan limit. It is a plain local process that uses zero LLM tokens to stay live.
+A localhost page that shows, for one orchestra project: the active sessions, each workstream's plan progress, an ETA per task and per workstream that waits out the plan limits, a timeline with the rollout, a delivery calendar, and a projection of the weekly plan limit. It is a plain local process that uses zero LLM tokens to stay live.
 
 The decision inbox (item 3) becomes a second view of this page later; nothing here depends on it.
 
@@ -24,7 +24,7 @@ Zero-dependency Node (18 or newer), ES modules, in `plugins/orchestra/liveview/`
 | --- | --- |
 | `server.mjs` | HTTP server, the 5-second rebuild loop, `liveview.json`, idle exit, signals. |
 | `sources.mjs` | Reads session files, registry, notes, plans, `CLAUDE.md`, git and transcripts. All I/O lives here. |
-| `snapshot.mjs` | Pure functions: parsing, task timing, ETA, token weighting, projection, rollout, calendar window. No I/O. |
+| `snapshot.mjs` | Pure functions: parsing, task timing, ETA, token weighting, projection, limit waits, rollout, calendar window. No I/O. |
 | `page.html` | The page: one file, inline CSS and JS, no build step. |
 | `tests/*.test.mjs` | `node --test`. |
 
@@ -75,6 +75,12 @@ The simple version: per-task medians by agent and risk, calibrated from git. Fil
 - **History:** each finished task is appended to `.orchestra/eta-history.jsonl` (`plan`, `task`, `agent`, `risk`, `minutes`, `finishedAt`), keyed by plan and task so nothing is written twice. At start it is seeded from `git log --all` on plan files. Squash merges and deleted branches then lose nothing already seen.
 - **Estimate for an open task:** the median of past tasks with the same agent and risk. With fewer than 3 of those, the same agent; then all tasks; then 45 minutes, marked uncalibrated (`?`). The agent stands in for the model, since each agent pins one.
 - **Workstream ETA:** the sum of its open tasks' estimates. On the timeline, done tasks sit at their real times and the open ones are laid out back to back from now.
+- **Limit waits:** every estimate then moves past the plan limits, so the strip, the track and the calendar agree on one date.
+  - Work burns each limit at today's pace (the projection's burn rate), scaled by how many workstreams are open at that moment, so the pace drops as they finish.
+  - When a limit reaches 100%, all work stops until its reset. The weekly window then resets on its fixed schedule; a new 5-hour window opens when work resumes.
+  - The walk is exact between events (a limit running out, a reset, a workstream starting or ending), so it has no step size. `limitPauses(jobs, limits, now)` returns the waits as `{ kind, from, to }`; `afterPauses(t, pauses)` moves a time past them. A job that ends just as a limit runs out is not delayed.
+  - `shortcut: today's pace held constant; a pace change shows up at the next 5-second rebuild.`
+  - The task ETA in a row ("3 h 30 m") stays work time; the waits show on the dates.
 
 ## Limit projection
 
@@ -83,7 +89,7 @@ The simple version: per-task medians by agent and risk, calibrated from git. Fil
 - **Reading:** the freshest `seven_day` reading across session files (limits are per account).
 - **Calibration:** `k = percentUsed / weighted tokens from the window start (resetsAt minus 7 days) to the reading`.
 - **Now:** `k × weighted tokens from the window start to now`.
-- **Run-out:** at the burn rate of the last 24 hours. No run-out time when it falls after `resetsAt`.
+- **Run-out:** at the burn rate of the last 24 hours (the last hour for the 5-hour limit). No run-out time when it falls after `resetsAt`. The rate, in percent per millisecond, is part of the projection, for the limit waits.
 - **5-hour:** the same method on the `five_hour` reading.
 - **No reading yet:** weighted tokens only, labelled `no reading yet`.
 
@@ -91,7 +97,7 @@ The simple version: per-task medians by agent and risk, calibrated from git. Fil
 
 - **Past:** merges into the integration branch and releases (first-parent commits on the production branch) inside the calendar window, as filled diamonds.
 - **Projected:** each open workstream's merge at its ETA, as hollow diamonds.
-- **Queued:** the n-th item of "Next workstreams" starts at the n-th earliest projected end and lasts the median length of past workstreams (from `eta-history.jsonl`, per plan), else 2 days marked `?`, drawn as a dashed bar.
+- **Queued:** the n-th item of "Next workstreams" starts at the n-th earliest projected end and lasts the median length of past workstreams (from `eta-history.jsonl`, per plan), else 2 days marked `?`, drawn as a dashed bar. Its listed length is work time, without the limit waits inside it.
 
 ## Page
 
@@ -102,26 +108,29 @@ The approved prototype was built with taste-skill (app style `achromatic-ledger`
   - Cobalt is the one data hue: done work, the actual limit line.
   - The band's four shapes are the only other colour.
   - Vermilion is kept for a figure that breaks: 250k context, a run-out before the reset, 90% or more at the reset.
-  - The tokens are `docs/index.html`'s, including its dark palette and `data-theme` override.
+  - The light tokens are `docs/index.html`'s.
+  - The dark ground is true black (`#000000`), with surface `#0E0E10`, raised `#18181B`, border `#232327`, rule `#1A1A1D` and grid `#202024`. The owner chose it over ink, graphite, warm charcoal and cobalt night in a live preview.
+  - A System, Light and Dark switch in the top bar sets `data-theme` on `<html>`. System follows the operating system. The choice is kept in `localStorage`, wrapped in try and catch.
   - Archivo 800, the wordmark's face, carries the wordmark, the `h1`, the card titles, the headline figures and each row's ETA. IBM Plex Sans with tabular figures carries everything else. No monospace.
   - The half circle is pale blue on dark too, in the logo and as a status shape; `docs/BRAND.md` changed with it (the deep blue disappeared on ink).
-  - 4px radius, 1px borders, no shadows.
-- **Shell:** a 48px top bar with the brand mark, the wordmark, `liveview` and the freshness stamp ("Updated 3 s ago", or "Stale since" in vermilion). No sidebar: one destination for now. The decision inbox (item 3) later adds a second.
+  - 4px radius, 1px borders, no shadows, no gradients. Limit waits are a flat `--pause` band (`#EDE7DC` light, `#19191D` dark).
+  - Every column is left-aligned, numbers included, so no column changes alignment.
+- **Shell:** a 48px top bar with the brand mark, the wordmark, `liveview`, the freshness stamp ("Updated 3 s ago", or "Stale since" in vermilion) and the theme switch. No sidebar: one destination for now. The decision inbox (item 3) later adds a second.
 - **Title row:**
   - The project folder name as the `h1`.
-  - One sentence with the finding: "billing is waiting on you: approve the invoice mockup. Open work lands by Fri 06:19."
+  - One sentence with the finding: "billing is waiting on you: approve the invoice mockup. All work lands by Sun 16:16." The date is the same as the strip's.
   - On the right, the one primary action, "Open <the first waiting session>" (its `claude://` link), shown only when a waiting session has a link.
 - **Strip:** one card split into three cells, in the owner's priority order:
-  - "All merged by", the latest projected merge, with "ETA from N finished tasks" or "Uncalibrated".
+  - "All merged by", the latest projected merge, queued workstreams included and after the limit waits, with "From N finished tasks" or "Uncalibrated", and the total of limit waits ("54 h 58 m of limit waits" or "no limit waits").
   - 5-hour limit %, with the run-out time or the reset time;
   - weekly limit %, with the run-out time or the projected % at the reset;
-- **Middle row:** "Needs you" (1fr) beside "Weekly limit" (2fr).
+- **Middle row:** "Needs you" (1fr) beside "Weekly limit" (2fr), both the same height.
   - "Needs you" lists every session that is waiting, at 250k or more, stale, unregistered, or registered with no session. Each has its shape, name, an "Open" link when it has one, and a plain reason ("254k context: clear it at the next stop"). When nothing needs the owner, it keeps its frame and says so.
   - The chart shows cumulative weekly % across the 7-day window:
     - a y-scale at 0, 25, 50, 75 and 100% with faint gridlines;
     - the actual line solid cobalt, the projection dashed to the run-out (100%) or to the reset, with its end labelled;
-    - a "Now N%" line and the reading as a dot.
-- **Workstreams card:** one row per session or registered workstream (orchestrator first, unregistered last). Columns: shape, name, context, stage and PR, a "done of total · ETA" button, and the timeline track.
+    - a "Now N%" line and the reading as a dot. A run-out close to now is labelled to the right of its point, clear of "Now N%".
+- **Workstreams card:** one row per session or registered workstream (orchestrator first, unregistered last). Columns: shape, name, context, stage, PR ("none" when a plan has no PR yet), a "done of total · ETA" button, and the timeline track, 24px apart.
   - **Shapes, as in the band:**
     - triangle saffron: waiting;
     - square vermilion: 250k or more;
@@ -130,16 +139,22 @@ The approved prototype was built with taste-skill (app style `achromatic-ledger`
     - outlined half circle: stale, unregistered or no session.
 
     Shapes are 16px. Every shape has an accessible name, and every row also says its reason in words when it is not running or idle.
-  - **Track:** one rounded 10px pill per workstream, chosen by the owner from a live preview of three treatments (thin line, pill, beads). It spans the plan from its first task's start to its projected end. The planned span is a cobalt tint; the done part, up to the last finished task, is solid cobalt. There are no per-task blocks; task boundaries live in the opened task list. A 1px ink now-line, labelled `now`.
+  - **Track:** one rounded 10px pill per workstream, chosen by the owner from a live preview of three treatments (thin line, pill, beads). It spans the plan from its first task's start to its projected end. The planned span is a cobalt tint; the done part, up to the last finished task, is solid cobalt. There are no per-task blocks; task boundaries live in the opened task list. A 1px ink now-line, labelled `now`. Limit waits are `--pause` bands across every track, behind the pills, titled with the limit and the times.
   - **Opening a row:** the ETA cell is a real disclosure button (`aria-expanded`); a click anywhere else on the row does the same for the mouse. It opens the task list: a dot for each task (filled when done, outlined when current), its title, agent and risk, and the measured time or `est` with the estimate (`?` when uncalibrated). Open rows are remembered in `localStorage`, wrapped in try and catch. Every redraw keeps keyboard focus on the same control.
   - **Names:** a name links to the session's `claude://` link when its file has one; otherwise it is plain text. Only `claude://` links pass.
   - **Last rows:** the queued workstreams (dashed bars), then the rollout row (filled diamonds for merges and releases, hollow for projected merges).
-  - **Legend:** a shape key, the bar fills and the diamonds.
+  - **Legend:** a shape key, the bar fills, the limit-wait band and the diamonds.
+- **Delivery calendar card:** a month grid, chosen by the owner over a day-by-day 24-hour view in a live preview. Meta: "At today's pace, with 54 h 58 m of limit waits".
+  - Weeks run Monday to Sunday, from the week of today to the week of the last projected merge.
+  - Each day cell has its date in Archivo 800 (with the month on the first cell and on the 1st), today as a filled ink pill, and earlier days muted.
+  - Each projected merge is listed on its day with a hollow diamond, the name and the time; queued workstreams have a dashed diamond.
+  - A day with limit waits says how long ("16 h 40 m limit wait"). A day with no work at all because a limit is spent takes the `--pause` fill and says "Limit spent: no work".
+  - With no open plan: "No plan is open, so nothing is due."
 - **Calendar window:**
   - It runs from the start of the oldest open workstream, at most 3 days back, to the latest projected end, and is at least one day wide.
   - Under 2 days the axis shows hours every 3 hours, with midnight named ("30 Fri"); otherwise it shows day names.
   - Labels stay inside the track.
-- **Phone (below 640px):** the top bar drops `liveview`, the action moves under the finding, and the strip becomes two cells ("All merged by", 5-hour) and the weekly limit full width. "Needs you" and the chart stack. Each workstream becomes a two-line row (name and ETA, then context and stage) with its track below; every other hour label hides. The page never scrolls sideways.
+- **Phone (below 640px):** the top bar drops `liveview`, the action moves under the finding, and the strip becomes two cells ("All merged by", 5-hour) and the weekly limit full width. "Needs you" and the chart stack. Each workstream becomes a two-line row (name and ETA, then context, stage and PR) with its track below; every other hour label hides. The calendar becomes a list of the days that have a merge or a wait. The page never scrolls sideways.
 
 ## Errors
 
@@ -172,6 +187,7 @@ The page always draws and labels what is missing; nothing takes the server down.
   - weighted tokens and the dedupe by message id;
   - calibration, run-out, none after the reset and none without a reading;
   - queued placement;
+  - limit waits: a 5-hour wait and the resume after its reset, the slower burn as workstreams finish, a spent weekly limit, and no delay for a job that ends as the limit runs out;
   - the calendar window.
 - **Sources:** the incremental transcript reader on a temp folder: append, shrink, and a bad line.
 - **Server**, on a fixture project:
@@ -184,6 +200,8 @@ The page always draws and labels what is missing; nothing takes the server down.
 - **Page:** taste-skill's `lint.mjs --app` and `inspect.mjs --app` (0 FAIL), impeccable's detector (no findings), and a Playwright pass:
   - the disclosure opens and closes by click and keyboard, and keeps focus across the 5-second redraws;
   - no row is a `role="button"` around a link;
+  - the theme switch sets and clears `data-theme`, and Dark gives a black ground;
+  - the two middle cards have the same height;
   - light and dark both read;
   - no sideways scroll at 390;
   - no console errors.
