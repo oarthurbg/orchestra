@@ -123,6 +123,9 @@ h2{font-family:var(--display);font-weight:800;font-size:17px;line-height:24px;le
   :root{--gutter:16px;--pad:16px}
   .scope{display:none}
   .fresh{display:none}
+  /* The freshness line is hidden here, except when it holds an error: that wraps under the bar. */
+  .bar-top:has(.fresh .error){height:auto;min-height:48px;flex-wrap:wrap;padding-bottom:8px}
+  .fresh:has(.error){display:block;order:9;flex-basis:100%;margin-left:0}
   .themes{margin-left:auto}
   .title{flex-wrap:wrap}
   #action{margin-left:0}
@@ -147,7 +150,7 @@ h2{font-family:var(--display);font-weight:800;font-size:17px;line-height:24px;le
   <svg width="28" height="28" viewBox="0 0 100 100" aria-hidden="true"><path d="M10 90 A 27 27 0 0 1 64 90 Z" fill="var(--half)"/><circle cx="34" cy="34" r="24" fill="#2450E0"/><rect x="62" y="10" width="28" height="42" fill="#F0442C"/><polygon points="66,90 90,90 78,56" fill="#FFC21A"/></svg>
   <span class="word">orchestra</span>
   <span class="scope">liveview</span>
-  <span class="fresh" id="fresh" aria-live="polite"></span>
+  <span class="fresh" id="fresh"></span>
   <div class="themes" role="group" aria-label="Theme">
     <button type="button" data-theme-pick="system" aria-pressed="false">System</button>
     <button type="button" data-theme-pick="light" aria-pressed="false">Light</button>
@@ -231,7 +234,7 @@ function title(snap) {
   document.getElementById('project').textContent = snap.project
   const age = Math.max(0, Math.round((Date.now() - snap.builtAt) / 1000))
   document.getElementById('fresh').replaceChildren($('span', {},
-    snap.staleSince ? $('span', { class: 'error' }, `Stale since ${clock(snap.staleSince)} · `) : null, `Updated ${age} s ago`))
+    snap.staleSince ? $('span', { class: 'error', role: 'status' }, `Stale since ${clock(snap.staleSince)} · `) : null, `Updated ${age} s ago`))
   const waiting = snap.rows.filter(r => r.reason === 'waiting')
   const last = lastEnd(snap)
   const parts = []
@@ -239,7 +242,7 @@ function title(snap) {
   parts.push(last ? `All work lands by ${when(last)}.` : 'No plan is open.')
   document.getElementById('finding').replaceChildren(...parts)
   const target = waiting.find(r => r.link)
-  document.getElementById('action').replaceChildren(target ? $('a', { class: 'btn', href: target.link }, `Open ${target.name}`) : '')
+  document.getElementById('action').replaceChildren(target ? $('a', { class: 'btn', href: target.link, 'data-focus': 'action' }, `Open ${target.name}`) : '')
 }
 
 function kpis(snap) {
@@ -251,7 +254,7 @@ function kpis(snap) {
     cell('All merged by', last ? when(last) : '–', [snap.etaBasis >= 3 ? `From ${snap.etaBasis} finished tasks` : 'Uncalibrated: under 3 finished tasks',
       snap.pauses.length ? `${dur(Math.round(waitMs(snap, snap.builtAt, Infinity) / MIN))} of limit waits` : 'no limit waits'].join(', '), false),
     cell('5-hour limit', pct(fiveHour), fiveHour.percent == null ? 'No reading yet' : fiveHour.runOut ? `Runs out ${clock(fiveHour.runOut)}, before the reset` : `Resets ${clock(Date.parse(fiveHour.resetsAt))}`, !!fiveHour.runOut),
-    cell('Weekly limit', pct(week), week.percent == null ? 'No reading yet' : week.runOut ? `Runs out ${when(week.runOut)}, before the reset` : `About ${Math.round(week.atReset)}% at the reset, ${when(Date.parse(week.resetsAt))}`, !!week.runOut || week.atReset >= 90),
+    cell('Weekly limit', pct(week), week.percent == null ? 'No reading yet' : week.runOut ? `Runs out ${when(week.runOut)}, before the reset` : `About ${Math.round(week.atReset ?? week.percent)}% at the reset, ${when(Date.parse(week.resetsAt))}`, !!week.runOut || (week.atReset ?? week.percent) >= 90),
   )
 }
 
@@ -312,16 +315,17 @@ function grid(snap) {
   const { from, to } = snap.window
   const pos = t => `${(100 * (Math.min(Math.max(t, from), to) - from)) / (to - from)}%`
   const width = (a, b) => `${Math.max(0.4, (100 * (Math.min(b, to) - Math.max(a, from))) / (to - from))}%`
-  const short = to - from <= 2 * DAY, step = short ? 3 * HOUR : DAY
+  const short = to - from <= 2 * DAY
   const first = new Date(from)
   first.setMinutes(0, 0, 0)
   if (short) first.setHours(Math.ceil(first.getHours() / 3) * 3); else first.setHours(12)
   const days = []
   // Labels stay inside the track; midnight names the day; the now line is labelled.
   const inside = t => (t - from) / (to - from) > 0.04 && (to - t) / (to - from) > 0.04
-  for (let t = +first; t <= to; t += step) {
+  // Step in local time, so a DST change does not shift the labels.
+  for (const d = new Date(first); +d <= to; d.setHours(d.getHours() + (short ? 3 : 24))) {
+    const t = +d
     if (!inside(t)) continue
-    const d = new Date(t)
     const midnight = short && d.getHours() === 0
     days.push($('span', { style: `left:${pos(t)}`, class: midnight ? 'day' : '' }, midnight ? d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' }) : short ? clock(t) : d.toLocaleDateString(undefined, { weekday: 'short' })))
   }
@@ -446,7 +450,7 @@ function render(snap) {
 
 function draw(snap) {
   if (snap.error) {
-    document.getElementById('finding').replaceChildren($('span', { class: 'error' }, `The snapshot failed: ${snap.error}`))
+    document.getElementById('finding').replaceChildren($('span', { class: 'error', role: 'status' }, `The snapshot failed: ${snap.error}`))
     return
   }
   title(snap)
@@ -461,16 +465,17 @@ let last = null
 async function poll() {
   try {
     const r = await fetch('/api/snapshot', { cache: 'no-store' })
+    if (!r.ok) throw new Error(`HTTP ${r.status}`)
     last = await r.json()
   } catch {
-    document.getElementById('fresh').replaceChildren($('span', { class: 'error' }, 'The liveview server stopped. Start it again with /orchestra:liveview.'))
+    document.getElementById('fresh').replaceChildren($('span', { class: 'error', role: 'status' }, 'The liveview server stopped. Start it again with /orchestra:liveview.'))
     return
   }
   try {
     if (last) render(last)
   } catch (err) {
     console.error(err)
-    document.getElementById('fresh').replaceChildren($('span', { class: 'error' }, `This page failed to draw the snapshot: ${err.message}`))
+    document.getElementById('fresh').replaceChildren($('span', { class: 'error', role: 'status' }, `This page failed to draw the snapshot: ${err.message}`))
   }
 }
 applyTheme(theme)
