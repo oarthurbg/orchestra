@@ -25,6 +25,12 @@ function readInfo(root) {
   try { return JSON.parse(fs.readFileSync(infoFile(root), 'utf8')) } catch { return null }
 }
 
+const key = p => (process.platform === 'win32' ? path.resolve(p).toLowerCase() : path.resolve(p))
+const sameRoot = (a, b) => key(a) === key(b)
+const alive = pid => { try { process.kill(pid, 0); return true } catch (err) { return err.code === 'EPERM' } }
+// liveview.json files this process wrote and still serves, so a file naming our own pid can still be told from a stale one.
+const held = new Set()
+
 // The URL of a live server for this root, or null.
 export async function liveUrl(root) {
   const info = readInfo(root)
@@ -32,7 +38,7 @@ export async function liveUrl(root) {
   try {
     const r = await fetch(new URL('api/ping', info.url), { signal: AbortSignal.timeout(1000) })
     const body = await r.json()
-    return path.resolve(body.root) === path.resolve(root) ? info.url : null
+    return sameRoot(body.root, root) ? info.url : null
   } catch {
     return null
   }
@@ -90,22 +96,39 @@ export async function startServer({
       return
     }
     const send = (type, body) => res.writeHead(200, { 'content-type': type, 'cache-control': 'no-store' }).end(body)
-    const route = new URL(req.url ?? '/', 'http://localhost').pathname
+    let route
+    try { route = new URL(req.url ?? '/', 'http://localhost').pathname } catch { res.writeHead(400).end('bad request'); return }
     if (req.method !== 'GET') res.writeHead(405).end()
     else if (route === '/') send('text/html; charset=utf-8', page)
     else if (route === '/api/snapshot') send('application/json', JSON.stringify(snapshot))
-    else if (route === '/api/ping') send('application/json', JSON.stringify({ root }))
+    else if (route === '/api/ping') send('application/json', JSON.stringify({ root, pid: process.pid }))
     else res.writeHead(404).end('not found')
   })
 
   bound = await listen(server, port, port + PORT_TRIES - 1)
   const url = `http://localhost:${bound}/`
   fs.mkdirSync(path.join(root, '.orchestra'), { recursive: true })
-  fs.writeFileSync(infoFile(root), JSON.stringify({ url, pid: process.pid }))
+  const file = infoFile(root)
+  const info = JSON.stringify({ url, pid: process.pid })
+  try {
+    fs.writeFileSync(file, info, { flag: 'wx' })
+  } catch (err) {
+    if (err.code !== 'EEXIST') { server.close(); throw err }
+    const pid = readInfo(root)?.pid
+    // shortcut: a stale file whose pid was recycled by another live process blocks every start until --stop removes it; upgrade by pinging the recorded url if that bites.
+    if (pid && (pid === process.pid ? held.has(file) : alive(pid))) {
+      await new Promise(resolve => server.close(resolve))
+      throw Object.assign(new Error(`liveview already running for ${root} (pid ${pid})`), { code: 'ERUNNING' })
+    }
+    fs.writeFileSync(file, info)
+  }
+  held.add(file)
   let timer = null
   const close = () => {
     if (timer) clearInterval(timer)
-    if (readInfo(root)?.url === url) fs.rmSync(infoFile(root), { force: true })
+    if (readInfo(root)?.url === url) fs.rmSync(file, { force: true })
+    held.delete(file)
+    server.closeAllConnections?.()
     return new Promise(resolve => server.close(() => resolve()))
   }
   tick()
@@ -113,23 +136,31 @@ export async function startServer({
   return { url, port: bound, tick, close }
 }
 
-// Stops the server recorded in liveview.json. On Windows the signal cannot run our handler, so the file goes here.
-export function stop(root) {
+// Stops the server recorded in liveview.json, killing the pid only when that server answers ping as itself.
+// On Windows the signal cannot run our handler, so the file goes here.
+export async function stop(root) {
   const info = readInfo(root)
-  if (info?.pid) { try { process.kill(info.pid) } catch { /* already gone */ } }
+  if (info?.pid && info.url) {
+    try {
+      // 15 s outlasts a first scan of the transcripts, during which the server cannot answer.
+      const body = await (await fetch(new URL('api/ping', info.url), { signal: AbortSignal.timeout(15_000) })).json()
+      if (body.pid === info.pid && sameRoot(body.root, root)) process.kill(info.pid)
+    } catch { /* not answering, not ours, or already gone */ }
+  }
   fs.rmSync(infoFile(root), { force: true })
 }
 
 async function main(argv) {
   const arg = name => { const i = argv.indexOf(name); return i >= 0 ? argv[i + 1] : undefined }
   const root = path.resolve(arg('--root') ?? process.cwd())
-  if (argv.includes('--stop')) { stop(root); console.log('liveview stopped'); return }
+  if (argv.includes('--stop')) { await stop(root); console.log('liveview stopped'); return }
   const running = await liveUrl(root)
   if (running) { console.log(running); return }
   if (argv.includes('--detach')) {
     spawn(process.execPath, [fileURLToPath(import.meta.url), '--root', root], { detached: true, stdio: 'ignore', windowsHide: true }).unref()
-    // Up to 30 s: the first scan of the transcripts can take several seconds, and the server cannot answer ping meanwhile.
-    for (let i = 0; i < 300; i++) {
+    // About 30 s (plus one last ping of up to 1 s): the first scan of the transcripts can take several seconds, and the server cannot answer ping meanwhile.
+    const deadline = Date.now() + 30_000
+    while (Date.now() < deadline) {
       await new Promise(r => setTimeout(r, 100))
       const url = await liveUrl(root)
       if (url) { console.log(url); return }
@@ -142,7 +173,9 @@ async function main(argv) {
   try {
     s = await startServer({ root })
   } catch (err) {
-    console.error(`liveview: no free port from ${FIRST_PORT} to ${FIRST_PORT + PORT_TRIES - 1} (${err.code ?? err})`)
+    if (err.code === 'ERUNNING') { console.log((await liveUrl(root)) ?? 'liveview already starting'); return }
+    if (err.code === 'EADDRINUSE') console.error(`liveview: no free port from ${FIRST_PORT} to ${FIRST_PORT + PORT_TRIES - 1}`)
+    else console.error(`liveview: ${err.message ?? err}`)
     process.exit(1)
   }
   console.log(s.url)

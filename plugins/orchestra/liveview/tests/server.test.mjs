@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import http from 'node:http'
+import net from 'node:net'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -84,27 +85,67 @@ test('exits on its own after 30 minutes with no fresh session file', async () =>
 
 test('the command line detaches, reuses a live server and stops it', async () => {
   const root = fixture()
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: fs.mkdtempSync(path.join(os.tmpdir(), 'liveview-cfg-')) }
   const run = (...args) => new Promise(resolve => {
-    const p = spawn(process.execPath, [SERVER, '--root', root, ...args], { stdio: ['ignore', 'pipe', 'pipe'] })
+    const p = spawn(process.execPath, [SERVER, '--root', root, ...args], { stdio: ['ignore', 'pipe', 'pipe'], env })
     let out = ''
     p.stdout.on('data', c => { out += c })
     p.on('close', () => resolve(out.trim()))
   })
-  const url = await run('--detach')
-  assert.match(url, /^http:\/\/localhost:\d+\/$/)
-  assert.equal(await run('--detach'), url, 'a second start reuses the running server')
-  await run('--stop')
-  assert.equal(fs.existsSync(path.join(root, '.orchestra', 'liveview.json')), false)
-  await new Promise(r => setTimeout(r, 300))
-  assert.equal(await liveUrl(root), null)
+  try {
+    const url = await run('--detach')
+    assert.match(url, /^http:\/\/localhost:\d+\/$/)
+    assert.equal(await run('--detach'), url, 'a second start reuses the running server')
+    await run('--stop')
+    assert.equal(fs.existsSync(path.join(root, '.orchestra', 'liveview.json')), false)
+    await new Promise(r => setTimeout(r, 300))
+    await assert.rejects(fetch(`${url}api/ping`, { signal: AbortSignal.timeout(2000) }), 'the server process is gone')
+  } finally {
+    await stop(root)
+  }
 })
 
 test('SIGTERM removes liveview.json', { skip: process.platform === 'win32' && 'Windows cannot deliver SIGTERM to a handler; --stop covers it' }, async () => {
   const root = fixture()
-  const p = spawn(process.execPath, [SERVER, '--root', root], { stdio: 'ignore' })
-  for (let i = 0; i < 50 && !(await liveUrl(root)); i++) await new Promise(r => setTimeout(r, 100))
-  p.kill('SIGTERM')
-  await new Promise(r => p.on('close', r))
-  assert.equal(fs.existsSync(path.join(root, '.orchestra', 'liveview.json')), false)
-  stop(root)
+  const env = { ...process.env, CLAUDE_CONFIG_DIR: fs.mkdtempSync(path.join(os.tmpdir(), 'liveview-cfg-')) }
+  const p = spawn(process.execPath, [SERVER, '--root', root], { stdio: 'ignore', env })
+  try {
+    for (let i = 0; i < 50 && !(await liveUrl(root)); i++) await new Promise(r => setTimeout(r, 100))
+    p.kill('SIGTERM')
+    await new Promise(r => p.on('close', r))
+    assert.equal(fs.existsSync(path.join(root, '.orchestra', 'liveview.json')), false)
+  } finally {
+    p.kill()
+    await stop(root)
+  }
+})
+
+test('a second start for the same root is refused while the first is alive', async () => {
+  const root = fixture()
+  const s = await startServer({ root, port: PORT + 50, reader: reader(), auto: false, onIdle: () => {} })
+  try {
+    await assert.rejects(startServer({ root, port: PORT + 50, reader: reader(), auto: false, onIdle: () => {} }), { code: 'ERUNNING' })
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root, '.orchestra', 'liveview.json'), 'utf8')), { url: s.url, pid: process.pid })
+    await assert.rejects(get(PORT + 51, '/api/ping'), 'the second server closed its port')
+    assert.deepEqual(JSON.parse((await get(s.port, '/api/ping')).body), { root: path.resolve(root), pid: process.pid })
+  } finally {
+    await s.close()
+  }
+})
+
+test('a request line that is not a valid URL gets 400', async () => {
+  const s = await startServer({ root: fixture(), port: PORT + 60, reader: reader(), auto: false, onIdle: () => {} })
+  try {
+    const reply = await new Promise((resolve, reject) => {
+      const sock = net.connect(s.port, '127.0.0.1', () => sock.write(`GET http://[ HTTP/1.1\r\nHost: 127.0.0.1:${s.port}\r\nConnection: close\r\n\r\n`))
+      let out = ''
+      sock.on('data', c => { out += c })
+      sock.on('end', () => resolve(out))
+      sock.on('error', reject)
+    })
+    assert.match(reply, /^HTTP\/1\.1 400/)
+    assert.equal((await get(s.port, '/api/snapshot')).status, 200, 'the server is still up')
+  } finally {
+    await s.close()
+  }
 })
