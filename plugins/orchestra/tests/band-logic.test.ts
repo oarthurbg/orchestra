@@ -274,7 +274,7 @@ describe('small helpers', () => {
   })
 
   test('isSafeTarget accepts plain claude:// and local URLs, and openerArgv refuses the rest', () => {
-    expect(isSafeTarget('claude://claude.ai/epitaxy/local_d07fe721-a1b0')).toBe(true)
+    expect(isSafeTarget('claude://claude.ai/epitaxy/local_0a1b2c3d-0000')).toBe(true)
     expect(isSafeTarget('http://localhost:4123/')).toBe(true)
     for (const bad of ['http://localhost:1/&calc.exe', 'claude://x&y', 'claude://x y', 'https://evil.example/', 'claude://x"y']) {
       expect(isSafeTarget(bad)).toBe(false)
