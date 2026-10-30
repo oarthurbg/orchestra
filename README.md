@@ -1,3 +1,17 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/brand/readme-hero-dark.png">
+    <img alt="orchestra: many voices, one composition" src="assets/brand/readme-hero-light.png" width="820">
+  </picture>
+</p>
+
+<p align="center">
+  <a href="https://code.claude.com/docs/en/plugins"><img alt="Claude Code plugin" src="https://img.shields.io/badge/Claude_Code-plugin-2450E0?style=flat-square"></a>
+  <img alt="9 agents" src="https://img.shields.io/badge/agents-9-F0442C?style=flat-square">
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-FFC21A?style=flat-square&labelColor=111114"></a>
+  <a href="https://oarthurbg.github.io/orchestra/"><img alt="Docs" src="https://img.shields.io/badge/docs-the_stack_on_one_page-B9C8F2?style=flat-square&labelColor=111114"></a>
+</p>
+
 # orchestra
 
 A Claude Code plugin for running one project with several Claude sessions at once: one **orchestrator** session that only coordinates, and one **workstream** session per feature, each taking its feature from spec to PR with its own worktree, isolated test data and subagents. It works for any kind of app: no database, server or Docker required.
@@ -18,6 +32,8 @@ plugins/orchestra/
   commands/    /orchestra:init, /orchestra:start-workstream, /orchestra:close-wave
   templates/   CLAUDE.md, HANDOFF.md, handoff-note.md
 docs/index.html  the stack at a glance
+docs/BRAND.md    mark, colors and type
+assets/brand/    logo, plugin icon, README hero, social preview
 ```
 
 | Agent | Model, effort | Ponytail | Job |
@@ -95,6 +111,10 @@ orchestra only decides where each of these enters the flow. All credit for the s
 - [design](https://github.com/anthropics/knowledge-work-plugins/tree/main/design) by Anthropic (knowledge-work plugins): design critique and accessibility review. Apache-2.0.
 - [security-audit](https://github.com/cloudflare/security-audit-skill) by Cloudflare: multi-phase security audits with verified findings. MIT.
 - [playwright-cli](https://github.com/microsoft/playwright-cli) by Microsoft: browser checks and screenshots from the command line. Apache-2.0.
+
+## Design
+
+The mark is a small Bauhaus composition. Kandinsky and Itten paired the basic shapes with the primary colors: the circle is blue, the square red, the triangle yellow. Here a blue circle rests on a half circle, the pause the others play over, next to a red block and a yellow triangle: separate voices, one composition. The four ponytail modes on the docs page use the same four shapes. Brand files and rules are in [`docs/BRAND.md`](docs/BRAND.md).
 
 ## License
 
