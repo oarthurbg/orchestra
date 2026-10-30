@@ -41,6 +41,8 @@ To investigate: whether the mod can answer inside the app. App sessions are neve
 
 ### 4. The maestro decides when to build a code graph
 
+**Parked in favour of item 5.** The code graph was built on branch `claude/graphify-e5bb5f` (PR #6, closed, branch kept) and measured: about 25% fewer work tokens on a large TypeScript app, none on Python. The language server in item 5 matched or beat it on both, so item 5 is the way forward. The text below is the original idea.
+
 [graphify](https://github.com/Graphify-Labs/graphify) (Apache-2.0, installed with `pip install graphifyy`, not a Claude Code plugin) turns the codebase into a knowledge graph that agents query instead of sweeping files. Idea, to be brainstormed and specced after the band:
 - At `/orchestra:init` and at every wave end, the maestro measures the integration branch (files, lines of code, and later the tokens explorers and planners spend per task, from the band's session reports).
 - Past a threshold it proposes building the graph on the integration branch in the main checkout. The build costs LLM tokens, so it gets its own level in "Owner authorizations" (default `ask`).
@@ -55,7 +57,6 @@ A measured trial (9 questions on networkx, the Python standard library and a pub
 
 Idea, to be brainstormed and specced:
 - Explorer and planner call a Claude Code LSP plugin (`find references`, call hierarchy) when one is installed, and fall back to grep otherwise.
-- Decide whether graphify (item 4) stays for TypeScript or is dropped; for Python the language server replaces it.
 - No build step and no update after merges: the server reads the working tree, so it also sees a worktree's own branch.
 
 Still open: a planner task on Opus, an app over 1,000 files, and an installed LSP plugin instead of the hand-made wrapper used in the trial.
