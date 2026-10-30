@@ -56,6 +56,16 @@ test('parsePlan reads tasks, agent, risk and ticks, and stops at the next ## sec
   assert.equal(parsePlan(plan('x  ')).at(0).done, false)
 })
 
+test('parsePlan ignores headings, sections and checkboxes inside fenced code blocks', () => {
+  const md = ['### Task 1: Real', '', '- [ ] **Step 1: Do it.**', '', '```md', '### Task 9: Fake', '## Notes', '- [ ] fake step', '```', '', '- [x] **Step 2: Done.**', '', '### Task 2: Next', '', '- [ ] **Step 1: Go.**', ''].join('\n')
+  assert.deepEqual(parsePlan(md).map(t => [t.n, t.steps]), [[1, 2], [2, 1]])
+})
+
+test('parseRegistry skips an aligned separator row', () => {
+  const md = ['| Workstream | Session | Branch and worktree | Test data | Port | Schema change | Stage |', '| :--- | :--- | :--- | :--- | :--- | :--- | :--- |'].join('\n')
+  assert.deepEqual(parseRegistry(md), [])
+})
+
 test('parseBranches and parseQueued', () => {
   const md = '## Project settings\n\n- Integration branch (workstream PRs go here): `develop`\n- Production branch (releases and hotfixes only): `main`\n'
   assert.deepEqual(parseBranches(md), { integration: 'develop', production: 'main' })
@@ -129,6 +139,8 @@ test('projection calibrates on the reading and projects the run-out at the last 
   assert.ok(fast.runOut > NOW && fast.runOut < Date.parse(resetsAt))
   assert.ok(fast.series.length > 0 && fast.series.at(-1).at <= NOW)
   assert.equal(projection(events, null, 'seven_day', NOW).percent, null)
+  const past = { kind: 'seven_day', percentUsed: 100, resetsAt: new Date(NOW - HOUR).toISOString(), at: NOW - 2 * HOUR }
+  assert.deepEqual(projection(events, past, 'seven_day', NOW), projection(events, null, 'seven_day', NOW), 'a reading past its reset is no reading')
 })
 
 test('freshestReading picks the newest session file', () => {
@@ -162,7 +174,7 @@ test('buildSnapshot puts the maestro first, then workstreams with tasks and ETA,
   const sessions = [
     { v: 1, session: 'o', role: 'maestro', workstream: null, title: 'Maestro', link: 'claude://claude.ai/epitaxy/o', state: 'idle', context: { tokens: 64_000 }, updatedAt: iso(NOW), limits: [] },
     { v: 1, session: 's1', role: 'principal', workstream: 'billing', title: '', link: 'javascript:alert(1)', state: 'waiting', detail: 'asks: approve mockup', context: { tokens: 182_000 }, stage: 'build', pr: '', updatedAt: iso(NOW), limits: [] },
-    { v: 1, session: 'u', role: 'unregistered', workstream: null, branch: 'fix-typo', title: '', link: '', state: 'idle', context: { tokens: 12_000 }, updatedAt: iso(NOW), limits: [] },
+    { v: 1, session: 'u', role: 'unregistered', workstream: null, branch: 'fix-typo', title: '', link: 'claude://x" onmouseover=alert(1)', state: 'idle', context: { tokens: 12_000 }, updatedAt: iso(NOW), limits: [] },
   ]
   const snap = buildSnapshot({
     now: NOW, project: 'repo', sessions, registry: parseRegistry(REGISTRY),
@@ -176,6 +188,8 @@ test('buildSnapshot puts the maestro first, then workstreams with tasks and ETA,
   const billing = snap.rows[1]
   assert.equal(billing.shape, 'triangle')
   assert.equal(billing.link, '', 'only claude:// links pass')
+  assert.equal(snap.rows[0].link, 'claude://claude.ai/epitaxy/o')
+  assert.equal(snap.rows[3].link, '', 'a claude:// string with quotes is dropped')
   assert.equal(billing.done, 1)
   assert.equal(billing.total, 2)
   assert.equal(billing.tasks[0].minutes, 60)
@@ -186,6 +200,30 @@ test('buildSnapshot puts the maestro first, then workstreams with tasks and ETA,
   assert.equal(snap.queued[0].start, NOW + 45 * MIN)
   assert.deepEqual(snap.rollout.merges.map(m => m.subject), ['Merge auth'])
   assert.equal(snap.limits.week.percent, null)
+})
+
+test('buildSnapshot reads the newest session file of a workstream', () => {
+  const iso = t => new Date(t).toISOString()
+  const mk = (session, at, state, tokens) => ({ v: 1, session, role: 'principal', workstream: 'billing', title: '', link: '', state, context: { tokens }, updatedAt: iso(at), limits: [] })
+  const snap = buildSnapshot({
+    now: NOW, project: 'repo', sessions: [mk('old', NOW - HOUR, 'idle', 260_000), mk('new', NOW, 'running', 70_000)], registry: parseRegistry(REGISTRY).slice(0, 1),
+    workstreams: {}, history: [], events: [], merges: [], releases: [], queued: [],
+  })
+  assert.deepEqual([snap.rows[0].shape, snap.rows[0].context], ['circle', 70_000])
+})
+
+test('buildSnapshot moves ends and queued starts past a spent 5-hour limit', () => {
+  const iso = t => new Date(t).toISOString()
+  const limits = [{ kind: 'five_hour', percentUsed: 100, resetsAt: iso(NOW + 2 * HOUR) }]
+  const sessions = [{ v: 1, session: 's1', role: 'principal', workstream: 'billing', title: '', link: '', state: 'running', context: { tokens: 1000 }, updatedAt: iso(NOW), limits }]
+  const snap = buildSnapshot({
+    now: NOW, project: 'repo', sessions, registry: parseRegistry(REGISTRY).slice(0, 1),
+    workstreams: { billing: { planPath: 'p.md', planMd: plan('xx '), versions: [], commits: [] } },
+    history: [], events: [{ id: 'a', at: NOW - 2 * HOUR, w: 999 }, { id: 'b', at: NOW - 30 * MIN, w: 1 }], merges: [], releases: [], queued: ['export'],
+  })
+  assert.deepEqual(snap.pauses, [{ kind: 'five_hour', from: NOW, to: NOW + 2 * HOUR }])
+  assert.equal(snap.rows[0].end, NOW + 45 * MIN + 2 * HOUR)
+  assert.equal(snap.queued[0].start, NOW + 45 * MIN + 2 * HOUR)
 })
 
 test('limitPauses stops work while the 5-hour limit is spent and resumes at its reset', () => {
@@ -201,4 +239,9 @@ test('limitPauses burns slower as jobs finish, and waits for the weekly reset wh
   assert.deepEqual(limitPauses([{ start: NOW, end: NOW + HOUR }, { start: NOW, end: NOW + 3 * HOUR }], [five], NOW), [], '30 + 2 x 15 = 60%')
   const week = { kind: 'seven_day', percent: 100, rate: 1 / HOUR, resetsAt: new Date(NOW + HOUR).toISOString() }
   assert.deepEqual(limitPauses([{ start: NOW, end: NOW + HOUR }], [week, { kind: 'five_hour', percent: null, rate: 0 }], NOW), [{ kind: 'seven_day', from: NOW, to: NOW + HOUR }])
+})
+
+test('limitPauses waits for the reset of a spent limit even when its recent rate is 0', () => {
+  const week = { kind: 'seven_day', percent: 100, rate: 0, resetsAt: new Date(NOW + 2 * HOUR).toISOString() }
+  assert.deepEqual(limitPauses([{ start: NOW, end: NOW + 3 * HOUR }], [week], NOW), [{ kind: 'seven_day', from: NOW, to: NOW + 2 * HOUR }])
 })

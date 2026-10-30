@@ -18,8 +18,9 @@ export function parseRegistry(md) {
   for (const line of md.split(/\r?\n/)) {
     if (!line.trim().startsWith('|')) continue
     const c = cells(line)
-    if (c.length < 7 || c[0] === 'Workstream' || /^-+$/.test(c[0])) continue
+    if (c.length < 7 || c[0] === 'Workstream') continue
     const [branch = '', worktree = ''] = ticks(c[2])
+    if (!worktree) continue // separator and header rows have none
     rows.push({ name: c[0], session: c[1], branch, worktree: worktree.replace(/\\/g, '/'), stage: c[6] })
   }
   return rows
@@ -33,8 +34,10 @@ export function planPathFromNote(note) {
 // Plan tasks: `### Task N: title`, the `**Agent:** x. **Risk:** y.` line and the step checkboxes.
 export function parsePlan(md) {
   const tasks = []
-  let t = null
+  let t = null, fenced = false
   for (const line of md.split(/\r?\n/)) {
+    if (/^\s*(```|~~~)/.test(line)) { fenced = !fenced; continue }
+    if (fenced) continue
     const h = /^###\s+Task\s+(\d+):\s*(.+?)\s*$/.exec(line)
     if (h) {
       t = { n: Number(h[1]), title: h[2], agent: '', risk: '', steps: 0, ticked: 0 }
@@ -148,7 +151,7 @@ const WINDOWS = { five_hour: 5 * HOUR, seven_day: 7 * DAY }
 
 // Limit projection from usage events and the freshest reading ({ kind, percentUsed, resetsAt, at }).
 export function projection(events, reading, kind, now) {
-  if (!reading || !reading.resetsAt) return { kind, percent: null, rate: 0, runOut: null, atReset: null, resetsAt: null, reading: null, series: [] }
+  if (!reading || !reading.resetsAt || Date.parse(reading.resetsAt) <= now) return { kind, percent: null, rate: 0, runOut: null, atReset: null, resetsAt: null, reading: null, series: [] }
   const span = WINDOWS[kind]
   const reset = Date.parse(reading.resetsAt)
   const start = reset - span
@@ -177,7 +180,7 @@ export function limitPauses(jobs, limits, now) {
   const goal = Math.max(0, ...spans.map(j => j.to))
   const open = w => spans.filter(j => j.from <= w && w < j.to).length
   const base = open(0) || 1
-  const meters = limits.filter(l => l.percent != null && l.rate > 0)
+  const meters = limits.filter(l => l.percent != null && (l.rate > 0 || l.percent >= 100))
     .map(l => ({ kind: l.kind, used: l.percent, reset: Date.parse(l.resetsAt), span: WINDOWS[l.kind], rate: l.rate }))
   const edges = [...new Set(spans.flatMap(j => [j.from, j.to]))].sort((a, b) => a - b)
   const pauses = []
@@ -250,7 +253,7 @@ export function placeQueued(names, openEnds, typical, now) {
 }
 
 const sessionRow = (s, now) => ({
-  key: s.session, name: s.title || s.workstream || s.branch || s.session, link: /^claude:\/\//.test(s.link ?? '') ? s.link : '',
+  key: s.session, name: s.title || s.workstream || s.branch || s.session, link: /^claude:\/\/[A-Za-z0-9._\/-]+$/.test(s.link ?? '') ? s.link : '',
   role: s.role, state: s.state, detail: s.detail ?? '', context: s.context?.tokens ?? null, stage: s.stage ?? '', pr: s.pr ?? '',
   ...attention(s, now), plan: null, tasks: [], done: 0, total: 0, eta: null, etaCalibrated: true, start: null, end: null,
 })
@@ -262,7 +265,7 @@ export function buildSnapshot(input) {
   const listed = new Set()
   for (const s of sessions.filter(s => s.role === 'maestro')) { rows.push(sessionRow(s, now)); listed.add(s.session) }
   for (const r of registry) {
-    const s = sessions.find(x => x.workstream === r.name) ?? null
+    const s = sessions.filter(x => x.workstream === r.name).reduce((a, b) => (!a || Date.parse(b.updatedAt) > Date.parse(a.updatedAt) ? b : a), null)
     if (s) listed.add(s.session)
     const row = s ? { ...sessionRow(s, now), name: s.title || r.name } : { ...sessionRow({ session: r.name, workstream: r.name, role: 'principal', state: 'idle', updatedAt: new Date(now).toISOString() }, now), ...attention(null, now) }
     row.key = `ws:${r.name}`
