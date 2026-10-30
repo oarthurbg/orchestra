@@ -5,7 +5,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 
-import { TranscriptReader, appendHistory, findPlan, firstParent, gather, planVersions, readHistory, readSessions, readWorkstream, seedHistory } from '../sources.mjs'
+import { TranscriptReader, appendHistory, branchFiles, findPlan, firstParent, gather, planVersions, readHistory, readSessions, readWorkstream, seedHistory } from '../sources.mjs'
 import { timedTasks } from '../snapshot.mjs'
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'liveview-'))
@@ -250,4 +250,42 @@ test('a registry row naming a folder that is not a git worktree of main is repor
   fs.mkdirSync(path.join(main, '.orchestra'))
   fs.writeFileSync(path.join(main, '.orchestra', 'workstreams.md'), `| Workstream | Session | Branch and worktree | Test data | Port | Schema change | Stage |\n| --- | --- | --- | --- | --- | --- | --- |\n| evil | s1 | \`evil\` at \`${planted}\` | none | none | no | build |\n`)
   assert.deepEqual(gather(main, Date.now(), emptyReader(), []).workstreams.evil, { worktreeMissing: true })
+})
+
+test('branchFiles keeps the pictures, pages, PDFs, specs and plans a branch commits, pictures first', () => {
+  const { repo, g } = initRepo()
+  const put = (file, content = 'x') => { fs.mkdirSync(path.dirname(path.join(repo, file)), { recursive: true }); fs.writeFileSync(path.join(repo, file), content) }
+  put('docs/old.png')
+  put('docs/superpowers/specs/billing-design.md', 'v1')
+  g('add', 'docs')
+  g('commit', '-q', '-m', 'base')
+  g('checkout', '-q', '-b', 'billing')
+  put('docs/mockups/invoice.png')
+  put('docs/screenshots/search.png')
+  put('docs/superpowers/specs/billing-design.md', 'v2')
+  put('docs/superpowers/plans/billing.md')
+  put('src/app.js')
+  put('notes.md')
+  g('add', 'docs', 'src', 'notes.md')
+  g('rm', '-q', 'docs/old.png')
+  g('commit', '-q', '-m', 'work')
+  put('docs/mockups/draft.png') // on disk, never committed
+  assert.deepEqual(branchFiles(repo, 'develop'), [
+    { path: 'docs/mockups/invoice.png', kind: 'Mockup', change: 'added', picture: true },
+    { path: 'docs/screenshots/search.png', kind: 'Screenshot', change: 'added', picture: true },
+    { path: 'docs/superpowers/specs/billing-design.md', kind: 'Spec', change: 'changed', picture: false },
+    { path: 'docs/superpowers/plans/billing.md', kind: 'Plan', change: 'added', picture: false },
+  ])
+  assert.deepEqual(branchFiles(repo, null), [])
+  // A new commit moves HEAD, so the cached list is read again.
+  put('docs/invoice.pdf')
+  put('docs/mockups/invoice.html')
+  g('add', 'docs/invoice.pdf', 'docs/mockups/invoice.html')
+  g('commit', '-q', '-m', 'more')
+  assert.deepEqual(branchFiles(repo, 'develop').map(f => [f.path, f.kind]), [
+    ['docs/mockups/invoice.png', 'Mockup'], ['docs/screenshots/search.png', 'Screenshot'], ['docs/mockups/invoice.html', 'Mockup'],
+    ['docs/invoice.pdf', 'PDF'], ['docs/superpowers/specs/billing-design.md', 'Spec'], ['docs/superpowers/plans/billing.md', 'Plan'],
+  ])
+  g('remote', 'add', 'origin', 'https://github.com/acme/shop.git')
+  assert.equal(gather(repo, Date.now(), emptyReader(), []).origin, 'https://github.com/acme/shop.git')
 })

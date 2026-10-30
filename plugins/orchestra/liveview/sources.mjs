@@ -9,6 +9,7 @@ import { StringDecoder } from 'node:string_decoder'
 import { DAY, parseBranches, parsePlan, parseQueued, parseRegistry, planPathFromNote, timedTasks, usageEvent } from './snapshot.mjs'
 
 const PLANS = 'docs/superpowers/plans'
+const SPECS = 'docs/superpowers/specs'
 
 export function readText(file) {
   try { return fs.readFileSync(file, 'utf8') } catch { return null }
@@ -111,6 +112,43 @@ export function readWorkstream(row, integration) {
   return { planPath, planMd, versions, commits }
 }
 
+const PICTURE = /\.(png|jpe?g|gif|webp|svg)$/i
+
+// Kind and sort rank of a file worth looking at before answering: pictures, pages, PDFs, specs, plans. null for the rest.
+function fileKind(p) {
+  const low = p.toLowerCase()
+  // A mockup or screenshot can be a picture, a page or a PDF; a spec or plan keeps its own kind.
+  const named = low.includes('mockup') ? 'Mockup' : low.includes('screenshot') ? 'Screenshot' : null
+  if (PICTURE.test(low)) return [named ?? 'Image', 0]
+  if (low.endsWith('.html')) return [named ?? 'Page', 1]
+  if (low.endsWith('.pdf')) return [named ?? 'PDF', 2]
+  if (!low.endsWith('.md')) return null
+  if (p.startsWith(`${SPECS}/`)) return ['Spec', 3]
+  if (p.startsWith(`${PLANS}/`)) return ['Plan', 4]
+  return null
+}
+
+// The files a workstream's branch committed that the owner may look at, reused while HEAD does not move.
+const filesCache = new Map()
+export function branchFiles(worktree, integration) {
+  const head = git(worktree, ['rev-parse', 'HEAD'])?.trim()
+  if (!head) return []
+  const key = `${worktree}|${integration}`
+  if (filesCache.get(key)?.head === head) return filesCache.get(key).files
+  const base = integrationRef(worktree, integration)
+  // -z keeps unusual paths unquoted; --no-renames lists a renamed file as added, so it is kept.
+  const out = base ? git(worktree, ['diff', '-z', '--no-renames', '--name-status', '--diff-filter=AM', `${base}...HEAD`]) : null
+  const parts = (out ?? '').split('\0')
+  const ranked = []
+  for (let i = 0; i + 1 < parts.length; i += 2) {
+    const k = fileKind(parts[i + 1])
+    if (k) ranked.push([k[1], { path: parts[i + 1], kind: k[0], change: parts[i] === 'A' ? 'added' : 'changed', picture: PICTURE.test(parts[i + 1]) }])
+  }
+  const files = ranked.sort((a, b) => a[0] - b[0] || (a[1].path < b[1].path ? -1 : a[1].path > b[1].path ? 1 : 0)).map(r => r[1])
+  if (out !== null) filesCache.set(key, { head, files })
+  return files
+}
+
 // The ETA history: one JSON line per finished task, keyed by plan and task.
 export function readHistory(main) {
   const text = readText(path.join(main, '.orchestra', 'eta-history.jsonl')) ?? ''
@@ -210,7 +248,7 @@ export function gather(main, now, reader, history) {
   const registry = parseRegistry(readText(path.join(main, '.orchestra', 'workstreams.md')) ?? '').map(r => ({ ...r, worktree: path.resolve(main, r.worktree) }))
   const { integration, production } = parseBranches(readText(path.join(main, 'CLAUDE.md')))
   const known = registeredWorktrees(main)
-  const workstreams = Object.fromEntries(registry.map(r => [r.name, known.has(realKey(r.worktree)) ? readWorkstream(r, integration) : { worktreeMissing: true }]))
+  const workstreams = Object.fromEntries(registry.map(r => [r.name, known.has(realKey(r.worktree)) ? { ...readWorkstream(r, integration), files: branchFiles(r.worktree, integration) } : { worktreeMissing: true }]))
   const since = now - 3 * DAY
   return {
     now,
@@ -223,5 +261,6 @@ export function gather(main, now, reader, history) {
     merges: firstParent(main, integration, since),
     releases: firstParent(main, production, since),
     queued: parseQueued(readText(path.join(main, 'docs', 'HANDOFF.md'))),
+    origin: git(main, ['remote', 'get-url', 'origin'])?.trim() ?? '',
   }
 }
