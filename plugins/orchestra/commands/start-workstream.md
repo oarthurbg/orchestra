@@ -1,0 +1,22 @@
+---
+description: (Orchestrator) Open a new workstream: check for overlap, create its worktree, test database and port, and start its session with a briefing
+argument-hint: <workstream-name> <one-line goal>
+---
+
+You are the orchestrator (skill `orchestra:orchestrator`). Open the workstream described in: $ARGUMENTS
+
+1. **Name:** lowercase letters, digits and `_` or `-` for the branch; the test database uses the same name with `-` replaced by `_`.
+2. **Overlap check:** read `docs/HANDOFF.md` ("Workstreams") and list `docs/superpowers/specs/`. If the goal overlaps an open spec or worktree, stop and tell the owner which one.
+3. **Schema queue:** if the goal likely changes the database schema and another open workstream already does, tell the owner it has to wait or go after that one.
+4. **Load:** count running workstreams. With 4 to 6 already running, tell the owner the machine is at its limit before adding one.
+5. **Resources:** using the values in `CLAUDE.md` ("Project settings"):
+   - `git fetch origin` and `git worktree add -b <branch> <worktree path> origin/<integration branch>`;
+   - `scripts/test-db/test-db.sh create <name>` (or the `.ps1` on Windows without Bash);
+   - pick the next free dev server port.
+6. **Register:** add a row to the "Workstreams" table in `docs/HANDOFF.md`.
+7. **Session:** in the desktop app, start a new session in the worktree folder (`start_session`) with this briefing, filled in:
+
+   > You are the workstream session for `<name>`: <goal>. Load the `orchestra:workstream` skill and follow it. Worktree `<path>` on branch `<branch>`. Test database `TEST_DATABASE_URL=<url>`. Dev server port `<port>`. Start with `superpowers:brainstorming` with the owner, then the spec. Report to the orchestrator session `<orchestrator session id>` in one line on cross-workstream decisions, schema changes, wave ends (with your context size) and when the PR is ready.
+
+   Outside the desktop app, print the briefing for the owner to paste into a new session.
+8. Report: branch, worktree, database, port and the session link.
