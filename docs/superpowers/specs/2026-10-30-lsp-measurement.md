@@ -132,4 +132,4 @@ Haiku, for comparison (sum of cell means): grep 1,870, plugin LSP 2,146, wrapper
 
 ## Not measured
 
-Opus planner tasks; more than one run per cell; apps over 600 files (the 500 to 1,500 target was only partly reached); an installed Claude Code LSP plugin instead of a hand-made wrapper; a language server for code that is not strongly typed.
+Opus planner tasks (Opus was tested as an explorer only); Sonnet; LSP + graphify on Opus; Python through the installed plugin (`pyright-lsp`); whether subagents get the `LSP` tool; a language server for code that is not strongly typed.
