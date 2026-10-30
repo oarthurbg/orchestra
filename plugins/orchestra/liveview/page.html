@@ -31,7 +31,7 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--ground);color:var(--text);font:14px/20px var(--body);font-variant-numeric:tabular-nums}
 a{color:inherit}
-:focus-visible{outline:2px solid var(--data);outline-offset:2px}
+:focus-visible{outline:2px solid var(--text);outline-offset:2px}
 .bar-top{height:48px;display:flex;align-items:center;gap:12px;padding:0 var(--gutter);border-bottom:1px solid var(--border)}
 .word{font-family:var(--display);font-weight:800;font-size:21px;letter-spacing:-.02em}
 .scope{color:var(--muted)}
@@ -81,6 +81,7 @@ h2{font-family:var(--display);font-weight:800;font-size:17px;line-height:24px;le
 .row.click{cursor:pointer}
 .name a{text-decoration:none;font-weight:500}
 .name a:hover{text-decoration:underline}
+.cell-eta{display:flex}
 .disclose{text-align:left;font:700 14px var(--display);letter-spacing:-.01em;color:inherit;background:none;border:0;padding:4px 0;cursor:pointer;text-decoration:underline dotted;text-underline-offset:3px}
 .row.click:hover{background:var(--raised)}
 .row.open{background:var(--raised)}
@@ -98,6 +99,7 @@ h2{font-family:var(--display);font-weight:800;font-size:17px;line-height:24px;le
 .tasks{background:var(--raised);padding:4px var(--pad) 12px calc(var(--pad) + 32px);border-top:1px solid var(--rule)}
 .task{display:grid;grid-template-columns:16px minmax(0,320px) 220px 90px;gap:8px;min-height:28px;align-items:center}
 .legend{display:flex;flex-wrap:wrap;gap:6px 18px;padding:12px var(--pad) 16px;color:var(--muted);font-size:13px;border-top:1px solid var(--rule)}
+.legend > span > svg{vertical-align:-1px;margin:0 2px}
 .wait-sw{background:var(--pause);border:1px solid var(--border)}
 .sw{display:inline-block;width:18px;height:10px;border-radius:5px;vertical-align:-1px;margin-right:6px}
 .error{color:var(--negative)}
@@ -115,6 +117,22 @@ h2{font-family:var(--display);font-weight:800;font-size:17px;line-height:24px;le
 .pill{position:absolute;top:5px;height:10px;border-radius:5px}
 .wait{position:absolute;top:-12px;bottom:-12px;background:var(--pause)}
 
+@media (max-width:1105px){
+  /* The score folds into two-line rows: name and ETA, then context and stage, then the track. */
+  .score-inner{min-width:0}
+  .row{grid-template-columns:20px auto auto minmax(0,1fr) auto;grid-template-areas:"s n n n e" ". c g p p" "t t t t t";gap:4px 12px;padding-top:10px;padding-bottom:10px}
+  .row > :nth-child(1){grid-area:s}.row > :nth-child(2){grid-area:n}.row > :nth-child(3){grid-area:c}
+  .row > :nth-child(4){grid-area:g}.row > :nth-child(5){grid-area:p}.row > :nth-child(6){grid-area:e}.row > :nth-child(7){grid-area:t}
+  .task{grid-template-columns:16px minmax(0,1fr) auto}
+  .task .meta{grid-column:2 / 4;grid-row:2}
+  .tasks{padding-left:var(--pad)}
+  .now, .track .wait{top:0;bottom:0}
+  .days .nowlabel{display:none}
+}
+@media (min-width:641px) and (max-width:1105px){
+  .drop{grid-template-columns:14px minmax(0,1fr)}
+  .drop .meta{grid-column:2;white-space:nowrap}
+}
 @media (max-width:900px){
   .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
   .kpi:nth-child(3){border-left:0;border-top:1px solid var(--border);grid-column:1 / -1}
@@ -130,16 +148,7 @@ h2{font-family:var(--display);font-weight:800;font-size:17px;line-height:24px;le
   .themes{margin-left:auto}
   .title{flex-wrap:wrap}
   #action{margin-left:0}
-  /* The score folds into two-line rows: name and ETA, then context and stage, then the track. */
-  .score-inner{min-width:0}
-  .row{grid-template-columns:20px auto auto minmax(0,1fr) auto;grid-template-areas:"s n n n e" ". c g p p" "t t t t t";gap:4px 12px;padding-top:10px;padding-bottom:10px}
-  .row > :nth-child(1){grid-area:s}.row > :nth-child(2){grid-area:n}.row > :nth-child(3){grid-area:c}
-  .row > :nth-child(4){grid-area:g}.row > :nth-child(5){grid-area:p}.row > :nth-child(6){grid-area:e}.row > :nth-child(7){grid-area:t}
-  .task{grid-template-columns:16px minmax(0,1fr) auto}
-  .task .meta{grid-column:2 / 4;grid-row:2}
-  .tasks{padding-left:var(--pad)}
   .days span:nth-child(even){display:none}
-  .now, .track .wait{top:0;bottom:0}
   .month{grid-template-columns:minmax(0,1fr);border-left:0;border-top:0}
   .month .dow, .cell.empty{display:none}
   .cell{min-height:0;border-right:0;border-bottom:1px solid var(--rule)}
@@ -177,7 +186,7 @@ h2{font-family:var(--display);font-weight:800;font-size:17px;line-height:24px;le
   </div>
   <section class="card" aria-labelledby="h-work">
     <div class="card-head"><h2 id="h-work">Workstreams</h2><span class="meta" id="work-meta"></span></div>
-    <div class="score"><div class="score-inner" id="grid"></div></div>
+    <div class="score"><div class="score-inner" id="grid" role="table" aria-labelledby="h-work"></div></div>
     <div class="legend" id="legend"></div>
   </section>
   <section class="card" aria-labelledby="h-cal">
@@ -199,6 +208,8 @@ const $ = (tag, attrs = {}, ...kids) => {
 // One persistent live region, written only when a state changes, so a screen reader hears failures and recovery, never the 5 s refresh.
 const say = t => { const s = document.getElementById('status'); if (s.textContent !== t) s.textContent = t }
 let failed = false
+const OFFLINE = 'The liveview server stopped. Start it again with /orchestra:liveview.'
+let offline = false // set by poll() when the server cannot be reached; kept across redraws
 const fail = t => { failed = true; say(t) }
 const MIN = 60000, HOUR = 60 * MIN, DAY = 24 * HOUR
 const dur = m => (m == null ? '–' : m >= 60 ? `${Math.floor(m / 60)} h${m % 60 ? ` ${String(m % 60).padStart(2, '0')} m` : ''}` : `${m} m`) // taste-skill-ignore: zero-padded minutes in a duration, not index numbering
@@ -230,7 +241,9 @@ const SHAPES = {
   half: () => $('svg:path', { d: 'M0 13 A 7 7 0 0 1 14 13 Z', fill: 'var(--idle)' }),
   'half-open': () => $('svg:path', { d: 'M1 12.5 A 6 6 0 0 1 13 12.5 Z', fill: 'none', stroke: 'var(--muted)', 'stroke-width': 1.5 }),
 }
-const shape = (s, label) => $('svg:svg', { width: 16, height: 16, viewBox: '0 0 14 14', role: 'img', 'aria-label': label }, SHAPES[s]())
+const shape = (s, label) => $('svg:svg', { width: 16, height: 16, viewBox: '0 0 14 14', ...(label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': 'true' }) }, SHAPES[s]())
+const diamond = (filled, label) => $('svg:svg', { width: 12, height: 12, ...(label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': 'true' }) },
+  $('svg:polygon', { points: '6,0.5 11.5,6 6,11.5 0.5,6', fill: filled ? 'var(--text)' : 'var(--surface)', stroke: 'var(--text)' }))
 const NEEDS = new Set(['waiting', 'over 250k', 'stale', 'unregistered', 'no session'])
 const waitLabel = p => `Waiting for the ${p.kind === 'five_hour' ? '5-hour' : 'weekly'} limit to reset, ${when(p.from)} to ${when(p.to)}`
 const waitMs = (snap, a, b) => snap.pauses.reduce((s, p) => s + Math.max(0, Math.min(b, p.to) - Math.max(a, p.from)), 0)
@@ -239,7 +252,7 @@ const lastEnd = snap => { const ends = [...snap.rows.filter(r => r.end != null).
 function title(snap) {
   document.getElementById('project').textContent = snap.project
   const age = Math.max(0, Math.round((Date.now() - snap.builtAt) / 1000))
-  document.getElementById('fresh').replaceChildren($('span', {},
+  document.getElementById('fresh').replaceChildren(offline ? $('span', { class: 'error' }, OFFLINE) : $('span', {},
     snap.staleSince ? $('span', { class: 'error' }, `Stale since ${clock(snap.staleSince)} · `) : null, `Updated ${age} s ago`))
   const waiting = snap.rows.filter(r => r.reason === 'waiting')
   const last = lastEnd(snap)
@@ -269,6 +282,8 @@ function chart(snap) {
   const W = svg.clientWidth || 800, H = 220, L = 40, R = 16, T = 24, B = 28
   const p = snap.limits.week
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`)
+  const proj = p.percent == null ? null : p.runOut ? `projected 100% ${when(p.runOut)}` : `projected ${Math.round(p.atReset ?? p.percent)}% at the reset`
+  svg.setAttribute('aria-label', p.resetsAt ? ['Weekly limit', p.percent == null ? 'no reading yet' : `${Math.round(p.percent)}% now`, proj, `resets ${when(Date.parse(p.resetsAt))}`].filter(Boolean).join(', ') : 'Weekly limit: no reading yet')
   document.getElementById('week-meta').textContent = p.resetsAt ? `Resets ${when(Date.parse(p.resetsAt))}` : ''
   if (!p.resetsAt) {
     svg.replaceChildren($('svg:line', { x1: L, x2: W - R, y1: H - B, y2: H - B, stroke: 'var(--border)' }),
@@ -289,18 +304,22 @@ function chart(snap) {
   }
   if (p.series.length) kids.push($('svg:polyline', { points: p.series.map(s => `${x(s.at)},${y(Math.min(s.percent, 100))}`).join(' '), fill: 'none', stroke: 'var(--data)', 'stroke-width': 2 }))
   const nowX = x(snap.builtAt)
+  let endLabel = null
   if (p.percent != null) {
     const [tx, ty, label] = p.runOut ? [x(p.runOut), y(100), `100% ${when(p.runOut)}`] : [x(end), y(Math.min(p.atReset ?? p.percent, 100)), `${Math.round(p.atReset ?? p.percent)}% at reset`]
     kids.push($('svg:polyline', { points: `${nowX},${y(p.percent)} ${tx},${ty}`, fill: 'none', stroke: 'var(--data)', 'stroke-width': 2, 'stroke-dasharray': '6 4' }))
     const close = p.runOut || (p.atReset ?? 0) >= 90
     const near = tx - nowX < 160
-    kids.push($('svg:text', { ...(near ? { x: tx + 8, y: ty + 4, 'text-anchor': 'start' } : { x: Math.min(tx, W - R), y: ty - 8, 'text-anchor': 'end' }),
+    kids.push(endLabel = $('svg:text', { ...(near ? { x: tx + 8, y: ty + 4, 'text-anchor': 'start' } : { x: Math.min(tx, W - R), y: ty - 8, 'text-anchor': 'end' }),
       fill: close ? 'var(--negative)' : 'var(--text)', 'font-size': 12 }, label))
     kids.push($('svg:text', { x: nowX - 6, y: T - 10, 'text-anchor': 'end', fill: 'var(--text)', 'font-size': 12 }, `Now ${Math.round(p.percent)}%`))
   }
   kids.push($('svg:line', { x1: nowX, x2: nowX, y1: T - 8, y2: H - B, stroke: 'var(--text)' }))
   if (p.reading) kids.push($('svg:circle', { cx: x(p.reading.at), cy: y(p.reading.percent), r: 3, fill: 'var(--text)' }))
   svg.replaceChildren(...kids)
+  // Narrow screens: a label that runs past the right edge moves under the line's end, right-aligned.
+  const b = endLabel?.getBBox()
+  if (b && b.x + b.width > W - 2) { endLabel.setAttribute('text-anchor', 'end'); endLabel.setAttribute('x', W - R); endLabel.setAttribute('y', +endLabel.getAttribute('y') + 14); endLabel.setAttribute('style', 'paint-order:stroke;stroke:var(--surface);stroke-width:4px'); svg.append(endLabel) }
 }
 
 function needs(snap) {
@@ -309,7 +328,7 @@ function needs(snap) {
   const list = document.getElementById('needs')
   if (!rows.length) { list.replaceChildren($('li', { class: 'empty' }, 'Nothing waits on you. Sessions over 250k, stale or unregistered show here too.')); return }
   const reason = r => (r.reason === 'waiting' ? (r.detail || 'waiting on you').replace(/^asks: /, '') : r.reason === 'over 250k' ? `${ktok(r.context)} context: clear it at the next stop` : r.reason === 'stale' ? 'No report for over 30 minutes' : r.reason === 'no session' ? 'Registered, but no session is reporting' : 'A worktree session the maestro did not start')
-  list.replaceChildren(...rows.map(r => $('li', {}, $(r.link ? 'a' : 'div', r.link ? { class: 'item', href: r.link, 'data-focus': `open:${r.key}`, 'aria-label': `Open ${r.name}: ${reason(r)}` } : { class: 'item' },
+  list.replaceChildren(...rows.map(r => $('li', {}, $(r.link ? 'a' : 'div', r.link ? { class: 'item', href: r.link, 'data-focus': `open:${r.key}`, 'aria-label': `${r.name}, Open, ${reason(r)}` } : { class: 'item' },
     $('span', { title: r.reason }, shape(r.shape, r.reason)),
     $('span', {}, r.name),
     r.link ? $('span', { class: 'open', 'aria-hidden': 'true' }, 'Open') : $('span'),
@@ -336,7 +355,7 @@ function grid(snap) {
     days.push($('span', { style: `left:${pos(t)}`, class: midnight ? 'day' : '' }, midnight ? d.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric' }) : short ? clock(t) : d.toLocaleDateString(undefined, { weekday: 'short' })))
   }
   days.push($('span', { class: 'nowlabel', style: `left:${pos(snap.builtAt)}` }, 'now'))
-  const rows = [$('div', { class: 'row head' }, $('span'), $('span', {}, 'Workstream'), $('span', {}, 'Context'), $('span', {}, 'Stage'), $('span', {}, 'PR'), $('span', {}, 'Tasks, ETA'), $('div', { class: 'days' }, days))]
+  const rows = [$('div', { class: 'row head' }, $('span', { 'aria-label': 'Status' }), $('span', {}, 'Workstream'), $('span', {}, 'Context'), $('span', {}, 'Stage'), $('span', {}, 'PR'), $('span', {}, 'Tasks, ETA'), $('div', { class: 'days', 'aria-label': 'Timeline' }, days))]
   const nowLine = () => [...snap.pauses.filter(p => p.to > from && p.from < to).map(p => $('span', { class: 'wait', style: `left:${pos(p.from)};width:${width(p.from, p.to)}`, title: waitLabel(p) })),
     $('span', { class: 'now', style: `left:${pos(snap.builtAt)}` })]
   document.getElementById('work-meta').textContent = `${new Date(from).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })} to ${new Date(to).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}`
@@ -346,6 +365,7 @@ function grid(snap) {
     const isOpen = open.has(r.key)
     const toggle = () => { isOpen ? open.delete(r.key) : open.add(r.key); saveOpen(); render(snap) }
     const canOpen = r.tasks.length > 0
+    const etaText = `${r.done} of ${r.total} · ${dur(r.eta)}${r.etaCalibrated ? '' : ' ?'}`
     const label = r.link ? $('a', { href: r.link, 'data-focus': `name:${r.key}`, onclick: e => e.stopPropagation() }, r.name) : $('span', {}, r.name)
     // The ETA cell is the disclosure button; a click anywhere else on the row does the same for the mouse.
     rows.push($('div', {
@@ -358,20 +378,19 @@ function grid(snap) {
       $('span', { class: 'meta' }, r.stage || (r.detail && r.detail !== 'no plan' ? r.detail : '')),
       $('span', { class: 'meta' }, r.pr || (r.plan ? 'none' : '')),
       r.total
-        ? $('button', { class: 'disclose', 'data-focus': `eta:${r.key}`, 'aria-expanded': String(isOpen), 'aria-label': `${r.name}: ${r.done} of ${r.total} tasks done, ${dur(r.eta)} left. ${isOpen ? 'Hide' : 'Show'} tasks`, onclick: toggle },
-          `${r.done} of ${r.total} · ${dur(r.eta)}${r.etaCalibrated ? '' : ' ?'}`)
+        ? $('span', { class: 'cell-eta' }, $('button', { class: 'disclose', 'data-focus': `eta:${r.key}`, 'aria-expanded': String(isOpen), 'aria-controls': isOpen ? `tasks-${r.key}` : null, 'aria-label': `${etaText}, ${r.name}${r.etaCalibrated ? '' : ', uncalibrated estimate'}`, onclick: toggle }, etaText))
         : $('span', { class: 'meta' }, r.plan === null && r.workstream ? 'no plan' : ''),
       $('div', { class: 'track' }, nowLine(), segs),
     ))
     if (isOpen) {
-      rows.push($('div', { class: 'tasks' },
+      rows.push($('div', { class: 'tasks', role: 'row', id: `tasks-${r.key}` }, $('div', { role: 'cell' },
         r.tasks.map(t => $('div', { class: 'task' },
           $('svg:svg', { width: 10, height: 10, viewBox: '0 0 10 10', role: 'img', 'aria-label': t.done ? 'done' : t.current ? 'current' : 'to do' },
-            $('svg:circle', { cx: 5, cy: 5, r: 4, fill: t.done ? 'var(--data)' : 'none', stroke: t.done || t.current ? 'var(--data)' : 'var(--border)', 'stroke-width': 1.5 })),
+            $('svg:circle', { cx: 5, cy: 5, r: 4, fill: t.done ? 'var(--data)' : 'none', stroke: t.done || t.current ? 'var(--data)' : 'var(--muted)', 'stroke-width': 1.5 })),
           $('span', {}, `${t.n}. ${t.title}`),
           $('span', { class: 'meta' }, [t.agent, t.risk].filter(Boolean).join(' · ')),
-          $('span', {}, t.done ? dur(t.minutes) : `est ${dur(t.minutes)}${t.calibrated ? '' : ' ?'}`),
-        ))))
+          $('span', {}, t.done ? dur(t.minutes) : `${t.current ? 'now' : 'est'} ${dur(t.minutes)}${t.calibrated ? '' : ' ?'}`),
+        )))))
     }
   }
   for (const q of snap.queued) {
@@ -386,8 +405,9 @@ function grid(snap) {
   ]
   rows.push($('div', { class: 'row' }, $('span'), $('span', { class: 'meta' }, 'Rollout'), $('span'), $('span'), $('span'), $('span'),
     $('div', { class: 'track' }, nowLine(), diamonds.map(m => $('span', { style: `position:absolute;left:${pos(m.at)};top:4px;margin-left:-6px`, title: `${m.label}, ${when(m.at)}` },
-      $('svg:svg', { width: 12, height: 12, 'aria-label': `${m.label}, ${when(m.at)}`, role: 'img' },
-        $('svg:polygon', { points: '6,0.5 11.5,6 6,11.5 0.5,6', fill: m.filled ? 'var(--text)' : 'var(--surface)', stroke: 'var(--text)' })))))))
+      diamond(m.filled, `${m.label}, ${when(m.at)}`))))))
+  // Table semantics: every row is a row, every direct child a cell (the ETA button sits inside its cell).
+  rows.forEach((row, i) => { if (row.getAttribute('role')) return; row.setAttribute('role', 'row'); for (const c of row.children) c.setAttribute('role', i ? 'cell' : 'columnheader') })
   document.getElementById('grid').replaceChildren(...rows)
   const key = (s, text) => $('span', {}, $('span', { style: 'display:inline-block;vertical-align:-2px;margin-right:6px' }, shape(s, '')), text)
   document.getElementById('legend').replaceChildren(
@@ -396,7 +416,7 @@ function grid(snap) {
     $('span', {}, $('span', { class: 'sw', style: 'background:var(--data-tint)' }), 'Estimated'),
     $('span', {}, $('span', { class: 'sw', style: 'border:1px dashed var(--muted);border-radius:5px' }), 'Queued'),
     $('span', {}, $('span', { class: 'sw wait-sw' }), 'Waiting for a limit reset'),
-    $('span', {}, '◆ Merged or released · ◇ Projected merge'),
+    $('span', {}, diamond(true), ' Merged or released · ', diamond(false), ' Projected merge'),
     $('span', {}, '? Uncalibrated estimate'),
   )
 }
@@ -439,7 +459,7 @@ function calendar(snap) {
     const blocked = wait > 0 && wait >= addDays(d, 1) - from - MIN
     const dt = new Date(d)
     cells.push($('div', { class: `cell${d < today ? ' past' : ''}${d === today ? ' today' : ''}${blocked ? ' blocked' : ''}${!its.length && !wait ? ' empty' : ''}` },
-      $('span', { class: 'num', 'aria-label': dt.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' }) },
+      $('span', { class: 'num' }, $('span', { class: 'sr-only' }, `${dt.toLocaleDateString(undefined, { weekday: 'long' })}, `),
         dt.getDate() === 1 || d === first ? dt.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) : String(dt.getDate())),
       its.map(drop),
       wait ? $('span', { class: 'note' }, blocked ? 'Limit spent: no work' : `${dur(Math.round(wait / MIN))} limit wait`) : null))
@@ -457,7 +477,6 @@ function render(snap) {
 function draw(snap) {
   if (snap.error) {
     document.getElementById('finding').replaceChildren($('span', { class: 'error' }, `The snapshot failed: ${snap.error}`))
-    fail(`The snapshot failed: ${snap.error}`)
     return
   }
   title(snap)
@@ -466,30 +485,36 @@ function draw(snap) {
   needs(snap)
   grid(snap)
   calendar(snap)
-  if (snap.staleSince) fail(`The data is stale since ${clock(snap.staleSince)}: the last rebuild failed.`)
-  else if (failed) { failed = false; say('Live again.') }
 }
 
 let last = null
 async function poll() {
+  let snap
   try {
     const r = await fetch('/api/snapshot', { cache: 'no-store' })
     if (!r.ok) throw new Error(`HTTP ${r.status}`)
-    last = await r.json()
+    snap = await r.json()
   } catch {
-    const msg = 'The liveview server stopped. Start it again with /orchestra:liveview.'
-    document.getElementById('fresh').replaceChildren($('span', { class: 'error' }, msg))
-    fail(msg)
+    offline = true
+    document.getElementById('fresh').replaceChildren($('span', { class: 'error' }, OFFLINE))
+    fail(OFFLINE)
     return
   }
+  // The offline line is cleared here, on a good fetch, so redraws between polls cannot erase it.
+  offline = false
+  last = snap
   try {
-    if (last) render(last)
+    render(last)
   } catch (err) {
     console.error(err)
     const msg = `This page failed to draw the snapshot: ${err.message}`
     document.getElementById('fresh').replaceChildren($('span', { class: 'error' }, msg))
     fail(msg)
+    return
   }
+  const bad = last.error ? `The snapshot failed: ${last.error}` : last.staleSince ? `The data is stale since ${clock(last.staleSince)}: the last rebuild failed.` : null
+  if (bad) fail(bad)
+  else if (failed) { failed = false; say('Live again.') }
 }
 applyTheme(theme)
 matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => last && render(last))
