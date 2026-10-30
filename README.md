@@ -90,18 +90,22 @@ Then, in your project:
 - **Claude Code desktop app** (Code tab) for the session tools the workflow relies on: starting sessions, messaging between them, reading their context size, clearing and archiving them. In the plain CLI the roles and agents still work, but you start, brief, clear and archive sessions by hand.
 - **Docker** only if you pick the optional Postgres-in-Docker test data example.
 - **git** with worktrees, and the **GitHub CLI** (`gh`) for PRs.
+- **Claude Code 2.1.309 or newer** for the band. Older versions were not tested.
 
 ## The band
 
-orchestra draws a band above the prompt in every session. In an orchestra project the orchestrator's band shows the 5-hour and weekly plan limits, when the week runs out at the current pace, how many workstreams are running, and one row for each workstream that needs you: waiting on an answer, over 250k tokens of context, or gone quiet. In the desktop app a row's name opens that session, and a `Liveview` button opens the local dashboard while it runs. A workstream session shows the same summary and its own row. In other projects the band shows the limits line only.
+orchestra draws a band above the prompt in every session. In an orchestra project the orchestrator's band shows the 5-hour and weekly plan limits, when the week runs out at the current pace, how many workstreams are running, and one row for each workstream that needs you: waiting on an answer, over 250k tokens of context, gone quiet (its report is more than 30 minutes old), or an `unregistered` row for a worktree session that is not in `.orchestra/workstreams.md`, so a forgotten worktree gets noticed. In the desktop app a row's name opens that session. In any session of the project, in the desktop app or the terminal, a `Liveview` button opens the local dashboard while it runs. A workstream session shows the same summary and its own row. In other projects the band shows the limits line only.
 
 Each session writes its own report to `.orchestra/sessions/` (not versioned) after each turn; the band re-reads the folder every 20 seconds. Staying live costs no tokens.
 
-**Keep-warm.** While one of a session's own subagents runs, the band sends a one-line request just before the prompt cache would expire, so the session does not pay to write its whole context to the cache again when the subagent returns. A cache read costs about 0.1x the input price; rewriting an expired cache costs 1.25x (5-minute cache) or 2x (1-hour cache). How cache reads count against plan limits is not published. Two settings, in the plugin's config menu:
+**Keep-warm.** While one of a session's own subagents runs, the band sends a one-line request just before the prompt cache would expire, so the session does not pay to write its whole context to the cache again when the subagent returns. It runs in every project, not only orchestra ones, and covers background and foreground subagents and long tool calls. It never pings while the main thread is itself making requests, since those keep the cache warm. The summary line counts the pings (`warm 2x`). A cache read costs about 0.1x the input price; rewriting an expired cache costs 1.25x (5-minute cache) or 2x (1-hour cache). How cache reads count against plan limits is not published. Two settings, in the plugin's config menu:
 
 - `cacheMinutes` (default 60): your cache lifetime. Use 5 for API keys and overage.
-- `warmMaxHours` (default 2): stop keeping the cache warm for a subagent that has run this long.
-- A subagent's age counts from when the band first saw it running, so one that was already running when the session started gets the full limit.
+- `warmMaxHours` (default 2): stop keeping the cache warm for a subagent that has run this long. Pings stop once every running subagent is older than this.
+
+A subagent's age counts from when the band first saw it running, so one that was already running when the session started gets the full limit.
+
+If a ping finds the cache already gone, it is not counted as a ping, pings stop until the main thread makes its next request, and the band shows this once per session: `orchestra band: keep-warm missed the cache; set cacheMinutes lower (5 for API keys and overage)`.
 
 The band shares its slot with other mods. ponytail's band stays as it is, with its own level switch. ponytail's level is one flag for every session (`~/.claude/.ponytail-active`): switching it in one session switches all of them, while each orchestra agent's per-stage mode stays in its own prompt.
 

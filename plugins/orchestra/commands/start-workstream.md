@@ -13,7 +13,7 @@ You are the orchestrator (skill `orchestra:orchestrator`). Open the workstream d
    - `git fetch origin` and `git worktree add -b <branch> <worktree path> origin/<integration branch>`;
    - if "Test data" is not `none`, run its Create command with the workstream name and note the "Tests read" value;
    - if "Dev server" is not `none`, pick the next free port.
-6. **Register:** add a row to `.orchestra/workstreams.md` (not versioned; create it with this header if missing):
+6. **Register:** add a row to `.orchestra/workstreams.md` (not versioned; create it with this header if missing). Write the worktree path absolute (`<branch>` at `<absolute worktree path>`); the band also resolves a relative one against the main checkout:
 
    | Workstream | Session | Branch and worktree | Test data | Port | Schema change | Stage |
    | --- | --- | --- | --- | --- | --- | --- |
