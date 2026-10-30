@@ -579,6 +579,28 @@ test('more than two rows: the compact band shows two and a count, the arrow open
   await ui.unmount()
 })
 
+test('an open band in a short window shows the rows that fit and a count, and keeps the footer', async ($, on) => {
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY3,
+    [`${ROOT}/.orchestra/liveview.json`]: JSON.stringify({ url: 'http://localhost:4123/' }),
+    [`${ROOT}/.orchestra/sessions/s2.json`]: report('s2', { workstream: 'reports', state: 'waiting', link: 'claude://claude.ai/epitaxy/local_s2' }),
+    [`${ROOT}/.orchestra/sessions/s3.json`]: report('s3', { workstream: 'auth', context: { tokens: 254_000, window: 1_000_000 } }),
+  }
+  disk(on, files)
+  session(on, ROOT, 'o')
+  mock.store(on)
+  await start($)
+  let ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  await ui.press({ key: 'orchestra-toggle' })
+  await ui.unmount()
+  ui = await $.ui.mount({ ...BAND, props: { ...BAND.props, maxRows: 6, scroll: { offset: 0, bodyRows: 6 } }, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /^Workstream$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /\+1 more: stale/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /no report yet/ })).toBeUndefined()
+  expect(await ui.find({ key: 'liveview' })).toBeDefined()
+  await ui.unmount()
+})
+
 test('the empty states: no workstreams yet, and nothing needs you', async ($, on) => {
   const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY.split(String.fromCharCode(10)).slice(0, 2).join(String.fromCharCode(10)) }
   disk(on, files)
