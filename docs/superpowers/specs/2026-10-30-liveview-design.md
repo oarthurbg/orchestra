@@ -12,7 +12,7 @@ The decision inbox (item 3) becomes a second view of this page later; nothing he
 
 Fixed by `docs/superpowers/specs/2026-10-30-band-mod-design.md`, not changed here:
 
-- Each session writes `.orchestra/sessions/<session id>.json` (format `v: 1` in the band spec). The dashboard reads these, so the orchestrator-written `status.json` from the roadmap is dropped.
+- Each session writes `.orchestra/sessions/<session id>.json` (format `v: 1` in the band spec). The dashboard reads these, so the maestro-written `status.json` from the roadmap is dropped.
 - While running, the dashboard writes `.orchestra/liveview.json` with a `url` of `http://localhost:<port>/`, and deletes it when it stops. The band opens only `localhost` or `127.0.0.1` URLs and reads only `url`; the dashboard also writes `pid`, for its own stop command.
 - The registry is `.orchestra/workstreams.md`; handoff notes are `docs/workstreams/<name>.md` with a `Status:` line.
 
@@ -41,7 +41,7 @@ Zero-dependency Node (18 or newer), ES modules, in `plugins/orchestra/liveview/`
 
 - **Routes match the path,** so `/?anything` still serves the page.
 - **One instance per project:** `node server.mjs --root <main checkout> --detach` starts the server in the background and prints its URL. When `.orchestra/liveview.json` already points to a server whose `/api/ping` answers with the same root, it prints that URL and starts nothing. `--stop` ends the process in `pid` and deletes `liveview.json` (on Windows a signal cannot run the server's own cleanup).
-- **Start by the band:** on `session.start` in an orchestrator session, the band runs that `--detach` command through `$.process.run` without waiting for it. When `node` is missing the call fails and nothing happens.
+- **Start by the band:** on `session.start` in a maestro session, the band runs that `--detach` command through `$.process.run` without waiting for it. When `node` is missing the call fails and nothing happens.
 - **Start and stop by hand:** `/orchestra:liveview` runs the same command; `/orchestra:liveview stop` runs `--stop`.
 - **Stop:** on SIGINT or SIGTERM it deletes `liveview.json` and exits. It also exits on its own when it has run for 30 minutes and no session file was updated in the last 30 minutes. A `liveview.json` left behind by a crash is overwritten at the next start.
 - **Band change:** the start call is a small addition to the band's `hooks/band/register.tsx`, built after the band lands. The band's spec and plan files are not changed.
@@ -130,7 +130,7 @@ The approved prototype was built with taste-skill (app style `achromatic-ledger`
     - a y-scale at 0, 25, 50, 75 and 100% with faint gridlines;
     - the actual line solid cobalt, the projection dashed to the run-out (100%) or to the reset, with its end labelled;
     - a "Now N%" line and the reading as a dot. A run-out close to now is labelled to the right of its point, clear of "Now N%".
-- **Workstreams card:** one row per session or registered workstream (orchestrator first, unregistered last). Columns: shape, name, context, stage, PR ("none" when a plan has no PR yet), a "done of total · ETA" button, and the timeline track, 24px apart.
+- **Workstreams card:** one row per session or registered workstream (the maestro, the session that conducts the others and writes role `maestro`, first; unregistered last). Columns: shape, name, context, stage, PR ("none" when a plan has no PR yet), a "done of total · ETA" button, and the timeline track, 24px apart.
   - **Shapes, as in the band:**
     - triangle saffron: waiting;
     - square vermilion: 250k or more;
@@ -169,7 +169,7 @@ The page always draws and labels what is missing; nothing takes the server down.
 ## Changes elsewhere in orchestra
 
 - `commands/liveview.md`: the new `/orchestra:liveview [stop]` command.
-- `hooks/band/register.tsx`: the start call on `session.start` in an orchestrator session (after the band lands).
+- `hooks/band/register.tsx`: the start call on `session.start` in a maestro session (after the band lands).
 - `skills/workstream/SKILL.md`: the tick rule from the ETA section.
 - `plugin.json`: version 0.3.0.
 - README: a liveview section with the screenshots, the Node 18 requirement, how to start and stop it, and that it reads token counts (never content) from every project's transcripts, because limits are per account.
@@ -196,7 +196,7 @@ The page always draws and labels what is missing; nothing takes the server down.
   - a busy port moves to the next;
   - `liveview.json` is written and removed on SIGTERM;
   - the idle exit fires, with an injected clock.
-- **Band addition:** engine tests: an orchestrator session calls `$.process.run` once with `--detach`; a workstream session never does.
+- **Band addition:** engine tests: a maestro session calls `$.process.run` once with `--detach`; a workstream session never does.
 - **Page:** taste-skill's `lint.mjs --app` and `inspect.mjs --app` (0 FAIL), impeccable's detector (no findings), and a Playwright pass:
   - the disclosure opens and closes by click and keyboard, and keeps focus across the 5-second redraws;
   - no row is a `role="button"` around a link;
