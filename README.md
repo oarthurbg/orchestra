@@ -95,6 +95,7 @@ Then, in your project:
 - **Docker** only if you pick the optional Postgres-in-Docker test data example.
 - **git** with worktrees, and the **GitHub CLI** (`gh`) for PRs.
 - **Claude Code 2.1.309 or newer** for the band. Older versions were not tested.
+- **graphify** (optional, `pip install graphifyy`) for a code graph that explorers and planners query before they grep. The maestro proposes the first build at `/orchestra:init` and at wave ends once the integration branch tracks 500 or more TypeScript or JavaScript files; it costs no tokens and is never committed. Without it, everything works as before.
 
 ## The band
 
