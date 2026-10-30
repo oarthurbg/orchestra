@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>orchestra inbox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Prototype of the liveview's inbox view. Tokens and shell are page.html's (achromatic-ledger on the brand).
+   Grid: fluid canvas, 32px gutter; each question is one card, 5fr ask + 7fr evidence, 32px between.
+   The question is set at 22px, above page.html's 17px card titles: here it is the content, not a card label. */
+:root{
+  --ground:#FAF8F3; --surface:#FFFFFF; --raised:#F0ECE3; --border:#E4DED2; --rule:#EFEBE3;
+  --text:#111114; --muted:#5E5A52; --primary:#111114; --on-primary:#FAF8F3;
+  --data:#2450E0; --negative:#C8341B; --triangle:#FFC21A; --idle:#8FA3D9; --half:#B9C8F2;
+  --display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --radius:4px; --gap:16px; --pad:24px; --gutter:32px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --ground:#000000; --surface:#0E0E10; --raised:#18181B; --border:#232327; --rule:#1A1A1D;
+  --text:#F1EEE8; --muted:#A9A49A; --primary:#F1EEE8; --on-primary:#000000; --data:#5B7FFF; --negative:#FF6A52; --idle:#B9C8F2; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --ground:#000000; --surface:#0E0E10; --raised:#18181B; --border:#232327; --rule:#1A1A1D;
+  --text:#F1EEE8; --muted:#A9A49A; --primary:#F1EEE8; --on-primary:#000000; --data:#5B7FFF; --negative:#FF6A52; --idle:#B9C8F2; color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--text);font:14px/20px var(--body);font-variant-numeric:tabular-nums}
+a{color:inherit}
+p{text-wrap:pretty}
+:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.bar-top{height:48px;display:flex;align-items:center;gap:12px;padding:0 var(--gutter);border-bottom:1px solid var(--border)}
+.bar-top > svg{flex:none}
+.word{font-family:var(--display);font-weight:800;font-size:21px;letter-spacing:-.02em}
+.views{display:flex;gap:4px;margin-left:12px}
+.views a{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:var(--radius);color:var(--muted);text-decoration:none;font-weight:500}
+.views a:hover{color:var(--text)}
+.views a[aria-current="page"]{background:var(--raised);color:var(--text)}
+.count{font:800 13px/18px var(--display);min-width:20px;padding:0 6px;border-radius:999px;background:var(--triangle);color:#111114;text-align:center}
+.fresh{margin-left:auto;color:var(--muted);font-size:12px}
+.themes{display:flex;gap:2px;padding:2px;border:1px solid var(--border);border-radius:999px}
+.themes button{font:500 12px var(--body);color:var(--muted);background:none;border:0;border-radius:999px;padding:4px 10px;min-height:24px;cursor:pointer}
+.themes button:hover{color:var(--text)}
+.themes button[aria-pressed="true"]{background:var(--primary);color:var(--on-primary)}
+.theme-cycle{display:none;font:500 12px var(--body);color:var(--text);background:none;border:1px solid var(--border);border-radius:999px;padding:4px 12px;min-height:28px;cursor:pointer}
+main{padding:28px var(--gutter) 48px;display:grid;grid-template-columns:minmax(0,1fr);gap:var(--gap)}
+.title{margin-bottom:8px}
+h1{font-family:var(--display);font-weight:800;font-size:28px;line-height:36px;letter-spacing:-.02em;margin:0}
+.finding{margin:4px 0 0;color:var(--muted);font-size:16px;line-height:24px;max-width:80ch}
+.finding b{color:var(--text);font-weight:600}
+.fresh-m{display:none;margin:4px 0 0;color:var(--muted);font-size:13px}
+.btn{flex:none;height:36px;padding:0 14px;border-radius:var(--radius);background:var(--primary);color:var(--on-primary);border:0;font:500 14px var(--body);display:inline-flex;align-items:center;text-decoration:none;cursor:pointer}
+.btn:hover{opacity:.88}
+.btn.quiet{background:none;color:var(--text);border:1px solid var(--border)}
+.btn.quiet:hover{opacity:1;background:var(--raised)}
+/* Desktop: the ask on the left with its button under it, the evidence on the right.
+   One column: ask, evidence, then the button, so the files are seen before answering. */
+.q{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);grid-template-areas:"ask ev" "act ev";grid-template-rows:auto 1fr;column-gap:32px;padding:var(--pad)}
+.ask{grid-area:ask}
+.ev{grid-area:ev}
+.act{grid-area:act;align-self:start;margin-top:20px;display:flex;align-items:center;gap:12px}
+.who{display:flex;align-items:center;gap:8px;color:var(--muted)}
+.who b{color:var(--text);font-weight:600}
+.who time{margin-left:auto}
+.who time.long{color:var(--negative)}
+h2{font-family:var(--display);font-weight:800;font-size:22px;line-height:28px;letter-spacing:-.015em;margin:12px 0 0;max-width:36ch;text-wrap:balance;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
+.opts{margin:16px 0 0;font-size:16px;line-height:24px;color:var(--muted);max-width:60ch}
+.opts b{color:var(--text);font-weight:500}
+ul.opts{padding-left:20px}
+ul.opts li{color:var(--text)}
+.opened{color:var(--muted)}
+.q.is-opened{opacity:.55}
+.shots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.ev.one{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 24px;align-items:start}
+.ev.one .shots{grid-template-columns:minmax(0,1fr)}
+.ev.one .files{margin-top:0}
+.shot{display:block;text-decoration:none;color:inherit}
+.shot img{display:block;width:100%;aspect-ratio:16/10;object-fit:cover;object-position:top center;border-radius:var(--radius);background:var(--raised)}
+.shot span{display:block;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.shot:hover span{text-decoration:underline}
+.files{list-style:none;margin:16px 0 0;padding:0}
+.files li{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:12px;align-items:baseline;padding:8px 0;border-top:1px solid var(--rule)}
+.files li:first-child{border-top:0}
+.files .kind, .files .chg{color:var(--muted)}
+.files a{font-weight:500;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.files a:hover{text-decoration:underline}
+.none{align-self:start;margin:0;padding:16px;border-radius:var(--radius);background:var(--raised);color:var(--muted)}
+.none b{color:var(--text);font-weight:500}
+.empty{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:32px var(--pad);display:none}
+.empty p{margin:0 0 16px;color:var(--muted);font-size:16px;line-height:24px}
+body.is-empty .q{display:none}
+body.is-empty .empty{display:block}
+.demo{color:var(--muted);font-size:13px}
+.demo button{font:inherit;color:inherit;background:none;border:0;padding:0;text-decoration:underline;cursor:pointer}
+@media (max-width:900px){
+  .q{grid-template-columns:minmax(0,1fr);grid-template-areas:"ask" "ev" "act";grid-template-rows:auto;row-gap:20px}
+  .act{margin-top:0}
+}
+@media (max-width:640px){
+  :root{--gutter:16px;--pad:16px}
+  .fresh, .word, .themes{display:none}
+  .theme-cycle{display:inline-block;margin-left:auto}
+  .views{margin-left:0}
+  .fresh-m{display:block}
+  h2{font-size:20px;line-height:26px}
+  .ev.one{grid-template-columns:minmax(0,1fr)}
+  .files li{grid-template-columns:minmax(0,1fr) auto}
+  .files .kind{grid-column:1 / -1;font-size:12px;line-height:16px}
+}
+</style>
+</head>
+<body>
+<header class="bar-top">
+  <svg width="28" height="28" viewBox="0 0 100 100" aria-hidden="true"><path d="M10 90 A 27 27 0 0 1 64 90 Z" fill="var(--half)"/><circle cx="34" cy="34" r="24" fill="#2450E0"/><rect x="62" y="10" width="28" height="42" fill="#F0442C"/><polygon points="66,90 90,90 78,56" fill="#FFC21A"/></svg>
+  <span class="word">orchestra</span>
+  <nav class="views" aria-label="Views">
+    <a href="#overview">Overview</a>
+    <a href="#inbox" aria-current="page">Inbox <span class="count" id="count"></span><span class="sr-only" id="count-sr"></span></a>
+  </nav>
+  <span class="fresh">Updated 3 s ago</span>
+  <div class="themes" role="group" aria-label="Theme">
+    <button type="button" data-theme-pick="system" aria-pressed="true">System</button>
+    <button type="button" data-theme-pick="light" aria-pressed="false">Light</button>
+    <button type="button" data-theme-pick="dark" aria-pressed="false">Dark</button>
+  </div>
+  <button type="button" class="theme-cycle" id="cycle">Theme: System</button>
+</header>
+<main id="main">
+  <div class="title">
+    <h1 id="h1"></h1><p class="finding" id="finding"></p>
+    <p class="fresh-m">Updated 3 s ago</p>
+  </div>
+  <section class="empty" aria-label="Inbox is empty">
+    <p>When a workstream asks you something, its question and the files to look at show up here.</p>
+    <a class="btn quiet" href="#overview">Go to the overview</a>
+  </section>
+  <p class="demo">Prototype with sample data. <button type="button" id="toggle">Show the empty state</button></p>
+</main>
+<script>
+// Sample data in the shape the inbox endpoint will return. Asked times are relative to now.
+const MIN = 60000, now = Date.now()
+const FILES_SHOWN = 5
+const questions = [
+  { workstream: 'billing', stage: 'build', askedAt: now - 130 * MIN, link: '#',
+    question: 'Approve the invoice mockup, or change how the totals sit?',
+    options: ['Approve as it is', 'Move totals above the line items', 'Show tax on its own row'],
+    files: [
+      { path: 'docs/mockups/invoice-light.png', kind: 'Mockup', change: 'added', src: 'light-1440.png' },
+      { path: 'docs/mockups/invoice-dark.png', kind: 'Mockup', change: 'added', src: 'dark-1440.png' },
+      { path: 'docs/superpowers/specs/2026-10-30-billing-design.md', kind: 'Spec', change: 'changed' },
+      { path: 'docs/superpowers/plans/2026-10-30-billing.md', kind: 'Plan', change: 'added' },
+    ],
+    pr: { label: 'PR #14, draft', href: '#' } },
+  { workstream: 'search', stage: 'review', askedAt: now - 38 * MIN, link: '#',
+    question: 'Keep the old filters next to the new search box?',
+    options: ['Keep them', 'Drop them'],
+    files: [
+      { path: 'docs/screenshots/search-phone.png', kind: 'Screenshot', change: 'added', src: 'light-390.png' },
+      { path: 'docs/superpowers/specs/2026-10-30-search-design.md', kind: 'Spec', change: 'added' },
+    ],
+    pr: null },
+  { workstream: 'exports', stage: 'plan', askedAt: now - 9 * MIN, link: '#',
+    question: 'Send a sample export file to test the parser against.',
+    options: [], files: [], pr: null },
+]
+
+const $ = (tag, attrs = {}, ...kids) => {
+  const el = tag.startsWith('svg:') ? document.createElementNS('http://www.w3.org/2000/svg', tag.slice(4)) : document.createElement(tag)
+  for (const [k, v] of Object.entries(attrs)) if (v != null && v !== false) el.setAttribute(k, v)
+  for (const kid of kids.flat()) if (kid != null && kid !== false) el.append(kid instanceof Node ? kid : String(kid))
+  return el
+}
+const triangle = () => $('svg:svg', { width: 16, height: 16, viewBox: '0 0 14 14', 'aria-hidden': 'true' }, $('svg:polygon', { points: '0,13 14,13 7,1', fill: 'var(--triangle)' }))
+const mins = t => Math.round((now - t) / MIN)
+const short = t => { const m = mins(t); return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} m` : `${m} m` }
+const spoken = t => { const m = mins(t), h = Math.floor(m / 60), r = m % 60; return [h && `${h} hour${h > 1 ? 's' : ''}`, r && `${r} minute${r > 1 ? 's' : ''}`].filter(Boolean).join(' ') }
+const base = p => p.split('/').pop()
+const opened = new Set()
+
+function options(q) {
+  if (!q.options.length) return $('p', { class: 'opts' }, 'No options offered: it needs your own words.')
+  // Up to three read as one sentence; more become a list.
+  if (q.options.length > 3) return [$('p', { class: 'opts' }, 'It offers:'), $('ul', { class: 'opts' }, q.options.map(o => $('li', {}, o)))]
+  return $('p', { class: 'opts' }, 'It offers ', ...q.options.flatMap((o, i) => [i ? (i === q.options.length - 1 ? ', or ' : ', ') : '', $('b', {}, o)]), '.')
+}
+
+function evidence(q) {
+  if (!q.files.length && !q.pr) return $('p', { class: 'none ev' }, $('b', {}, `Nothing on the ${q.workstream} branch yet.`), ' The question is all there is; the session has the rest.')
+  const shots = q.files.filter(f => f.src).slice(0, 2)
+  const rest = q.files.filter(f => !shots.includes(f))
+  const more = rest.length - FILES_SHOWN
+  return $('div', { class: shots.length === 1 ? 'ev one' : 'ev' },
+    shots.length ? $('div', { class: 'shots' }, shots.map(f => $('a', { class: 'shot', href: f.src, target: '_blank', rel: 'noopener' },
+      $('img', { src: f.src, alt: `${f.kind} ${base(f.path)}, opens in a new tab`, loading: 'lazy' }), $('span', {}, base(f.path))))) : null,
+    $('ul', { class: 'files' },
+      rest.slice(0, FILES_SHOWN).map(f => $('li', {}, $('span', { class: 'kind' }, f.kind), $('a', { href: '#', target: '_blank', title: f.path }, base(f.path)), $('span', { class: 'chg' }, f.change))),
+      more > 0 ? $('li', {}, $('span', { class: 'kind' }, ''), $('span', { class: 'chg' }, `${more} more on the branch`), '') : null,
+      q.pr ? $('li', {}, $('span', { class: 'kind' }, 'Pull request'), $('a', { href: q.pr.href, target: '_blank' }, q.pr.label), $('span', { class: 'chg' }, 'on GitHub')) : null))
+}
+
+function card(q, first) {
+  const id = `h-${q.workstream}`
+  const isOpened = opened.has(q.workstream)
+  const btn = $('a', { class: first ? 'btn' : 'btn quiet', href: q.link }, `Answer in ${q.workstream}`)
+  btn.addEventListener('click', e => { e.preventDefault(); opened.add(q.workstream); render(shown) })
+  return $('section', { class: `q${isOpened ? ' is-opened' : ''}`, 'aria-labelledby': id },
+    $('div', { class: 'ask' },
+      $('div', { class: 'who' }, triangle(), $('b', {}, q.workstream), $('span', {}, `${q.stage} stage`),
+        $('time', { class: mins(q.askedAt) > 120 ? 'long' : null, datetime: new Date(q.askedAt).toISOString(), 'aria-label': `waiting ${spoken(q.askedAt)}` }, `Waiting ${short(q.askedAt)}`)),
+      $('h2', { id, title: q.question }, $('span', { class: 'sr-only' }, `${q.workstream} asks: `), q.question),
+      options(q)),
+    evidence(q),
+    $('div', { class: 'act' }, isOpened ? $('span', { class: 'opened' }, `Opened in ${q.workstream}. It leaves the inbox once answered.`) : btn))
+}
+
+let shown = questions
+function render(list) {
+  document.body.classList.toggle('is-empty', !list.length)
+  document.querySelectorAll('.q').forEach(n => n.remove())
+  const sorted = [...list].sort((a, b) => a.askedAt - b.askedAt)
+  const count = document.getElementById('count')
+  count.textContent = list.length || ''
+  count.hidden = !list.length
+  count.setAttribute('aria-hidden', 'true')
+  document.getElementById('count-sr').textContent = list.length ? `, ${list.length} waiting` : ''
+  document.getElementById('h1').textContent = list.length ? `${list.length} ${list.length === 1 ? 'decision' : 'decisions'} waiting on you` : 'Nothing is waiting on you'
+  const first = sorted[0]
+  document.getElementById('finding').replaceChildren(...(first
+    ? [$('b', {}, `${first.workstream} has waited longest, ${short(first.askedAt)}.`), ' Oldest first. Each answer goes in its own session.']
+    : ['Every workstream is working on its own.']))
+  const anchor = document.querySelector('.empty')
+  sorted.forEach((q, i) => anchor.before(card(q, i === 0)))
+}
+render(shown)
+document.getElementById('toggle').addEventListener('click', e => {
+  shown = shown.length ? [] : questions
+  e.target.textContent = shown.length ? 'Show the empty state' : 'Show the sample questions'
+  render(shown)
+})
+const THEMES = ['system', 'light', 'dark']
+let theme = 'system'
+function applyTheme(t) {
+  theme = t
+  if (t === 'system') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', t)
+  for (const x of document.querySelectorAll('[data-theme-pick]')) x.setAttribute('aria-pressed', String(x.dataset.themePick === t))
+  document.getElementById('cycle').textContent = `Theme: ${t[0].toUpperCase()}${t.slice(1)}`
+}
+for (const b of document.querySelectorAll('[data-theme-pick]')) b.addEventListener('click', () => applyTheme(b.dataset.themePick))
+document.getElementById('cycle').addEventListener('click', () => applyTheme(THEMES[(THEMES.indexOf(theme) + 1) % 3]))
+</script>
+</body>
+</html>
