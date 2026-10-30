@@ -1,0 +1,13 @@
+{
+  "name": "orchestra",
+  "version": "0.1.0",
+  "description": "Multi-session agent orchestration: an orchestrator session that only coordinates, workstream sessions that each own a feature from spec to PR, 9 subagents with set models and ponytail modes, handoff notes and per-workstream test databases.",
+  "author": {
+    "name": "oarthurbg",
+    "url": "https://github.com/oarthurbg"
+  },
+  "homepage": "https://github.com/oarthurbg/orchestra",
+  "repository": "https://github.com/oarthurbg/orchestra",
+  "license": "MIT",
+  "keywords": ["orchestration", "multi-session", "workflow", "subagents", "spec-first"]
+}

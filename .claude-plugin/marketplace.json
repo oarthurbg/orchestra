@@ -1,0 +1,60 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "orchestra",
+  "description": "Multi-session agent orchestration for Claude Code: one orchestrator session, parallel workstream sessions, spec-first, risk-proportional reviews. Also lists the third-party plugins the workflow uses, fetched from their own upstream repositories.",
+  "owner": {
+    "name": "oarthurbg",
+    "url": "https://github.com/oarthurbg"
+  },
+  "plugins": [
+    {
+      "name": "orchestra",
+      "source": "./plugins/orchestra",
+      "description": "Orchestrator and workstream roles, 9 subagents, handoff notes, per-workstream test databases, and /orchestra:init to scaffold a project.",
+      "category": "productivity",
+      "tags": ["orchestration", "multi-session", "workflow", "subagents"]
+    },
+    {
+      "name": "superpowers",
+      "source": { "source": "github", "repo": "obra/superpowers" },
+      "description": "Upstream: Jesse Vincent (obra/superpowers). Brainstorming, plans, subagent-driven development, TDD, debugging, code review.",
+      "homepage": "https://github.com/obra/superpowers",
+      "category": "development"
+    },
+    {
+      "name": "ponytail",
+      "source": { "source": "github", "repo": "DietrichGebert/ponytail" },
+      "description": "Upstream: Dietrich Gebert (DietrichGebert/ponytail). Lazy senior dev mode with off, lite, full and ultra levels, plus review, debt and audit.",
+      "homepage": "https://github.com/DietrichGebert/ponytail",
+      "category": "productivity"
+    },
+    {
+      "name": "impeccable",
+      "source": { "source": "git-subdir", "url": "pbakaus/impeccable", "path": "plugin" },
+      "description": "Upstream: Paul Bakaus (pbakaus/impeccable). Frontend design fluency, anti-pattern detector and finish reviewer.",
+      "homepage": "https://impeccable.style",
+      "category": "design"
+    },
+    {
+      "name": "taste-skill",
+      "source": { "source": "github", "repo": "Leonxlnx/taste-skill" },
+      "description": "Upstream: leonxlnx (Leonxlnx/taste-skill). Art direction to keep mockups clear of the generic AI look.",
+      "homepage": "https://github.com/Leonxlnx/taste-skill",
+      "category": "design"
+    },
+    {
+      "name": "frontend-design",
+      "source": { "source": "git-subdir", "url": "anthropics/claude-plugins-official", "path": "plugins/frontend-design" },
+      "description": "Upstream: Anthropic (claude-plugins-official). Distinctive visual direction for mockups.",
+      "homepage": "https://github.com/anthropics/claude-plugins-official/tree/main/plugins/frontend-design",
+      "category": "design"
+    },
+    {
+      "name": "design",
+      "source": { "source": "git-subdir", "url": "anthropics/knowledge-work-plugins", "path": "design" },
+      "description": "Upstream: Anthropic (knowledge-work-plugins). Design critique and accessibility review.",
+      "homepage": "https://github.com/anthropics/knowledge-work-plugins/tree/main/design",
+      "category": "design"
+    }
+  ]
+}
