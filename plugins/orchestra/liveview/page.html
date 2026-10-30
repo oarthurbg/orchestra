@@ -97,7 +97,7 @@ h2{font-family:var(--display);font-weight:800;font-size:17px;line-height:24px;le
 .days .nowlabel{top:-16px;color:var(--text);font-weight:500}
 .row.head{padding-top:12px}
 .tasks{background:var(--raised);padding:4px var(--pad) 12px calc(var(--pad) + 32px);border-top:1px solid var(--rule)}
-.task{display:grid;grid-template-columns:16px minmax(0,320px) 220px 90px;gap:8px;min-height:28px;align-items:center}
+.task{display:grid;grid-template-columns:16px minmax(0,320px) 220px auto;gap:8px;min-height:28px;align-items:center}
 .legend{display:flex;flex-wrap:wrap;gap:6px 18px;padding:12px var(--pad) 16px;color:var(--muted);font-size:13px;border-top:1px solid var(--rule)}
 .legend > span > svg{vertical-align:-1px;margin:0 2px}
 .wait-sw{background:var(--pause);border:1px solid var(--border)}
@@ -481,7 +481,7 @@ function render(snap) {
 
 function draw(snap) {
   if (snap.error) {
-    document.getElementById('fresh').replaceChildren()
+    document.getElementById('fresh').replaceChildren(offline ? $('span', { class: 'error' }, OFFLINE) : '')
     document.getElementById('finding').replaceChildren($('span', { class: 'error' }, `The snapshot failed: ${snap.error}`))
     return
   }
