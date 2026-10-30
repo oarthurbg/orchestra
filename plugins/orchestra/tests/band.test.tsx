@@ -25,26 +25,34 @@ const posix = (path: string) => path.replace(/^[A-Za-z]:/, '').replace(/\\/g, '/
 
 function disk(on: On, files: Record<string, string>, failWrites = false) {
   const under = (dir: string) => Object.keys(files).filter(k => k.startsWith(`${dir}/`))
-  on('fs.read', ($, e) => (posix(e.path) in files ? { value: files[posix(e.path)]! } : ({ deny: 'missing' }) as never))
-  on('fs.write', ($, e) => { if (failWrites) return { deny: 'disk full' } as never; files[posix(e.path)] = e.text; return { value: undefined } })
+  // Each write moves a file's mtime; `touch` does it for a test that changes `files` itself.
+  const mtime: Record<string, number> = {}
+  const reads: Record<string, number> = {}
+  let tick = 1
+  on('fs.read', ($, e) => {
+    reads[posix(e.path)] = (reads[posix(e.path)] ?? 0) + 1
+    return posix(e.path) in files ? { value: files[posix(e.path)]! } : ({ deny: 'missing' }) as never
+  })
+  on('fs.write', ($, e) => { if (failWrites) return { deny: 'disk full' } as never; files[posix(e.path)] = e.text; mtime[posix(e.path)] = ++tick; return { value: undefined } })
   on('fs.exists', ($, e) => ({ value: posix(e.path) in files || under(posix(e.path)).length > 0 }))
   // exists() and stat() agree: a folder is there when a file lies under it.
   on('fs.stat', ($, e) => (posix(e.path) in files
-    ? { value: { kind: 'file', size: 1, mtimeMs: 1, isLink: false } }
+    ? { value: { kind: 'file', size: 1, mtimeMs: mtime[posix(e.path)] ?? 1, isLink: false } }
     : under(posix(e.path)).length > 0 ? { value: { kind: 'dir', size: 0, mtimeMs: 1, isLink: false } } : ({ deny: 'missing' }) as never))
   on('fs.list', ($, e) => ({
     value: under(posix(e.path)).filter(k => !k.slice(posix(e.path).length + 1).includes('/'))
-      .map(k => ({ name: k.slice(posix(e.path).length + 1), kind: 'file', size: 1, mtimeMs: 1, isLink: false })),
+      .map(k => ({ name: k.slice(posix(e.path).length + 1), kind: 'file', size: 1, mtimeMs: mtime[k] ?? 1, isLink: false })),
   }) as never)
+  return { reads, touch: (path: string) => { mtime[path] = ++tick } }
 }
 
-function session(on: On, root: string, id: string, agents: () => unknown[] = () => []) {
+function session(on: On, root: string, id: string, agents: () => unknown[] = () => [], title: () => string = () => 'Orchestrator') {
   const clock = mock.clock(on, { now: Date.now() })
   on('session.root', () => ({ value: root }))
   on('session.cwd', () => ({ value: root }))
   on('session.id', () => ({ value: id }))
   on('session.usage', () => ({ value: { startedAt: 0, context: { tokens: 30_000, window: 1_000_000 }, rateLimits: [{ kind: 'five_hour', percentUsed: 42 }] } }) as never)
-  on('mcp.call', () => ({ value: { content: [{ type: 'text', text: JSON.stringify({ title: 'Orchestrator', link: 'claude://claude.ai/epitaxy/local_o' }) }] } }) as never)
+  on('mcp.call', () => ({ value: { content: [{ type: 'text', text: JSON.stringify({ title: title(), link: 'claude://claude.ai/epitaxy/local_o' }) }] } }) as never)
   on('agent.list', () => ({ value: agents() }) as never)
   on('session.start', ($, e) => ({ cwd: e.cwd }))
   return clock
@@ -225,6 +233,7 @@ test('keep-warm pings once while a subagent runs and the cache is about to end',
 const AGENT = (id: string) => ({ id, description: id, type: 'implementer', status: 'running' })
 const REPLY = { isAnswered: true, text: 'ok', usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 30_000, cache_creation_input_tokens: 0 } }
 const MIN = 60_000
+const REFRESH = 20_000
 
 // Counts forks; the reply is `reply()`, or a denial when it returns null.
 function forker(on: On, reply: () => unknown = () => REPLY) {
@@ -312,20 +321,174 @@ test('a negative warmMaxHours falls back to 2 hours', { options: { cacheMinutes:
   expect(forks.count).toBe(1)
 })
 
-test('no ping while a turn is running: its own requests keep the cache warm', { options: { cacheMinutes: 5, warmMaxHours: 2 } }, async ($, on) => {
+// The bottom of a model request: answers at once, with no usage.
+function steps(on: On) {
+  on('turn.step', async function* ($, e) {
+    return { turnId: e.turnId, index: e.index, answer: '', toolUses: [], stopReason: 'end_turn' as const, usage: null }
+  })
+}
+const step = async ($: { turn: { step: (e: { turnId: string; index: number; model: string; messageCount: number; agentId?: string }) => AsyncGenerator<unknown, unknown> } }, agentId?: string) => {
+  for await (const _ of $.turn.step({ turnId: 't1', index: 0, model: 'opus', messageCount: 1, ...(agentId ? { agentId } : {}) })) { /* drain */ }
+}
+
+test('during a turn with no main-thread request for longer than the cache lifetime, a ping goes out', { options: { cacheMinutes: 5, warmMaxHours: 2 } }, async ($, on) => {
   const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
   disk(on, files)
   const clock = session(on, ROOT, 'o', () => [AGENT('a1')])
   const forks = forker(on)
   on('turn.start', ($, e) => ({ turnId: e.turnId }))
-  on('turn.complete', ($, e) => ({ text: e.answer }))
   await start($)
   await $.turn.start({ text: 'go', turnId: 't1' })
-  await clock.advance(6 * MIN)
+  await clock.advance(5 * MIN)
+  expect(forks.count).toBe(1)
+})
+
+test('a main-thread turn.step pushes the ping back; a subagent turn.step does not', { options: { cacheMinutes: 5, warmMaxHours: 2 } }, async ($, on) => {
+  const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+  disk(on, files)
+  const clock = session(on, ROOT, 'o', () => [AGENT('a1')])
+  const forks = forker(on)
+  steps(on)
+  await start($)
+  await clock.advance(4 * MIN)
+  await step($)
+  await clock.advance(4 * MIN)
   expect(forks.count).toBe(0)
-  await $.turn.complete({ reason: 'answer', answer: '', durationMs: 1, isAborted: false, turnId: 't1' })
+  await step($, 'a1')
   await clock.advance(MIN)
   expect(forks.count).toBe(1)
+})
+
+test('a session.measure is not a main-thread request: it does not push the ping back', { options: { cacheMinutes: 5, warmMaxHours: 2 } }, async ($, on) => {
+  const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+  disk(on, files)
+  const clock = session(on, ROOT, 'o', () => [AGENT('a1')])
+  const forks = forker(on)
+  on('session.measure', ($, e) => ({ changed: e.changed }))
+  await start($)
+  await clock.advance(4 * MIN)
+  await $.session.measure({ context: { tokens: 30_000, window: 1_000_000 }, rateLimits: [], changed: [] } as never)
+  await clock.advance(MIN)
+  expect(forks.count).toBe(1)
+})
+
+test('a fork that missed the cache is no ping: it counts a miss, toasts once and waits for the next main-thread request', { options: { cacheMinutes: 5, warmMaxHours: 2 } }, async ($, on) => {
+  const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+  disk(on, files)
+  const clock = session(on, ROOT, 'o', () => [AGENT('a1')])
+  // The session holds 30k of context; a fork that read 1k of it from the cache paid for the rest.
+  const forks = forker(on, () => ({ ...REPLY, usage: { ...REPLY.usage, cache_read_input_tokens: 1_000 } }))
+  const toasts: string[] = []
+  on('ui.toast', ($, e) => { toasts.push(e.text); return { value: undefined } })
+  steps(on)
+  await start($)
+  await clock.advance(5 * MIN)
+  expect(forks.count).toBe(1)
+  const warm = () => JSON.parse(files[`${ROOT}/.orchestra/sessions/o.json`]!).warm
+  expect(warm()).toMatchObject({ pings: 0, misses: 1 })
+  expect(toasts).toEqual(['orchestra band: keep-warm missed the cache; set cacheMinutes lower (5 for API keys and overage)'])
+  await clock.advance(20 * MIN)
+  expect(forks.count).toBe(1)
+  await step($)
+  await clock.advance(5 * MIN)
+  expect(forks.count).toBe(2)
+  expect(warm()).toMatchObject({ pings: 0, misses: 2 })
+  expect(toasts).toHaveLength(1)
+})
+
+test('the summary line shows the ping count in an orchestrator session', { options: { cacheMinutes: 5, warmMaxHours: 2 } }, async ($, on) => {
+  const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+  disk(on, files)
+  const clock = session(on, ROOT, 'o', () => [AGENT('a1')])
+  forker(on)
+  await start($)
+  let ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /warm/ })).toBeUndefined()
+  await ui.unmount()
+  await clock.advance(5 * MIN)
+  ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /warm 1x/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('the summary line shows the ping count outside an orchestra project too', { options: { cacheMinutes: 5, warmMaxHours: 2 } }, async ($, on) => {
+  const files: Record<string, string> = {}
+  disk(on, files)
+  const clock = session(on, '/home/u/other', 'x', () => [AGENT('a1')])
+  forker(on)
+  await $.session.start({ cwd: '/home/u/other', surface: 'desktop', isInteractive: true })
+  await clock.advance(5 * MIN)
+  const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /warm 1x/ })).toBeDefined()
+  expect(Object.keys(files)).toEqual([])
+  await ui.unmount()
+})
+
+test('a report whose re-read fails keeps its row, and an unchanged report is not re-read', async ($, on) => {
+  const S2 = `${ROOT}/.orchestra/sessions/s2.json`
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY,
+    [S2]: report('s2', { workstream: 'reports', state: 'waiting', detail: 'asks: pick chart library' }),
+  }
+  const fs = disk(on, files)
+  const clock = session(on, ROOT, 'o')
+  await start($)
+  await clock.advance(REFRESH)
+  await clock.advance(REFRESH)
+  expect(fs.reads[S2]).toBe(1)
+  // Half-written: the file changed and does not parse.
+  files[S2] = '{"v": 1, "sess'
+  fs.touch(S2)
+  await clock.advance(REFRESH)
+  expect(fs.reads[S2]).toBe(2)
+  const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /waiting on you/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('a report that disappeared is forgotten', async ($, on) => {
+  const S2 = `${ROOT}/.orchestra/sessions/s2.json`
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY,
+    [S2]: report('s2', { workstream: 'reports', state: 'waiting' }),
+  }
+  disk(on, files)
+  const clock = session(on, ROOT, 'o')
+  await start($)
+  delete files[S2]
+  await clock.advance(REFRESH)
+  const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /waiting on you/ })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('an AskUserQuestion call writes waiting with its question, and clears it afterwards', async ($, on) => {
+  const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+  disk(on, files)
+  session(on, ROOT, 'o')
+  const mine = () => JSON.parse(files[`${ROOT}/.orchestra/sessions/o.json`]!) as { state: string; detail: string }
+  let during: { state: string; detail: string } | undefined
+  on('tool.call', () => { during = mine(); return { result: { questions: [], answers: {} } } as never })
+  await start($)
+  await $.tool.call({ tool: 'AskUserQuestion', questions: [{ question: 'Which chart library?', header: 'Library', multiSelect: false, options: [{ label: 'a', description: 'a' }, { label: 'b', description: 'b' }] }] } as never)
+  expect(during).toMatchObject({ state: 'waiting', detail: 'asks: Which chart library?' })
+  expect(mine()).toMatchObject({ state: 'idle', detail: '' })
+})
+
+test('a main-thread turn.complete reads the sidebar title again', async ($, on) => {
+  const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+  disk(on, files)
+  let title = 'New session'
+  const clock = session(on, ROOT, 'o', () => [], () => title)
+  on('turn.complete', ($, e) => ({ text: e.answer }))
+  await start($)
+  const mine = () => JSON.parse(files[`${ROOT}/.orchestra/sessions/o.json`]!).title as string
+  expect(mine()).toBe('New session')
+  title = 'Fix the login page'
+  await $.turn.complete({ reason: 'answer', answer: '', durationMs: 1, isAborted: false, turnId: 't1' })
+  // The title is read without holding up the turn: wait for it to land.
+  for (let i = 0; i < 50 && mine() !== title; i++) await clock.advance(1)
+  expect(mine()).toBe('Fix the login page')
 })
 
 test('a refresh that rejects does not stop the keep-warm check', { options: { cacheMinutes: 5, warmMaxHours: 2 } }, async ($, on) => {

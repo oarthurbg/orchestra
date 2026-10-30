@@ -27,10 +27,23 @@ export function parseRegistry(md: string): RegistryRow[] {
   })
 }
 
+// A path from the registry, made absolute against `base` with its . and .. segments folded.
+export function resolvePath(base: string, path: string): string {
+  const p = norm(path)
+  const parts = (p.startsWith('/') || /^[a-z]:/.test(p) ? p : `${norm(base)}/${p}`).split('/')
+  // parts[0] is '' for a POSIX root or the drive: .. never climbs past it.
+  const out = [parts[0]!]
+  for (const s of parts.slice(1)) {
+    if (s === '..') { if (out.length > 1) out.pop() }
+    else if (s !== '.' && s !== '') out.push(s)
+  }
+  return out.join('/')
+}
+
 export function roleOf(root: string, main: string, rows: RegistryRow[]): { role: Role; workstream: string | null } {
   const r = norm(root)
   if (r === norm(main)) return { role: 'orchestrator', workstream: null }
-  const row = rows.find(x => x.worktree === r)
+  const row = rows.find(x => resolvePath(main, x.worktree) === r)
   return row ? { role: 'workstream', workstream: row.workstream } : { role: 'unregistered', workstream: null }
 }
 
@@ -51,7 +64,9 @@ export function parseSessionFile(text: string): SessionFile | null {
   try {
     const f = JSON.parse(text) as SessionFile | null
     const ok = typeof f === 'object' && f !== null && f.v === 1 && typeof f.session === 'string' && Array.isArray(f.limits) &&
-      typeof f.context === 'object' && f.context !== null && typeof f.warm === 'object' && f.warm !== null &&
+      f.limits.every(l => typeof l === 'object' && l !== null && typeof l.kind === 'string' && typeof l.percentUsed === 'number') &&
+      typeof f.context === 'object' && f.context !== null && (typeof f.context.tokens === 'number' || f.context.tokens === null) &&
+      typeof f.warm === 'object' && f.warm !== null &&
       typeof f.updatedAt === 'string' && !Number.isNaN(Date.parse(f.updatedAt))
     return ok ? f : null
   } catch {
@@ -100,6 +115,8 @@ export type ViewInput = {
   now: number
   liveview: string
   ownLimits?: Limit[]
+  // This session's own keep-warm pings, shown on the summary line in every role.
+  pings?: number
 }
 
 const newest = (files: SessionFile[]) => files.reduce<SessionFile | undefined>((a, b) => (!a || Date.parse(b.updatedAt) > Date.parse(a.updatedAt) ? b : a), undefined)
@@ -107,9 +124,10 @@ const pct = (limits: Limit[], kind: string) => limits.find(l => l.kind === kind)
 
 export function buildView(i: ViewInput): BandView {
   const fresh = newest(i.files.filter(f => f.limits.length > 0))
-  const limits = fresh?.limits ?? i.ownLimits ?? []
+  const limits = (fresh?.limits ?? i.ownLimits ?? []).filter(l => !l.resetsAt || Date.parse(l.resetsAt) > i.now)
   const view: BandView = {
     inProject: i.inProject,
+    pings: i.pings ?? 0,
     fiveHour: pct(limits, 'five_hour'),
     week: pct(limits, 'seven_day'),
     runOut: runOut(limits.find(l => l.kind === 'seven_day'), i.now),
@@ -132,7 +150,7 @@ export function buildView(i: ViewInput): BandView {
     if (me) {
       const big = (me.context.tokens ?? 0) >= CONTEXT_LIMIT
       const shape = me.state === 'waiting' ? 'triangle' : big ? 'square' : 'circle'
-      view.rows = [row(me, me.title || me.workstream || me.branch, shape, me.stage || me.state, me.warm.pings > 0 ? `warm ${me.warm.pings}x` : '')]
+      view.rows = [row(me, me.title || me.workstream || me.branch, shape, me.stage || me.state, '')]
     }
     return view
   }

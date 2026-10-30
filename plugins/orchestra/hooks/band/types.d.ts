@@ -17,7 +17,8 @@ export type SessionFile = {
   pr: string
   context: { tokens: number | null; window: number }
   limits: Limit[]
-  warm: { pings: number; last: string | null }
+  // misses: forks that did not read the cache, so they were not counted as pings.
+  warm: { pings: number; last: string | null; misses?: number }
   updatedAt: string
 }
 
@@ -37,6 +38,7 @@ export type BandRow = {
 
 export type BandView = {
   inProject: boolean
+  pings: number
   fiveHour: number | null
   week: number | null
   runOut: number | null

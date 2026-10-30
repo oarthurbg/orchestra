@@ -7,7 +7,7 @@ import type { BandView, Limit, Role, SessionFile } from './types'
 // The desktop app's session server, as Task 1 of the plan found it.
 const APP_SESSION_SERVER = 'ccd_session_mgmt'
 
-const EMPTY: BandView = { inProject: false, fiveHour: null, week: null, runOut: null, running: 0, waiting: 0, rows: [], liveview: '' }
+const EMPTY: BandView = { inProject: false, pings: 0, fiveHour: null, week: null, runOut: null, running: 0, waiting: 0, rows: [], liveview: '' }
 const view = atom({ plugin: 'orchestra', key: 'view' } as const, EMPTY)
 
 type Ctx = {
@@ -26,12 +26,19 @@ type Ctx = {
   lastRequestAt: number
   pings: number
   lastPing: string | null
+  misses: number
+  // A fork missed the cache: no pings until the next main-thread request.
+  missed: boolean
+  toasted: boolean
   seen: Map<string, number>
+  // Parsed reports by file name, with the mtime they were read at.
+  reports: Map<string, { mtimeMs: number; file: SessionFile }>
 }
 
 const fresh = (): Ctx => ({
   main: null, root: '', id: '', role: 'orchestrator', workstream: null, branch: '', title: '', link: '', turn: false, question: '',
-  context: { tokens: null, window: 0 }, limits: [], lastRequestAt: 0, pings: 0, lastPing: null, seen: new Map(),
+  context: { tokens: null, window: 0 }, limits: [], lastRequestAt: 0, pings: 0, lastPing: null, misses: 0, missed: false, toasted: false,
+  seen: new Map(), reports: new Map(),
 })
 const ctx: Ctx = fresh()
 
@@ -51,6 +58,11 @@ async function locate($: EngineInterface) {
   const who = roleOf(ctx.root, ctx.main, parseRegistry((await read$($, `${ctx.main}/.orchestra/workstreams.md`)) ?? ''))
   ctx.role = who.role
   ctx.workstream = who.workstream
+  await readTitle($)
+}
+
+// The sidebar title and link. The app names a session after its first prompt, so each main-thread turn reads them again.
+async function readTitle($: EngineInterface) {
   const r = await $.mcp.call(APP_SESSION_SERVER, 'get_session', { session_id: 'self' }).catch(() => undefined)
   const text = r?.content?.find(c => c.type === 'text')
   try {
@@ -77,18 +89,28 @@ async function write($: EngineInterface) {
   const file: SessionFile = {
     v: 1, session: ctx.id, role: ctx.role, workstream: ctx.workstream, branch: ctx.branch, title: ctx.title, link: ctx.link,
     state, detail: ctx.question || (state === 'waiting' ? (status?.waitingOn ?? '') : ''), stage: status?.stage ?? '', pr: status?.pr ?? '',
-    context: ctx.context, limits: ctx.limits, warm: { pings: ctx.pings, last: ctx.lastPing },
+    context: ctx.context, limits: ctx.limits, warm: { pings: ctx.pings, last: ctx.lastPing, misses: ctx.misses },
     updatedAt: new Date(await $.clock.now()).toISOString(),
   }
   await $.fs.write(`${ctx.main}/.orchestra/sessions/${ctx.id}.json`, JSON.stringify(file))
 }
 
-// Re-reads the reports, the registry and liveview.json, then stores the view: it depends on the clock too, so it never skips.
+// Re-reads the reports that changed, the registry and liveview.json, then stores the view: it depends on the clock too, so it never skips.
 async function refresh($: EngineInterface) {
   const dir = `${ctx.main}/.orchestra/sessions`
-  const entries = ctx.main === null ? [] : await $.fs.list(dir).catch(() => [])
-  const files = (await Promise.all(entries.filter(f => f.name.endsWith('.json')).map(f => read$($, `${dir}/${f.name}`))))
-    .flatMap(t => (t === null ? [] : [parseSessionFile(t)].filter((f): f is SessionFile => f !== null)))
+  // A failed listing keeps every report as it was.
+  const entries = ctx.main === null ? [] : await $.fs.list(dir).catch(() => null)
+  if (entries !== null) {
+    const listed = entries.filter(f => f.name.endsWith('.json'))
+    await Promise.all(listed.map(async f => {
+      if (ctx.reports.get(f.name)?.mtimeMs === f.mtimeMs) return
+      // A failed read or parse (a file read mid-write) keeps the last good reading, and the old mtime so the next tick tries again.
+      const file = parseSessionFile((await read$($, `${dir}/${f.name}`)) ?? '')
+      if (file) ctx.reports.set(f.name, { mtimeMs: f.mtimeMs, file })
+    }))
+    for (const name of [...ctx.reports.keys()]) if (!listed.some(f => f.name === name)) ctx.reports.delete(name)
+  }
+  const files = [...ctx.reports.values()].map(r => r.file)
   const registry = ctx.main === null ? [] : parseRegistry((await read$($, `${ctx.main}/.orchestra/workstreams.md`)) ?? '')
   let liveview = ''
   try {
@@ -96,7 +118,7 @@ async function refresh($: EngineInterface) {
   } catch {
     liveview = ''
   }
-  const next = buildView({ inProject: ctx.main !== null, role: ctx.role, self: ctx.id, files, registry, now: await $.clock.now(), liveview, ownLimits: ctx.limits })
+  const next = buildView({ inProject: ctx.main !== null, role: ctx.role, self: ctx.id, files, registry, now: await $.clock.now(), liveview, ownLimits: ctx.limits, pings: ctx.pings })
   await update($, view, () => next)
 }
 
@@ -143,13 +165,23 @@ export const register: Register = (on, options) => {
   on('session.measure', async ($, e, next) => {
     ctx.context = { tokens: e.context.tokens ?? null, window: e.context.window }
     ctx.limits = e.rateLimits.map(l => ({ kind: l.kind, percentUsed: l.percentUsed, ...(l.resetsAt ? { resetsAt: l.resetsAt } : {}) }))
-    ctx.lastRequestAt = await $.clock.now()
     await writeReport($)
     await refresh($)
     return next(e)
   }).catch(($, e, next) => next(e))
 
-  // Only a main-thread turn is the session's turn: a subagent's turn has its own cache.
+  // The keep-warm schedule counts from the main thread's last model request; a subagent's request has its own cache.
+  on('turn.step', async function* ($, e, next) {
+    if (e.agentId === undefined) {
+      ctx.lastRequestAt = await $.clock.now()
+      ctx.missed = false
+    }
+    return yield* next(e)
+  }).catch(async function* ($, e, next) {
+    return yield* next(e)
+  })
+
+  // Only a main-thread turn is the session's turn (running or idle); a subagent's turn is not.
   on('turn.start', async ($, e, next) => {
     if (e.agentId === undefined) {
       ctx.turn = true
@@ -158,11 +190,12 @@ export const register: Register = (on, options) => {
     return next(e)
   }).catch(($, e, next) => next(e))
 
-  // Only a main-thread turn is the session's turn: a subagent's turn has its own cache.
   on('turn.complete', async ($, e, next) => {
     if (e.agentId === undefined) {
       ctx.turn = false
       await writeReport($)
+      // Not awaited: the turn must not wait on the app's session server.
+      if (ctx.main !== null) void readTitle($).then(() => writeReport($)).catch(() => {})
     }
     return next(e)
   }).catch(($, e, next) => next(e))
@@ -182,7 +215,7 @@ export const register: Register = (on, options) => {
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     const v = await read($, view)
-    if (e.props.hasSurvey || (!v.inProject && v.fiveHour === null && v.week === null)) return next(e)
+    if (e.props.hasSurvey || (!v.inProject && v.fiveHour === null && v.week === null && v.pings === 0)) return next(e)
     // Other mods share this slot: draw theirs beneath ours instead of replacing it.
     const below = await next(e).catch(() => undefined)
     const { Box, Text, Button } = $.ui.resolve(e)
@@ -197,6 +230,7 @@ export const register: Register = (on, options) => {
           {v.week !== null && <Text>week {v.week}%{day && <Text dimColor> to {day}</Text>}</Text>}
           {v.inProject && <Text>{v.running} running</Text>}
           {v.inProject && v.waiting > 0 && <Text color="warning">{v.waiting} waiting</Text>}
+          {v.pings > 0 && <Text dimColor>warm {v.pings}x</Text>}
           <Box flexGrow={1} />
           {v.liveview !== '' && <Button key="liveview" plain label="Liveview" onPress={() => open($, v.liveview)} />}
         </Box>
@@ -215,13 +249,21 @@ export const register: Register = (on, options) => {
   }).catch(($, e, next) => next(e))
 }
 
-// Every REFRESH_MS: redraw, and keep the cache warm while one of this session's subagents runs.
 // A missing, non-numeric, zero or negative setting means its default.
 const positive = (value: unknown, fallback: number) => (Number.isFinite(Number(value)) && Number(value) > 0 ? Number(value) : fallback)
 
+const MISS_TOAST = 'orchestra band: keep-warm missed the cache; set cacheMinutes lower (5 for API keys and overage)'
+
+// Every REFRESH_MS: keep the cache warm while one of this session's subagents runs, then redraw.
 async function tick($: EngineInterface, options: Readonly<Record<string, unknown>>) {
-  // A failed redraw must not stop the keep-warm check below.
-  await refresh($).catch(() => {})
+  try {
+    await keepWarm($, options)
+  } finally {
+    await refresh($).catch(() => {})
+  }
+}
+
+async function keepWarm($: EngineInterface, options: Readonly<Record<string, unknown>>) {
   const now = await $.clock.now()
   const running = (await $.agent.list().catch(() => [])).filter(a => a.status === 'running' || a.status === 'pending')
   for (const a of running) if (!ctx.seen.has(a.id)) ctx.seen.set(a.id, now)
@@ -233,14 +275,27 @@ async function tick($: EngineInterface, options: Readonly<Record<string, unknown
     warmMaxHours: positive(options.warmMaxHours, 2),
     youngestRunningSince: ctx.seen.size === 0 ? null : Math.max(...ctx.seen.values()),
   })
-  // The turn's own requests keep the cache warm.
-  if (!due || ctx.turn) return
+  if (!due || ctx.missed) return
   // Set before the call: a slow fork must not let the next tick ping again; the ping is a request for the next schedule.
   ctx.lastRequestAt = now
   const r = await $.model.fork({ prompt: 'Reply with: ok' }).catch(() => undefined)
-  if (r?.isAnswered) {
+  if (!r?.isAnswered) return
+  const tokens = ctx.context.tokens
+  if (tokens !== null && r.usage.cache_read_input_tokens < tokens / 2) {
+    // It paid to write the context again: the cache lifetime is shorter than cacheMinutes says.
+    ctx.misses += 1
+    ctx.missed = true
+    if (!ctx.toasted) {
+      ctx.toasted = true
+      try {
+        $.ui.toast(MISS_TOAST)
+      } catch {
+        // A toast that fails changes nothing else.
+      }
+    }
+  } else {
     ctx.pings += 1
     ctx.lastPing = new Date(now).toISOString()
-    await writeReport($)
   }
+  await writeReport($)
 }
