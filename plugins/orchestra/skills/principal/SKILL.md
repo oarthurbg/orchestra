@@ -16,7 +16,7 @@ All nine, shared with the maestro: `explorer`, `planner`, `implementer`, `implem
 ## How a workstream runs
 
 1. **Brainstorm and mockups** (ponytail off): `superpowers:brainstorming` with the owner. For UI, mockups follow the mockup recipe in the maestro's `stages.md`: a brief, a builder subagent (`frontend-design`, `taste-skill`), a separate reviewer (the impeccable detector, `design:design-critique`) and one fix round, before the owner sees them.
-2. **Spec** (ponytail lite): write it in `docs/superpowers/specs/`. Sensitive specs get `security-audit` early.
+2. **Spec** (ponytail lite): write it in `docs/superpowers/specs/`. Sensitive specs get `security-audit` early. Any detail the brainstorm left open that you decide in the spec goes to the owner as a short list, and the plan starts only after their yes.
 3. **Plan:** dispatch `planner` (it runs in ultra). Each task comes back tagged with an agent and a risk.
 4. **Implementation:** `superpowers:subagent-driven-development`, one subagent at a time, visible in the conversation. Backend, database and integrations: `implementer` or `implementer-advanced` in full. UI: `implementer` in lite with `impeccable:impeccable`. Infrastructure: ultra. Mechanical: `mechanic`.
 5. **Reviews** per task, proportional to its risk (table in `stages.md`). UI tasks get the third review: `screenshotter` (web UI with a dev server), then `impeccable:impeccable-finish-reviewer` against the approved mockup, with `design:accessibility-review`. Handle findings with `superpowers:receiving-code-review`.
@@ -34,10 +34,10 @@ All nine, shared with the maestro: `explorer`, `planner`, `implementer`, `implem
 
 ## Reporting to the maestro
 
-Send one line (in the desktop app, `SendMessage` to the maestro session) when:
+Send one line (in the desktop app, `SendMessage` to the maestro session; without it, the status line of your handoff note) when:
 - a decision affects another workstream;
 - you open or change a schema migration;
-- you close a wave of tasks or get close to 250k tokens, with your context size (`get_usage` on yourself);
+- you close a wave of tasks or get close to 250k tokens, with your context size (`get_usage` on yourself; without the desktop app, see `/orchestra:close-wave` step 2);
 - the PR is ready to check and merge.
 
 You never merge your own PR, and you never touch another workstream's spec, plan or code.

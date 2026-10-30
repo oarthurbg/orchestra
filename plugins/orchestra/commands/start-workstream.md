@@ -10,7 +10,7 @@ You are the maestro (skill `orchestra:maestro`). Open the workstream described i
 3. **Schema queue:** if the goal likely changes a data schema and another open workstream already does, tell the owner it has to wait or go after that one.
 4. **Load:** count running workstreams. With 4 to 6 already running, tell the owner the machine is at its limit before adding one.
 5. **Resources:** using the values in `CLAUDE.md` ("Project settings"):
-   - `git fetch origin` and `git worktree add -b <branch> <worktree path> origin/<integration branch>`;
+   - `git fetch origin` and `git worktree add -b <branch> <worktree path> origin/<integration branch>`; with no remote, branch from the local integration branch. Unless the HANDOFF names another place, the worktree path is a sibling of the main checkout, `<main checkout>-<name>` (outside the repository, so test runners and searches never see it);
    - if "Test data" is not `none`, run its Create command with the workstream name and note the "Tests read" value;
    - if "Dev server" is not `none`, pick the next free port.
 6. **Register:** add a row to `.orchestra/workstreams.md` (not versioned; create it with this header if missing). Write the worktree path absolute (`<branch>` at `<absolute worktree path>`); the band also resolves a relative one against the main checkout:

@@ -1,6 +1,6 @@
 # Handoff note: <workstream>
 
-Status: <running | idle | waiting on owner> · context <N>k · <stage>, task <N> of <M> · PR <none | #N open | #N ready> · waiting on: <none | what, for whom> · updated <YYYY-MM-DD HH:MM>
+Status: <running | idle | waiting on owner> · context <N>k · <stage>[, task <N> of <M>] · PR <none | #N open | #N ready> · waiting on: <none | what, for whom> · updated <YYYY-MM-DD HH:MM>
 
 Delete this file in the last commit before the PR merges.
 
@@ -8,14 +8,14 @@ Delete this file in the last commit before the PR merges.
 
 Plan: `docs/superpowers/plans/<plan>.md`, task <N>: <title>. State: <not started | in progress | in review>.
 
-## 2. Last commit on the integration worktree
+## 2. Last commit on the workstream branch
 
 `<hash>` <subject>
 
 ## 3. Worktrees
 
-- `<path>` on branch `<branch>` (integration)
-- `<path>` on branch `<branch>` (task <N>)
+- `<path>` on branch `<branch>` (the workstream branch)
+- `<path>` on branch `<branch>` (task <N>, only while tasks run in their own worktrees)
 
 ## 4. Test data and dev server port
 

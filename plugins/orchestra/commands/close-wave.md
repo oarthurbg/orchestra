@@ -8,9 +8,9 @@ Close a wave of tasks. First decide which role this session has: a principal (sk
 ## In a principal session
 
 1. Make sure no subagent or command is still running. If one is, wait for it; never close a wave mid-task.
-2. Check your own context size (`get_usage` on this session in the desktop app).
+2. Check your own context size: `get_usage` on this session in the desktop app; without it, `context.tokens` in your band report, the newest file in `<main checkout>/.orchestra/sessions/` whose `branch` is yours (the main checkout is the first line of `git worktree list`). Never estimate it.
 3. Update your handoff note `docs/workstreams/<name>.md` with the `orchestra:handoff-note` template (the status line and all 8 sections), and commit it with `git add <path>` only.
-4. Send the maestro one line: wave done, what landed, next task, context size, and whether you need a clear (above 250k tokens).
+4. Report to the maestro in one line: wave done, what landed, next task, context size, and whether you need a clear (above 250k tokens). In the desktop app, `SendMessage` to the maestro session; without it, the status line you just committed is the report, and the maestro reads it from your worktree.
 5. Below 250k, carry on with the next wave. Above 250k, stop dispatching and wait for the maestro.
 
 ## In the maestro ($ARGUMENTS names the workstream)
