@@ -53,10 +53,10 @@ To investigate: whether the mod can answer inside the app. App sessions are neve
 
 ### 5. A language server for code navigation
 
-A measured trial (9 questions on networkx, the Python standard library and a public TypeScript app, Haiku explorers, one run per cell) found that Pyright and the TypeScript language service cut explorer work tokens about 30% with no loss of accuracy, including on Python, where graphify missed most callers. See [`docs/superpowers/specs/2026-10-30-lsp-measurement.md`](superpowers/specs/2026-10-30-lsp-measurement.md).
+Two measured trials, with different results. With a wrapper that prints source lines, Pyright and the TypeScript language service cut explorer work tokens about 30% on networkx, the Python standard library and a public TypeScript app. With the real Claude Code `LSP` tool on a 1,960-file public app, LSP alone was not cheaper than grep (the tool returns bare positions), while LSP plus graphify was the cheapest arm in a single run. See [`docs/superpowers/specs/2026-10-30-lsp-measurement.md`](superpowers/specs/2026-10-30-lsp-measurement.md).
 
 Idea, to be brainstormed and specced:
 - Explorer and planner call a Claude Code LSP plugin (`find references`, call hierarchy) when one is installed, and fall back to grep otherwise.
 - No build step and no update after merges: the server reads the working tree, so it also sees a worktree's own branch.
 
-Still open: a planner task on Opus, and the paired trial with an installed plugin on an app of 1,000+ files. The first attempt found why Anthropic's `typescript-lsp` plugin returned same-file references only (`typescript-language-server` answers early requests from a syntax-only server) and the fix, `initializationOptions: {"tsserver": {"useSyntaxServer": "never"}}`; details in the measurement doc.
+Still open: a planner task on Opus, several runs of the LSP + graphify arm, a tool output that includes the source line, and Python through `pyright-lsp`. Setup note: Anthropic's `typescript-lsp` plugin returns same-file references until `initializationOptions: {"tsserver": {"useSyntaxServer": "never"}}` is set; details in the measurement doc.
