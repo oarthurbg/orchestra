@@ -46,13 +46,14 @@ function disk(on: On, files: Record<string, string>, failWrites = false) {
   return { reads, touch: (path: string) => { mtime[path] = ++tick } }
 }
 
-function session(on: On, root: string, id: string, agents: () => unknown[] = () => [], title: () => string = () => 'Orchestrator') {
+function session(on: On, root: string, id: string, agents: () => unknown[] = () => [], title: () => string | null = () => 'Orchestrator') {
   const clock = mock.clock(on, { now: Date.now() })
   on('session.root', () => ({ value: root }))
   on('session.cwd', () => ({ value: root }))
   on('session.id', () => ({ value: id }))
   on('session.usage', () => ({ value: { startedAt: 0, context: { tokens: 30_000, window: 1_000_000 }, rateLimits: [{ kind: 'five_hour', percentUsed: 42 }] } }) as never)
-  on('mcp.call', () => ({ value: { content: [{ type: 'text', text: JSON.stringify({ title: title(), link: 'claude://claude.ai/epitaxy/local_o' }) }] } }) as never)
+  // A null title means the app's session server is gone: the call rejects.
+  on('mcp.call', () => { const t = title(); return (t === null ? { deny: 'no session server' } : { value: { content: [{ type: 'text', text: JSON.stringify({ title: t, link: 'claude://claude.ai/epitaxy/local_o' }) }] } }) as never })
   on('agent.list', () => ({ value: agents() }) as never)
   on('session.start', ($, e) => ({ cwd: e.cwd }))
   return clock
@@ -518,4 +519,18 @@ test('a subagent turn is not the session turn: the ping goes out and the report 
   expect(forks.count).toBe(1)
   await $.turn.complete({ reason: 'answer', answer: '', durationMs: 1, isAborted: false, turnId: 't1', agentId: 'a1' })
   expect(JSON.parse(files[`${ROOT}/.orchestra/sessions/o.json`]!).state).toBe('idle')
+})
+
+test('a get_session call that rejects later keeps the title and link already read', async ($, on) => {
+  const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+  disk(on, files)
+  let title: string | null = 'Orchestrator'
+  session(on, ROOT, 'o', () => [], () => title)
+  on('turn.complete', ($, e) => ({ text: e.answer }))
+  await start($)
+  title = null
+  await $.turn.complete({ reason: 'answer', answer: '', durationMs: 1, isAborted: false, turnId: 't1' })
+  await $.turn.complete({ reason: 'answer', answer: '', durationMs: 1, isAborted: false, turnId: 't2' })
+  const mine = JSON.parse(files[`${ROOT}/.orchestra/sessions/o.json`]!)
+  expect(mine).toMatchObject({ title: 'Orchestrator', link: 'claude://claude.ai/epitaxy/local_o' })
 })

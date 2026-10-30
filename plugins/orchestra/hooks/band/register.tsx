@@ -65,12 +65,13 @@ async function locate($: EngineInterface) {
 async function readTitle($: EngineInterface) {
   const r = await $.mcp.call(APP_SESSION_SERVER, 'get_session', { session_id: 'self' }).catch(() => undefined)
   const text = r?.content?.find(c => c.type === 'text')
+  // A failed call or a reply without them keeps what was read before (empty outside the desktop app: names stay plain text).
   try {
-    const s = JSON.parse((text && 'text' in text ? text.text : undefined) ?? '{}') as { title?: string; link?: string }
-    ctx.title = s.title ?? ''
-    ctx.link = s.link ?? ''
+    const s = JSON.parse((text && 'text' in text ? text.text : undefined) ?? '{}') as { title?: unknown; link?: unknown }
+    if (typeof s.title === 'string') ctx.title = s.title
+    if (typeof s.link === 'string') ctx.link = s.link
   } catch {
-    // Outside the desktop app there is no session server: names stay plain text.
+    // An unparseable reply changes nothing.
   }
 }
 
