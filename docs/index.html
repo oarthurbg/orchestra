@@ -4,32 +4,33 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>orchestra: agent orchestration stack</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 /* Layout: the workstream track (stages side by side), then the skill catalog grouped by plugin, then how skills pair up, then session rhythm */
 :root{
-  --bg:#f6f3f2; --surface:#ffffff; --line:#e6dedc; --fg:#1f1a1a; --muted:#6c605e;
-  --accent:#a3131c; --accent-soft:#f6dcda; --accent-fg:#7a0e15;
-  --chip:#efe9e8; --chip-fg:#3a3130;
-  --full:#2f5d8a; --lite:#3f7d58; --ultra:#8a4b14; --off:#7a7270;
-  --hl:#fff3c4; --hl-line:#d9a800;
+  --bg:#FAF8F3; --surface:#FFFFFF; --line:#E4DED2; --fg:#111114; --muted:#5E5A52;
+  --accent:#C8341B; --accent-soft:#FCE4DE; --accent-fg:#9E2412;
+  --chip:#F0ECE3; --chip-fg:#2C2A26;
+  --full:#2450E0; --lite:#E8AE00; --ultra:#F0442C; --off:#8FA3D9; --half:#B9C8F2;
+  --hl:#FFF1C2; --hl-line:#FFC21A;
   --display:"Archivo","Helvetica Neue",Arial,sans-serif;
   --body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#171313; --surface:#211b1b; --line:#3a3130; --fg:#f1eceb; --muted:#b0a3a1;
-  --accent:#e0525a; --accent-soft:#3b1d1f; --accent-fg:#ffb3b7;
-  --chip:#2d2525; --chip-fg:#e7dedd;
-  --full:#7fb0e0; --lite:#86c79f; --ultra:#e0a464; --off:#a59c9a;
-  --hl:#3d3414; --hl-line:#c9a227; color-scheme:dark}}
+  --bg:#111114; --surface:#1A1A20; --line:#2E2E38; --fg:#F1EEE8; --muted:#A9A49A;
+  --accent:#FF6A52; --accent-soft:#3A1A15; --accent-fg:#FFB4A6;
+  --chip:#23232B; --chip-fg:#E6E2DA;
+  --full:#5B7FFF; --lite:#FFC21A; --ultra:#FF5A40; --off:#8FA3D9; --half:#26335E;
+  --hl:#33290C; --hl-line:#FFC21A; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#171313; --surface:#211b1b; --line:#3a3130; --fg:#f1eceb; --muted:#b0a3a1;
-  --accent:#e0525a; --accent-soft:#3b1d1f; --accent-fg:#ffb3b7;
-  --chip:#2d2525; --chip-fg:#e7dedd;
-  --full:#7fb0e0; --lite:#86c79f; --ultra:#e0a464; --off:#a59c9a;
-  --hl:#3d3414; --hl-line:#c9a227; color-scheme:dark}
+  --bg:#111114; --surface:#1A1A20; --line:#2E2E38; --fg:#F1EEE8; --muted:#A9A49A;
+  --accent:#FF6A52; --accent-soft:#3A1A15; --accent-fg:#FFB4A6;
+  --chip:#23232B; --chip-fg:#E6E2DA;
+  --full:#5B7FFF; --lite:#FFC21A; --ultra:#FF5A40; --off:#8FA3D9; --half:#26335E;
+  --hl:#33290C; --hl-line:#FFC21A; color-scheme:dark}
 body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5}
 .wrap{max-width:1180px;margin:0 auto;padding-block:40px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:48px}
 h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
@@ -42,7 +43,8 @@ section{display:grid;gap:16px}
 .sub{color:var(--muted);margin:0;max-width:72ch}
 .flow{overflow-x:auto;padding-bottom:8px}
 .track{display:grid;grid-template-columns:repeat(7,minmax(188px,1fr));gap:10px;min-width:1320px}
-.stage{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;gap:10px;align-content:start;position:relative;transition:background .15s,border-color .15s}
+.stage{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:14px;display:grid;gap:10px;align-content:start;position:relative;transition:background .15s,border-color .15s}
+.stage{min-width:0;overflow-wrap:anywhere}
 .stage .who{font-size:12px;color:var(--muted)}
 .stage .agent{font-family:var(--mono);font-size:12.5px;color:var(--fg)}
 .stage .step{font-family:var(--mono);font-size:11px;color:var(--muted)}
@@ -51,24 +53,27 @@ section{display:grid;gap:16px}
 .arrow{position:absolute;right:-9px;top:22px;width:8px;height:8px;border-top:2px solid var(--line);border-right:2px solid var(--line);transform:rotate(45deg);z-index:1}
 .stage:last-child .arrow{display:none}
 .chips{display:flex;flex-wrap:wrap;gap:5px}
-.chip{font-family:var(--mono);font-size:11.5px;background:var(--chip);color:var(--chip-fg);border:1px solid transparent;border-radius:6px;padding:2px 7px;cursor:pointer;white-space:nowrap}
+.chip{font-family:var(--mono);font-size:11.5px;background:var(--chip);color:var(--chip-fg);border:1px solid transparent;border-radius:6px;padding:2px 7px;cursor:pointer;white-space:normal;text-align:left;max-width:100%}
 .chip:hover,.chip:focus-visible{border-color:var(--accent);outline:none}
 .chip.on{background:var(--accent-soft);color:var(--accent-fg);border-color:var(--accent)}
 .mode{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600}
-.mode i{width:9px;height:9px;border-radius:50%;display:inline-block}
-.m-full i{background:var(--full)} .m-full{color:var(--full)}
-.m-lite i{background:var(--lite)} .m-lite{color:var(--lite)}
-.m-ultra i{background:var(--ultra)} .m-ultra{color:var(--ultra)}
-.m-off i{background:var(--off)} .m-off{color:var(--off)}
+.mode i{width:10px;height:10px;display:inline-block}
+.m-full i{background:var(--full);border-radius:50%}
+.m-lite i{background:var(--lite);clip-path:polygon(50% 0,100% 100%,0 100%)}
+.m-ultra i{background:var(--ultra)}
+.m-off i{background:var(--off);height:5px;border-radius:5px 5px 0 0;align-self:center}
+.brand{display:flex;align-items:center;gap:12px;font-family:var(--display);font-weight:800;font-size:30px;letter-spacing:-.02em;margin-bottom:14px}
+.brand svg{width:46px;height:46px;flex:none}
+.brand .half{fill:var(--half)}
 .legend{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:var(--muted)}
 .hint{font-size:13px;color:var(--muted)}
 .clear{font:inherit;font-size:13px;background:none;border:1px solid var(--line);color:var(--fg);border-radius:6px;padding:3px 10px;cursor:pointer}
 .clear:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
-.role{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
+.role{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:14px;min-width:0}
 .role p{margin:6px 0 0;font-size:13.5px;color:var(--muted)}
 .groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:12px}
-.group{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:10px;align-content:start;min-width:0}
+.group{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:16px;display:grid;gap:10px;align-content:start;min-width:0}
 .group header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
 .group .src{font-family:var(--mono);font-size:11.5px;color:var(--muted)}
 .skill{display:grid;gap:2px;padding:8px 0;border-top:1px solid var(--line)}
@@ -82,7 +87,7 @@ section{display:grid;gap:16px}
 .pair{border-left:3px solid var(--accent);padding:2px 0 2px 12px}
 .pair p{margin:4px 0 0;font-size:13.5px}
 .rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
-.rule{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
+.rule{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:14px;min-width:0}
 .rule .big{font-family:var(--display);font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}
 .rule p{margin:4px 0 0;font-size:13.5px;color:var(--muted)}
 footer{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
@@ -93,6 +98,7 @@ footer{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padd
 
 <div class="wrap">
   <header>
+    <div class="brand"><svg viewBox="0 0 100 100" aria-hidden="true"><path class="half" d="M8 92 A 32 32 0 0 1 72 92 Z"/><circle cx="32" cy="34" r="22" fill="#2450E0"/><rect x="60" y="12" width="30" height="44" fill="#F0442C"/><polygon points="74,92 94,92 84,60" fill="#FFC21A"/></svg>orchestra</div>
     <div class="eyebrow">Claude Code · multi-session workflow</div>
     <h1>Agent Orchestration Stack</h1>
     <p class="lede">How a feature travels from request to production: which skill enters at each stage, which agent does the work, on which model, and in which ponytail mode. Click a skill to see where it shows up in the flow.</p>
