@@ -10,8 +10,9 @@ Run them in order and stop at the first item that fails. Before each merge, chec
 4. CI is green (`gh pr checks <number>`). A red or pending check is never merged.
 5. Schema change: this workstream is first in the schema queue, rebased on the latest integration branch, and its migration was regenerated after the rebase.
 6. The handoff note was deleted in the last commit, and its lasting summary is in `docs/HANDOFF.md` and the decisions log.
-7. Merge it (`gh pr merge <number>`) with the method the project uses for workstream PRs; the workstream branch may be deleted after merge, the permanent branches never.
-8. After merging:
+7. Any lesson the workstream sent is in `docs/lessons.md` or queued for the next docs PR, so it is not lost when the workstream closes.
+8. Merge it (`gh pr merge <number>`) with the method the project uses for workstream PRs; the workstream branch may be deleted after merge, the permanent branches never.
+9. After merging:
    - dispatch `verifier` on the integration branch (the full suite, including the tests reviewers skipped without test data);
    - drop the workstream's test data ("Test data" in "Project settings");
    - remove its row from `.orchestra/workstreams.md` and record it in "Where we are" (HANDOFF) through the next docs PR;
