@@ -1,0 +1,508 @@
+{
+  "benchmark": "lsp",
+  "date": "2026-10-30T20:08:28.730Z",
+  "machine": {
+    "cpu": "AMD Ryzen 9 5900X 12-Core Processor",
+    "logicalCores": 24,
+    "ramGB": 32,
+    "os": "Windows_NT 10.0.26300",
+    "node": "v24.18.0",
+    "cpuBusyPercentBefore": 9,
+    "cpuBusyPercentAfter": 11
+  },
+  "runs": 3,
+  "installs": {
+    "grep": "grep (GNU grep) 3.0",
+    "typescript": {
+      "version": "5.9.3",
+      "installSeconds": 1.48
+    },
+    "pyright": {
+      "version": "1.1.414",
+      "installSeconds": 15.6
+    }
+  },
+  "design": {
+    "importsPerFile": 3,
+    "layers": 10,
+    "topologies": [
+      "layered",
+      "chain"
+    ],
+    "directCallers": 12,
+    "secondLevelCallers": 24,
+    "decoyEvery": 20,
+    "symbol": "target"
+  },
+  "notes": [
+    "Each run is a fresh process: the language server starts cold every time. Times are wall time of the whole command, median of 3.",
+    "refs recall and precision count call sites only: lines marked import or declaration are left out.",
+    "calls recall and precision compare (level, function name, file:line) against the 12 direct and 24 second-level callers.",
+    "grep is grep -rnw over the source files; its hit count includes imports, the declaration and the planted decoys."
+  ],
+  "totalSeconds": 134.9,
+  "results": [
+    {
+      "language": "typescript",
+      "topology": "layered",
+      "files": 100,
+      "refs": {
+        "seconds": 0.7,
+        "runs": [
+          0.7,
+          0.69,
+          0.7
+        ],
+        "failure": null,
+        "lines": 25,
+        "imports": 12,
+        "found": 12,
+        "expected": 12,
+        "returned": 12,
+        "recall": 1,
+        "precision": 1
+      },
+      "calls": {
+        "seconds": 0.7,
+        "runs": [
+          0.69,
+          0.71,
+          0.7
+        ],
+        "failure": null,
+        "found": 36,
+        "expected": 36,
+        "returned": 36,
+        "recall": 1,
+        "precision": 1
+      },
+      "grep": {
+        "seconds": 0.07,
+        "runs": [
+          0.07,
+          0.07,
+          0.07
+        ],
+        "failure": null,
+        "hits": 31
+      }
+    },
+    {
+      "language": "typescript",
+      "topology": "layered",
+      "files": 500,
+      "refs": {
+        "seconds": 0.95,
+        "runs": [
+          0.96,
+          0.95,
+          0.93
+        ],
+        "failure": null,
+        "lines": 25,
+        "imports": 12,
+        "found": 12,
+        "expected": 12,
+        "returned": 12,
+        "recall": 1,
+        "precision": 1
+      },
+      "calls": {
+        "seconds": 1.01,
+        "runs": [
+          1.04,
+          1.01,
+          1.01
+        ],
+        "failure": null,
+        "found": 36,
+        "expected": 36,
+        "returned": 36,
+        "recall": 1,
+        "precision": 1
+      },
+      "grep": {
+        "seconds": 0.22,
+        "runs": [
+          0.23,
+          0.22,
+          0.22
+        ],
+        "failure": null,
+        "hits": 91
+      }
+    },
+    {
+      "language": "typescript",
+      "topology": "layered",
+      "files": 2000,
+      "refs": {
+        "seconds": 1.88,
+        "runs": [
+          1.88,
+          1.97,
+          1.78
+        ],
+        "failure": null,
+        "lines": 25,
+        "imports": 12,
+        "found": 12,
+        "expected": 12,
+        "returned": 12,
+        "recall": 1,
+        "precision": 1
+      },
+      "calls": {
+        "seconds": 1.97,
+        "runs": [
+          1.97,
+          1.97,
+          2.01
+        ],
+        "failure": null,
+        "found": 36,
+        "expected": 36,
+        "returned": 36,
+        "recall": 1,
+        "precision": 1
+      },
+      "grep": {
+        "seconds": 0.79,
+        "runs": [
+          0.82,
+          0.79,
+          0.78
+        ],
+        "failure": null,
+        "hits": 313
+      }
+    },
+    {
+      "language": "typescript",
+      "topology": "layered",
+      "files": 5000,
+      "refs": {
+        "seconds": 3.68,
+        "runs": [
+          3.7,
+          3.68,
+          3.67
+        ],
+        "failure": null,
+        "lines": 25,
+        "imports": 12,
+        "found": 12,
+        "expected": 12,
+        "returned": 12,
+        "recall": 1,
+        "precision": 1
+      },
+      "calls": {
+        "seconds": 4.21,
+        "runs": [
+          4.22,
+          4.14,
+          4.21
+        ],
+        "failure": null,
+        "found": 36,
+        "expected": 36,
+        "returned": 36,
+        "recall": 1,
+        "precision": 1
+      },
+      "grep": {
+        "seconds": 1.97,
+        "runs": [
+          1.97,
+          1.97,
+          1.94
+        ],
+        "failure": null,
+        "hits": 763
+      }
+    },
+    {
+      "language": "typescript",
+      "topology": "chain",
+      "files": 100,
+      "refs": {
+        "seconds": 0.65,
+        "runs": [
+          0.66,
+          0.65,
+          0.63
+        ],
+        "failure": null,
+        "lines": 25,
+        "imports": 12,
+        "found": 12,
+        "expected": 12,
+        "returned": 12,
+        "recall": 1,
+        "precision": 1
+      },
+      "calls": {
+        "seconds": 0.67,
+        "runs": [
+          0.67,
+          0.66,
+          0.87
+        ],
+        "failure": null,
+        "found": 36,
+        "expected": 36,
+        "returned": 36,
+        "recall": 1,
+        "precision": 1
+      },
+      "grep": {
+        "seconds": 0.08,
+        "runs": [
+          0.08,
+          0.08,
+          0.08
+        ],
+        "failure": null,
+        "hits": 34
+      }
+    },
+    {
+      "language": "typescript",
+      "topology": "chain",
+      "files": 500,
+      "refs": {
+        "seconds": 0.91,
+        "runs": [
+          0.91,
+          0.9,
+          0.92
+        ],
+        "failure": null,
+        "lines": 25,
+        "imports": 12,
+        "found": 12,
+        "expected": 12,
+        "returned": 12,
+        "recall": 1,
+        "precision": 1
+      },
+      "calls": {
+        "seconds": 1.06,
+        "runs": [
+          1.06,
+          1.16,
+          0.95
+        ],
+        "failure": null,
+        "found": 36,
+        "expected": 36,
+        "returned": 36,
+        "recall": 1,
+        "precision": 1
+      },
+      "grep": {
+        "seconds": 0.22,
+        "runs": [
+          0.21,
+          0.22,
+          0.22
+        ],
+        "failure": null,
+        "hits": 94
+      }
+    },
+    {
+      "language": "typescript",
+      "topology": "chain",
+      "files": 2000,
+      "refs": {
+        "seconds": 1.03,
+        "runs": [
+          1.01,
+          1.2,
+          1.03
+        ],
+        "failure": {
+          "code": 4,
+          "message": "language server failed: Maximum call stack size exceeded"
+        },
+        "lines": 0,
+        "imports": 0,
+        "found": 0,
+        "expected": 12,
+        "returned": 0,
+        "recall": 0,
+        "precision": null
+      },
+      "calls": {
+        "seconds": 1.02,
+        "runs": [
+          1,
+          1.04,
+          1.02
+        ],
+        "failure": {
+          "code": 4,
+          "message": "language server failed: Maximum call stack size exceeded"
+        },
+        "found": 0,
+        "expected": 36,
+        "returned": 0,
+        "recall": 0,
+        "precision": null
+      },
+      "grep": {
+        "seconds": 0.78,
+        "runs": [
+          0.79,
+          0.78,
+          0.77
+        ],
+        "failure": null,
+        "hits": 319
+      }
+    },
+    {
+      "language": "typescript",
+      "topology": "chain",
+      "files": 5000,
+      "refs": {
+        "seconds": 1.04,
+        "runs": [
+          1.04,
+          1.03,
+          1.04
+        ],
+        "failure": {
+          "code": 4,
+          "message": "language server failed: Maximum call stack size exceeded"
+        },
+        "lines": 0,
+        "imports": 0,
+        "found": 0,
+        "expected": 12,
+        "returned": 0,
+        "recall": 0,
+        "precision": null
+      },
+      "calls": {
+        "seconds": 1.01,
+        "runs": [
+          1.01,
+          1.02,
+          1.01
+        ],
+        "failure": {
+          "code": 4,
+          "message": "language server failed: Maximum call stack size exceeded"
+        },
+        "found": 0,
+        "expected": 36,
+        "returned": 0,
+        "recall": 0,
+        "precision": null
+      },
+      "grep": {
+        "seconds": 2.14,
+        "runs": [
+          1.92,
+          2.29,
+          2.14
+        ],
+        "failure": null,
+        "hits": 769
+      }
+    },
+    {
+      "language": "python",
+      "topology": "layered",
+      "files": 100,
+      "refs": {
+        "seconds": 0.93,
+        "runs": [
+          0.93,
+          0.94,
+          0.91
+        ],
+        "failure": null,
+        "lines": 25,
+        "imports": 12,
+        "found": 12,
+        "expected": 12,
+        "returned": 12,
+        "recall": 1,
+        "precision": 1
+      },
+      "calls": {
+        "seconds": 1.11,
+        "runs": [
+          1.07,
+          1.15,
+          1.11
+        ],
+        "failure": null,
+        "found": 36,
+        "expected": 36,
+        "returned": 36,
+        "recall": 1,
+        "precision": 1
+      },
+      "grep": {
+        "seconds": 0.07,
+        "runs": [
+          0.07,
+          0.07,
+          0.07
+        ],
+        "failure": null,
+        "hits": 31
+      }
+    },
+    {
+      "language": "python",
+      "topology": "layered",
+      "files": 500,
+      "refs": {
+        "seconds": 1.49,
+        "runs": [
+          1.44,
+          1.58,
+          1.49
+        ],
+        "failure": null,
+        "lines": 25,
+        "imports": 12,
+        "found": 12,
+        "expected": 12,
+        "returned": 12,
+        "recall": 1,
+        "precision": 1
+      },
+      "calls": {
+        "seconds": 1.71,
+        "runs": [
+          1.74,
+          1.7,
+          1.71
+        ],
+        "failure": null,
+        "found": 36,
+        "expected": 36,
+        "returned": 36,
+        "recall": 1,
+        "precision": 1
+      },
+      "grep": {
+        "seconds": 0.24,
+        "runs": [
+          0.27,
+          0.24,
+          0.23
+        ],
+        "failure": null,
+        "hits": 91
+      }
+    }
+  ]
+}

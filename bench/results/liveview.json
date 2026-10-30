@@ -1,0 +1,522 @@
+{
+  "benchmark": "liveview",
+  "date": "2026-10-30T20:29:07.042Z",
+  "machine": {
+    "cpu": "AMD Ryzen 9 5900X 12-Core Processor",
+    "logicalCores": 24,
+    "ramGB": 32,
+    "os": "Windows_NT 10.0.26300",
+    "node": "v24.18.0",
+    "cpuBusyPercentBefore": 5,
+    "cpuBusyPercentAfter": 9
+  },
+  "runs": 5,
+  "warmups": 1,
+  "ticks": 20,
+  "tasksPerPlan": 8,
+  "notes": [
+    "coldSnapshotMs: gather() plus buildSnapshot() on a fresh copy of sources.mjs, so the per-worktree git caches are empty, as on a new server.",
+    "warmSnapshotMs: the same on one module copy after a first call, so cached results are reused while HEAD does not move, as on every later 5 s tick.",
+    "apiSnapshotMs: GET /api/snapshot on a started server between ticks; the route serves the snapshot built by the last tick.",
+    "apiWhileTickingMs: 20 GET /api/snapshot requests, 500 ms apart, on a server whose own 5 s tick timer runs, as in real use.",
+    "Ticks run back to back, not 5 s apart. The transcript folder is empty, so reading session transcripts is not measured. ETA history is empty."
+  ],
+  "totalSeconds": 1221.1,
+  "results": [
+    {
+      "workstreams": 1,
+      "setupMs": 592,
+      "checks": {
+        "ok": true,
+        "rows": 1,
+        "inbox": 1,
+        "expectedInbox": 1,
+        "snapshotBytes": 3243
+      },
+      "coldSnapshotMs": {
+        "median": 668.8,
+        "runs": [
+          686.5,
+          672.5,
+          664.7,
+          668.8,
+          661.3
+        ]
+      },
+      "warmSnapshotMs": {
+        "median": 395.8,
+        "runs": [
+          369,
+          381.7,
+          395.8,
+          400.7,
+          404.3
+        ]
+      },
+      "apiSnapshotMs": {
+        "median": 9.3,
+        "runs": [
+          2.9,
+          14.9,
+          15.4,
+          9.3,
+          6.2
+        ]
+      },
+      "apiWhileTickingMs": {
+        "median": 16.3,
+        "max": 304.9,
+        "over1s": 0,
+        "requests": 20,
+        "runs": [
+          6.1,
+          1.8,
+          16.8,
+          17.3,
+          16.2,
+          15.9,
+          16.3,
+          16,
+          16.1,
+          191.5,
+          16.1,
+          16.9,
+          16.4,
+          16.4,
+          15.8,
+          17,
+          17.9,
+          16,
+          304.9,
+          16.6
+        ]
+      },
+      "serverTickMs": {
+        "median": 389.3,
+        "runs": [
+          385.9,
+          365.6,
+          374.1,
+          376.8,
+          388.5,
+          401.8,
+          389,
+          409.3,
+          443,
+          412.3,
+          392.6,
+          364.4,
+          371.2,
+          370.9,
+          390.7,
+          389.6,
+          433.3,
+          439.5,
+          395.1,
+          388.3
+        ]
+      },
+      "rssMB": {
+        "afterFirstTick": 74.8,
+        "after20Ticks": 76.2
+      },
+      "heapUsedMB": 10.1
+    },
+    {
+      "workstreams": 5,
+      "setupMs": 3536,
+      "checks": {
+        "ok": true,
+        "rows": 5,
+        "inbox": 2,
+        "expectedInbox": 2,
+        "snapshotBytes": 11173
+      },
+      "coldSnapshotMs": {
+        "median": 2997.7,
+        "runs": [
+          3282.5,
+          2997.7,
+          2925,
+          2931,
+          3036.1
+        ]
+      },
+      "warmSnapshotMs": {
+        "median": 1012.3,
+        "runs": [
+          1012.3,
+          1013.8,
+          956.7,
+          974.5,
+          1023.7
+        ]
+      },
+      "apiSnapshotMs": {
+        "median": 15,
+        "runs": [
+          1.7,
+          4.2,
+          15.4,
+          15.4,
+          15
+        ]
+      },
+      "apiWhileTickingMs": {
+        "median": 16.8,
+        "max": 994.3,
+        "over1s": 0,
+        "requests": 20,
+        "runs": [
+          7.3,
+          16.3,
+          17.2,
+          1.2,
+          16.9,
+          17.3,
+          16.6,
+          17.2,
+          16.4,
+          787.1,
+          16.8,
+          16.4,
+          16.1,
+          16.9,
+          16.8,
+          16.9,
+          17.3,
+          994.3,
+          16.3,
+          16
+        ]
+      },
+      "serverTickMs": {
+        "median": 970.5,
+        "runs": [
+          964.6,
+          956.5,
+          976,
+          990,
+          1034.3,
+          952.1,
+          1021.9,
+          1018.8,
+          958.9,
+          952.7,
+          971.2,
+          973.3,
+          977.5,
+          973.2,
+          969.8,
+          954.9,
+          971.3,
+          953.6,
+          963.4,
+          940.4
+        ]
+      },
+      "rssMB": {
+        "afterFirstTick": 75.6,
+        "after20Ticks": 81.2
+      },
+      "heapUsedMB": 9.2
+    },
+    {
+      "workstreams": 10,
+      "setupMs": 7032,
+      "checks": {
+        "ok": true,
+        "rows": 10,
+        "inbox": 4,
+        "expectedInbox": 4,
+        "snapshotBytes": 21340
+      },
+      "coldSnapshotMs": {
+        "median": 5893.5,
+        "runs": [
+          5891.8,
+          5936.8,
+          5893.5,
+          5975.2,
+          5804.4
+        ]
+      },
+      "warmSnapshotMs": {
+        "median": 1853.8,
+        "runs": [
+          1840.8,
+          1891.3,
+          1846,
+          1995.9,
+          1853.8
+        ]
+      },
+      "apiSnapshotMs": {
+        "median": 10.6,
+        "runs": [
+          1.5,
+          10.6,
+          15.8,
+          15.1,
+          1.5
+        ]
+      },
+      "apiWhileTickingMs": {
+        "median": 17.8,
+        "max": 4130.2,
+        "over1s": 6,
+        "requests": 20,
+        "runs": [
+          10.4,
+          17.3,
+          17.9,
+          17,
+          19.5,
+          16.9,
+          17.9,
+          17.8,
+          17.6,
+          4036.5,
+          18,
+          3920.4,
+          14.9,
+          4130.2,
+          16.5,
+          3944.9,
+          16.8,
+          3896.5,
+          16,
+          4078.6
+        ]
+      },
+      "serverTickMs": {
+        "median": 1825,
+        "runs": [
+          1784.3,
+          1831.8,
+          1755.2,
+          1786.5,
+          1744.4,
+          1837.3,
+          1819.3,
+          1833.7,
+          1830.7,
+          1817.3,
+          1963.1,
+          1800.3,
+          1803.4,
+          1727.7,
+          1800.2,
+          3100.6,
+          3423.2,
+          3351.1,
+          3949.4,
+          3999.7
+        ]
+      },
+      "rssMB": {
+        "afterFirstTick": 75.9,
+        "after20Ticks": 81.9
+      },
+      "heapUsedMB": 12.3
+    },
+    {
+      "workstreams": 25,
+      "setupMs": 45691,
+      "checks": {
+        "ok": true,
+        "rows": 25,
+        "inbox": 9,
+        "expectedInbox": 9,
+        "snapshotBytes": 51518
+      },
+      "coldSnapshotMs": {
+        "median": 14583.2,
+        "runs": [
+          14583.2,
+          14574.4,
+          14567.8,
+          14737.8,
+          15342.3
+        ]
+      },
+      "warmSnapshotMs": {
+        "median": 3905.3,
+        "runs": [
+          3996.9,
+          3891.2,
+          4032.7,
+          3890.3,
+          3905.3
+        ]
+      },
+      "apiSnapshotMs": {
+        "median": 4.6,
+        "runs": [
+          1.7,
+          4.6,
+          0.9,
+          13.3,
+          15.8
+        ]
+      },
+      "apiWhileTickingMs": {
+        "median": 17,
+        "max": 3671.9,
+        "over1s": 4,
+        "requests": 20,
+        "runs": [
+          5.4,
+          16.8,
+          1.5,
+          17,
+          16.7,
+          17.6,
+          17,
+          16.9,
+          16.9,
+          3671.9,
+          17.5,
+          16.5,
+          3462.9,
+          17.2,
+          16.8,
+          3424.2,
+          17.1,
+          17.4,
+          3558.1,
+          16.8
+        ]
+      },
+      "serverTickMs": {
+        "median": 3908.5,
+        "runs": [
+          3934.6,
+          3897.6,
+          3910.4,
+          4012.9,
+          3934,
+          3902,
+          3892.7,
+          4015.9,
+          3867.2,
+          3940.5,
+          3930.1,
+          3905.3,
+          3906.6,
+          3891.2,
+          3922.5,
+          4006.7,
+          3896.1,
+          3943.4,
+          3900.8,
+          3865.8
+        ]
+      },
+      "rssMB": {
+        "afterFirstTick": 80.2,
+        "after20Ticks": 92.2
+      },
+      "heapUsedMB": 15.2
+    },
+    {
+      "workstreams": 50,
+      "setupMs": 39839,
+      "checks": {
+        "ok": true,
+        "rows": 50,
+        "inbox": 17,
+        "expectedInbox": 17,
+        "snapshotBytes": 101709
+      },
+      "coldSnapshotMs": {
+        "median": 28799,
+        "runs": [
+          28926.8,
+          28885.5,
+          28799,
+          28678.4,
+          28747.4
+        ]
+      },
+      "warmSnapshotMs": {
+        "median": 7612.1,
+        "runs": [
+          7650.2,
+          7704,
+          7511.4,
+          7547,
+          7612.1
+        ]
+      },
+      "apiSnapshotMs": {
+        "median": 14.5,
+        "runs": [
+          1.8,
+          17.4,
+          14.5,
+          15.9,
+          1.2
+        ]
+      },
+      "apiWhileTickingMs": {
+        "median": 7216.8,
+        "max": 7984,
+        "over1s": 11,
+        "requests": 20,
+        "runs": [
+          7.7,
+          18.9,
+          17.6,
+          17.1,
+          17.7,
+          17,
+          17.1,
+          17.3,
+          17.6,
+          7618,
+          7242.7,
+          7378.2,
+          7221.7,
+          7236.8,
+          7258.7,
+          7287.8,
+          7211.8,
+          7311.2,
+          7984,
+          7457.1
+        ]
+      },
+      "serverTickMs": {
+        "median": 7758.1,
+        "runs": [
+          7762.9,
+          8472.4,
+          7895.2,
+          7597.8,
+          7644.7,
+          7703.7,
+          7845.7,
+          7648.4,
+          7596.7,
+          7879.3,
+          7829.7,
+          7642.3,
+          7716.5,
+          7861.8,
+          7753.4,
+          7747.5,
+          7746.5,
+          7782.5,
+          7902.1,
+          7939.4
+        ]
+      },
+      "rssMB": {
+        "afterFirstTick": 80.8,
+        "after20Ticks": 112.3
+      },
+      "heapUsedMB": 29.3
+    }
+  ]
+}
