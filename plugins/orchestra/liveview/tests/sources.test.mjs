@@ -137,9 +137,12 @@ test('appendHistory creates .orchestra when it is missing', () => {
 })
 
 test('gather resolves a relative registry worktree against the main checkout', () => {
-  const main = tmp()
+  const { repo: main, g } = initRepo()
+  fs.writeFileSync(path.join(main, 'README.md'), 'x')
+  g('add', 'README.md')
+  g('commit', '-q', '-m', 'base')
+  g('worktree', 'add', '-q', '-b', 'billing', '.worktrees/billing')
   fs.mkdirSync(path.join(main, '.orchestra'))
-  fs.mkdirSync(path.join(main, '.worktrees', 'billing'), { recursive: true })
   fs.writeFileSync(path.join(main, '.orchestra', 'workstreams.md'), '| Workstream | Session | Branch and worktree | Test data | Port | Schema change | Stage |\n| --- | --- | --- | --- | --- | --- | --- |\n| billing | s1 | `billing` at `.worktrees/billing` | none | none | no | build |\n')
   const s = gather(main, Date.now(), emptyReader(), [])
   assert.equal(s.workstreams.billing.worktreeMissing, undefined)
@@ -175,4 +178,41 @@ test('seedHistory times a task against its own branch, not the commits of other 
   repoAt(repo)('checkout', '-q', 'main')
   commit(p, '### Task 1: A\n\n- [x] step\n', 5, 'done')
   assert.equal(seedHistory(repo)[0].minutes, 120) // one 5h gap on main, capped; hourly commits elsewhere must not add up to 300
+})
+
+test('a plan that is a symlink leaving the worktree is not followed, from the note or the branch diff', t => {
+  const { repo, g } = initRepo()
+  const outside = path.join(path.dirname(repo), 'outside-link.md')
+  fs.writeFileSync(outside, '### Task 1: A\n\n- [ ] step\n')
+  fs.writeFileSync(path.join(repo, 'README.md'), 'x')
+  g('add', 'README.md')
+  g('commit', '-q', '-m', 'base')
+  g('checkout', '-q', '-b', 'feat')
+  const p = 'docs/superpowers/plans/x.md'
+  fs.mkdirSync(path.join(repo, 'docs', 'superpowers', 'plans'), { recursive: true })
+  try { fs.symlinkSync(outside, path.join(repo, p), 'file') } catch (err) {
+    if (err.code === 'EPERM') return t.skip('creating a symlink needs privileges on this Windows')
+    throw err
+  }
+  g('add', p)
+  g('commit', '-q', '-m', 'plan')
+  assert.equal(findPlan(repo, 'feat', 'develop'), null)
+  fs.mkdirSync(path.join(repo, 'docs', 'workstreams'), { recursive: true })
+  fs.writeFileSync(path.join(repo, 'docs', 'workstreams', 'feat.md'), `Plan: \`${p}\``)
+  assert.equal(findPlan(repo, 'feat', 'develop'), null)
+  assert.deepEqual(readWorkstream({ name: 'feat', worktree: repo }, 'develop'), {})
+})
+
+test('a registry row naming a folder that is not a git worktree of main is reported missing and not read', () => {
+  const { repo: main, g } = initRepo()
+  fs.writeFileSync(path.join(main, 'README.md'), 'x')
+  g('add', 'README.md')
+  g('commit', '-q', '-m', 'base')
+  const planted = tmp()
+  fs.mkdirSync(path.join(planted, 'docs', 'workstreams'), { recursive: true })
+  fs.writeFileSync(path.join(planted, 'docs', 'workstreams', 'evil.md'), 'Plan: `plan.md`')
+  fs.writeFileSync(path.join(planted, 'plan.md'), '### Task 1: A\n\n- [ ] step\n')
+  fs.mkdirSync(path.join(main, '.orchestra'))
+  fs.writeFileSync(path.join(main, '.orchestra', 'workstreams.md'), `| Workstream | Session | Branch and worktree | Test data | Port | Schema change | Stage |\n| --- | --- | --- | --- | --- | --- | --- |\n| evil | s1 | \`evil\` at \`${planted}\` | none | none | no | build |\n`)
+  assert.deepEqual(gather(main, Date.now(), emptyReader(), []).workstreams.evil, { worktreeMissing: true })
 })

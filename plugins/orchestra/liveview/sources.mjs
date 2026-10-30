@@ -67,17 +67,23 @@ export function firstParent(cwd, branch, since) {
   return log ? log.trim().split('\n').filter(Boolean).map(l => { const [ct, ...s] = l.split('\t'); return { at: Number(ct) * 1000, subject: s.join('\t') } }) : []
 }
 
+const inside = (root, p) => { const r = path.relative(root, p); return r !== '' && !r.startsWith('..') && !path.isAbsolute(r) }
+
+// A plan path comes from versioned files, so it must stay inside the worktree, symlinks resolved.
+function safePlan(worktree, p) {
+  if (!p || path.isAbsolute(p) || !inside(worktree, path.resolve(worktree, p))) return null
+  try { return inside(fs.realpathSync(worktree), fs.realpathSync(path.join(worktree, p))) ? p : null } catch { return p } // shortcut: a path that does not exist cannot be read, so it passes
+}
+
 // Which plan a workstream follows: its note's Plan line, else the one plan file its branch adds.
 export function findPlan(worktree, name, integration) {
-  const fromNote = planPathFromNote(readText(path.join(worktree, 'docs', 'workstreams', `${name}.md`)))
-  // The note is versioned, so a cloned repo controls it: a plan path must stay inside the worktree.
-  const rel = fromNote && path.relative(worktree, path.resolve(worktree, fromNote))
-  if (fromNote && !path.isAbsolute(fromNote) && rel && !rel.startsWith('..') && !path.isAbsolute(rel)) return fromNote
+  const fromNote = safePlan(worktree, planPathFromNote(readText(path.join(worktree, 'docs', 'workstreams', `${name}.md`))))
+  if (fromNote) return fromNote
   for (const base of integration ? [`origin/${integration}`, integration] : []) {
     const added = git(worktree, ['diff', '--name-only', '--diff-filter=A', `${base}...HEAD`, '--', PLANS])
     if (added === null) continue
     const files = added.trim().split('\n').filter(f => f.endsWith('.md'))
-    return files.length === 1 ? files[0] : null
+    return files.length === 1 ? safePlan(worktree, files[0]) : null
   }
   return null
 }
@@ -185,11 +191,20 @@ export class TranscriptReader {
   }
 }
 
+const realKey = p => { let r = path.resolve(p); try { r = fs.realpathSync.native(r) } catch { /* not on disk */ } return process.platform === 'win32' ? r.toLowerCase() : r }
+
+// The worktrees git itself lists for the main checkout; a registry row naming anything else is not trusted.
+function registeredWorktrees(main) {
+  const out = git(main, ['worktree', 'list', '--porcelain']) ?? ''
+  return new Set(out.split('\n').filter(l => l.startsWith('worktree ')).map(l => realKey(l.slice(9).trim())))
+}
+
 // Everything buildSnapshot needs, read fresh.
 export function gather(main, now, reader, history) {
   const registry = parseRegistry(readText(path.join(main, '.orchestra', 'workstreams.md')) ?? '').map(r => ({ ...r, worktree: path.resolve(main, r.worktree) }))
   const { integration, production } = parseBranches(readText(path.join(main, 'CLAUDE.md')))
-  const workstreams = Object.fromEntries(registry.map(r => [r.name, readWorkstream(r, integration)]))
+  const known = registeredWorktrees(main)
+  const workstreams = Object.fromEntries(registry.map(r => [r.name, known.has(realKey(r.worktree)) ? readWorkstream(r, integration) : { worktreeMissing: true }]))
   const since = now - 3 * DAY
   return {
     now,
