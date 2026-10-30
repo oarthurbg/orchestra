@@ -15,7 +15,9 @@ The last commit of the workstream, before merge, deletes the note. The lasting s
 
 The line right under the title is what the maestro's status round reads, so keep it current: update it at the end of every wave, when you start waiting on the owner, and before asking for a clear.
 
-`Status: <running | idle | waiting on owner> · context <N>k · <stage>, task <N> of <M> · PR <none | #N open | #N ready> · waiting on: <none | what, for whom> · updated <YYYY-MM-DD HH:MM>`
+`Status: <running | idle | waiting on owner> · context <N>k · <stage>[, task <N> of <M>] · PR <none | #N open | #N ready> · waiting on: <none | what, for whom> · updated <YYYY-MM-DD HH:MM>`
+
+Leave out the task until the plan exists (`spec`, then `plan, task 1 of 12`). Context is the measured size (see `/orchestra:close-wave` step 2), never a guess. `updated` is the real local time (`date`), never a placeholder: the status round uses it to spot stalled sessions.
 
 It is also how a principal reports without the desktop app: the maestro reads it straight from the worktree folder.
 
@@ -24,7 +26,7 @@ It is also how a principal reports without the desktop app: the maestro reads it
 Copy `${CLAUDE_PLUGIN_ROOT}/templates/handoff-note.md` and keep the status line and its 8 sections, each short:
 
 1. Current task (plan path and task number)
-2. Last commit on the integration worktree
+2. Last commit on the workstream branch
 3. Worktrees
 4. Test data and dev server port (or none)
 5. Next steps, in order

@@ -64,6 +64,8 @@ In a Claude Code session:
 /plugin install orchestra@orchestra
 ```
 
+Install it at user scope (the default). Principals work in their own worktrees, so a project-scope install reaches them only if `.claude/settings.json` is committed.
+
 Then install the plugins the workflow uses. This marketplace lists them, fetched from their own upstream repositories (nothing is copied here):
 
 ```
