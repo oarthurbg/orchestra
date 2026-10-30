@@ -212,6 +212,16 @@ test('buildSnapshot reads the newest session file of a workstream', () => {
   assert.deepEqual([snap.rows[0].shape, snap.rows[0].context], ['circle', 70_000])
 })
 
+test('buildSnapshot shows only the newest maestro file and drops stale unregistered files', () => {
+  const iso = t => new Date(t).toISOString()
+  const mk = (session, role, at) => ({ v: 1, session, role, workstream: null, title: session, link: '', state: 'waiting', context: { tokens: 1000 }, updatedAt: iso(at), limits: [] })
+  const snap = buildSnapshot({
+    now: NOW, project: 'repo', registry: [], workstreams: {}, history: [], events: [], merges: [], releases: [], queued: [],
+    sessions: [mk('old-maestro', 'maestro', NOW - DAY), mk('maestro', 'maestro', NOW - MIN), mk('old-fix', 'unregistered', NOW - 31 * MIN), mk('fix', 'unregistered', NOW - 30 * MIN)],
+  })
+  assert.deepEqual(snap.rows.map(r => r.name), ['maestro', 'fix'])
+})
+
 test('buildSnapshot moves ends and queued starts past a spent 5-hour limit', () => {
   const iso = t => new Date(t).toISOString()
   const limits = [{ kind: 'five_hour', percentUsed: 100, resetsAt: iso(NOW + 2 * HOUR) }]

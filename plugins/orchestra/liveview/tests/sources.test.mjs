@@ -6,6 +6,7 @@ import os from 'node:os'
 import path from 'node:path'
 
 import { TranscriptReader, appendHistory, findPlan, firstParent, gather, planVersions, readHistory, readSessions, readWorkstream, seedHistory } from '../sources.mjs'
+import { timedTasks } from '../snapshot.mjs'
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'liveview-'))
 const line = (id, at, input) => JSON.stringify({ type: 'assistant', timestamp: new Date(at).toISOString(), message: { id, model: 'claude-haiku-5-5', usage: { input_tokens: input } } })
@@ -130,6 +131,14 @@ test('TranscriptReader reads a big append in chunks and keeps a multibyte charac
   assert.equal(r.files.get(file).offset, bytes.length)
 })
 
+test('appendHistory skips tasks timed at 0 minutes, such as tasks ticked in the same commit', () => {
+  const main = tmp()
+  const e = (task, minutes) => ({ plan: 'p.md', task, agent: 'implementer', risk: 'normal', minutes, finishedAt: 1 })
+  const h = appendHistory(main, [], [e(1, 0), e(2, 7)])
+  assert.deepEqual(h.map(x => x.task), [2])
+  assert.deepEqual(readHistory(main).map(x => x.task), [2])
+})
+
 test('appendHistory creates .orchestra when it is missing', () => {
   const main = tmp()
   appendHistory(main, [], [{ plan: 'p.md', task: 1, agent: 'implementer', risk: 'normal', minutes: 5, finishedAt: 1 }])
@@ -163,7 +172,8 @@ test('firstParent prefers origin/<branch>, which gh pr merge updates, over the l
 
 test('seedHistory times a task against its own branch, not the commits of other branches', () => {
   const { repo } = initRepo('main')
-  const at = h => ({ GIT_AUTHOR_DATE: `2026-01-01T${String(h).padStart(2, '0')}:00:00Z`, GIT_COMMITTER_DATE: `2026-01-01T${String(h).padStart(2, '0')}:00:00Z` })
+  // Committer dates as a rebase leaves them, all the same: timing must read the author dates.
+  const at = h => ({ GIT_AUTHOR_DATE: `2026-01-01T${String(h).padStart(2, '0')}:00:00Z`, GIT_COMMITTER_DATE: '2026-02-01T00:00:00Z' })
   const commit = (file, content, hour, msg) => {
     fs.mkdirSync(path.dirname(path.join(repo, file)), { recursive: true })
     fs.writeFileSync(path.join(repo, file), content)
@@ -178,6 +188,31 @@ test('seedHistory times a task against its own branch, not the commits of other 
   repoAt(repo)('checkout', '-q', 'main')
   commit(p, '### Task 1: A\n\n- [x] step\n', 5, 'done')
   assert.equal(seedHistory(repo)[0].minutes, 120) // one 5h gap on main, capped; hourly commits elsewhere must not add up to 300
+})
+
+test('live timing leaves out integration commits a merge brings in, when the integration branch is known', () => {
+  const { repo } = initRepo()
+  const at = h => ({ GIT_AUTHOR_DATE: `2026-01-01T0${h}:00:00Z`, GIT_COMMITTER_DATE: `2026-01-01T0${h}:00:00Z` })
+  const commit = (file, content, hour, msg) => {
+    fs.mkdirSync(path.dirname(path.join(repo, file)), { recursive: true })
+    fs.writeFileSync(path.join(repo, file), content)
+    repoAt(repo, at(hour))('add', file)
+    repoAt(repo, at(hour))('commit', '-q', '-m', msg)
+  }
+  commit('README.md', 'x', 0, 'base')
+  repoAt(repo)('checkout', '-q', '-b', 'feat')
+  const p = 'docs/superpowers/plans/feat.md'
+  commit(p, '### Task 1: A\n\n- [ ] step\n', 0, 'plan')
+  repoAt(repo)('checkout', '-q', 'develop')
+  commit('d.txt', '1', 2, 'integration work')
+  repoAt(repo)('checkout', '-q', 'feat')
+  repoAt(repo, at(4))('merge', '-q', '--no-edit', 'develop')
+  commit(p, '### Task 1: A\n\n- [x] step\n', 4, 'task 1')
+  fs.mkdirSync(path.join(repo, 'docs', 'workstreams'), { recursive: true })
+  fs.writeFileSync(path.join(repo, 'docs', 'workstreams', 'feat.md'), `Plan: \`${p}\``)
+  const minutes = integration => { const w = readWorkstream({ name: 'feat', worktree: repo }, integration); return timedTasks(w.planPath, w.versions, w.commits)[0].minutes }
+  assert.equal(minutes(null), 240, 'unknown integration: the develop commit at 02:00 splits the 4 hours')
+  assert.equal(minutes('develop'), 120, 'one 4-hour gap, capped')
 })
 
 test('a plan that is a symlink leaving the worktree is not followed, from the note or the branch diff', t => {

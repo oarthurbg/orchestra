@@ -33,12 +33,14 @@ const alive = pid => { try { process.kill(pid, 0); return true } catch (err) { r
 
 // Only a loopback http url is ever fetched: liveview.json is in the project and may be planted.
 const loopback = url => /^http:\/\/(localhost|127\.0\.0\.1):\d+\/$/.test(url)
+// Pings the address the server binds: on Node 18, fetch to localhost tries ::1 only and never falls back to IPv4.
+const ping = (url, ms) => fetch(new URL('api/ping', url.replace('//localhost:', '//127.0.0.1:')), { signal: AbortSignal.timeout(ms) })
 
 // True when the server recorded in liveview.json is alive and answers ping for this root with that same pid.
 async function answers(info, root) {
   if (!info?.pid || !loopback(info.url) || !alive(info.pid)) return false
   try {
-    const body = await (await fetch(new URL('api/ping', info.url), { signal: AbortSignal.timeout(PING_MS) })).json()
+    const body = await (await ping(info.url, PING_MS)).json()
     return body.pid === info.pid && sameRoot(body.root, root)
   } catch {
     return false
@@ -50,8 +52,7 @@ export async function liveUrl(root) {
   const info = readInfo(root)
   if (!loopback(info?.url)) return null
   try {
-    const r = await fetch(new URL('api/ping', info.url), { signal: AbortSignal.timeout(1000) })
-    const body = await r.json()
+    const body = await (await ping(info.url, 1000)).json()
     return sameRoot(body.root, root) ? info.url : null
   } catch {
     return null

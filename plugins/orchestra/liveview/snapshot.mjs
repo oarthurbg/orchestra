@@ -118,6 +118,7 @@ export function estimate(task, history) {
 }
 
 // Typical workstream length: median of the per-plan totals in the history.
+// shortcut: plans still in progress count with their partial totals, keep finished plans only if queued ETAs read short.
 export function typicalWorkstream(history) {
   const perPlan = new Map()
   for (const h of history) perPlan.set(h.plan, (perPlan.get(h.plan) ?? 0) + h.minutes)
@@ -259,14 +260,18 @@ const sessionRow = (s, now) => ({
   ...attention(s, now), plan: null, tasks: [], done: 0, total: 0, eta: null, etaCalibrated: true, start: null, end: null,
 })
 
+const newest = xs => xs.reduce((a, b) => (!a || Date.parse(b.updatedAt) > Date.parse(a.updatedAt) ? b : a), null)
+
 // Everything the page draws, from what sources.mjs gathered.
 export function buildSnapshot(input) {
   const { now, project, sessions, registry, workstreams, history, events, merges, releases, queued } = input
   const rows = []
   const listed = new Set()
-  for (const s of sessions.filter(s => s.role === 'maestro')) { rows.push(sessionRow(s, now)); listed.add(s.session) }
+  // Old maestro files and unregistered files no one updates would sit in "Needs you" forever.
+  const maestro = newest(sessions.filter(s => s.role === 'maestro'))
+  if (maestro) rows.push(sessionRow(maestro, now))
   for (const r of registry) {
-    const s = sessions.filter(x => x.workstream === r.name).reduce((a, b) => (!a || Date.parse(b.updatedAt) > Date.parse(a.updatedAt) ? b : a), null)
+    const s = newest(sessions.filter(x => x.workstream === r.name))
     if (s) listed.add(s.session)
     const row = s ? { ...sessionRow(s, now), name: s.title || r.name } : { ...sessionRow({ session: r.name, workstream: r.name, role: 'principal', state: 'idle', updatedAt: new Date(now).toISOString() }, now), ...attention(null, now) }
     row.key = `ws:${r.name}`
@@ -282,6 +287,7 @@ export function buildSnapshot(input) {
       row.tasks = parsePlan(w.planMd).map(t => {
         const real = timed.get(t.n)
         if (t.done) return { n: t.n, title: t.title, agent: t.agent, risk: t.risk, done: true, current: false, minutes: real?.minutes ?? null, estimated: false, calibrated: true, start: real?.startedAt ?? null, end: real?.finishedAt ?? null }
+        // shortcut: the current task shows its full estimate from now with no credit for time already spent, subtract that if ETAs read long.
         const e = estimate(t, history)
         const out = { n: t.n, title: t.title, agent: t.agent, risk: t.risk, done: false, current: first, minutes: e.minutes, estimated: true, calibrated: e.calibrated, start: cursor, end: cursor + e.minutes * MIN }
         first = false
@@ -298,7 +304,7 @@ export function buildSnapshot(input) {
     } else if (!w.worktreeMissing) row.detail = row.detail || 'no plan'
     rows.push(row)
   }
-  for (const s of sessions.filter(s => !listed.has(s.session) && s.role === 'unregistered')) rows.push(sessionRow(s, now))
+  for (const s of sessions.filter(s => !listed.has(s.session) && s.role === 'unregistered' && now - Date.parse(s.updatedAt) <= STALE_MS)) rows.push(sessionRow(s, now))
 
   const planned = rows.filter(r => r.end !== null)
   const typical = typicalWorkstream(history)

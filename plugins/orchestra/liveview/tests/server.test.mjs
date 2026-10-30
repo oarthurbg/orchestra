@@ -23,13 +23,13 @@ function fixture() {
 
 const reader = () => new TranscriptReader(fs.mkdtempSync(path.join(os.tmpdir(), 'liveview-tx-')))
 
-function get(port, url, host) {
+function get(port, url, host, method = 'GET') {
   return new Promise((resolve, reject) => {
-    http.get({ host: '127.0.0.1', port, path: url, headers: host ? { host } : {} }, res => {
+    http.request({ host: '127.0.0.1', port, path: url, method, headers: host ? { host } : {} }, res => {
       let body = ''
       res.on('data', c => { body += c })
       res.on('end', () => resolve({ status: res.statusCode, body }))
-    }).on('error', reject)
+    }).on('error', reject).end()
   })
 }
 
@@ -46,12 +46,27 @@ test('serves the page and the snapshot, refuses a foreign Host, and cleans up on
     assert.equal((await get(s.port, '/?preview&bars=a')).status, 200, 'a query string still serves the page')
     assert.equal((await get(s.port, '/api/snapshot', 'evil.example')).status, 403)
     assert.equal((await get(s.port, '/api/snapshot', `localhost:${s.port}`)).status, 200)
+    assert.equal((await get(s.port, '/api/snapshot', `localhost:${s.port + 1}`)).status, 403, 'the right name with the wrong port')
+    assert.equal((await get(s.port, '/api/snapshot', undefined, 'POST')).status, 405)
     assert.equal((await get(s.port, '/nope')).status, 404)
     assert.equal(await liveUrl(root), s.url)
   } finally {
     await s.close()
   }
   assert.equal(fs.existsSync(path.join(root, '.orchestra', 'liveview.json')), false)
+})
+
+test('liveUrl pings the bound IPv4 address, as on Node 18 where fetch does not fall back from ::1', async () => {
+  const root = fixture()
+  const before = net.getDefaultAutoSelectFamily()
+  const s = await startServer({ root, port: PORT + 20, reader: reader(), auto: false, onIdle: () => {} })
+  net.setDefaultAutoSelectFamily(false)
+  try {
+    assert.equal(await liveUrl(root), s.url)
+  } finally {
+    net.setDefaultAutoSelectFamily(before)
+    await s.close()
+  }
 })
 
 test('a busy port moves to the next one', async () => {

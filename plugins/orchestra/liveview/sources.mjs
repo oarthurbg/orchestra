@@ -43,19 +43,19 @@ export function readSessions(main) {
   return out
 }
 
-// Versions of a plan file on a ref, oldest first.
+// Versions of a plan file on a ref, oldest first. Author dates, since a rebase rewrites committer dates.
 export function planVersions(cwd, ref, planPath) {
-  const log = git(cwd, ['log', '--format=%H %ct', ref, '--', planPath])
+  const log = git(cwd, ['log', '--format=%H %at', ref, '--', planPath])
   if (!log) return []
   return log.trim().split('\n').filter(Boolean).reverse().flatMap(line => {
-    const [sha, ct] = line.split(' ')
+    const [sha, at] = line.split(' ')
     const md = git(cwd, ['show', `${sha}:${planPath}`])
-    return md === null ? [] : [{ at: Number(ct) * 1000, md, sha }]
+    return md === null ? [] : [{ at: Number(at) * 1000, md, sha }]
   })
 }
 
 export function commitTimes(cwd, refArgs) {
-  const log = git(cwd, ['log', '--format=%ct', ...refArgs])
+  const log = git(cwd, ['log', '--format=%at', ...refArgs])
   return log ? log.trim().split('\n').filter(Boolean).map(s => Number(s) * 1000) : []
 }
 
@@ -72,8 +72,11 @@ const inside = (root, p) => { const r = path.relative(root, p); return r !== '' 
 // A plan path comes from versioned files, so it must stay inside the worktree, symlinks resolved.
 function safePlan(worktree, p) {
   if (!p || path.isAbsolute(p) || !inside(worktree, path.resolve(worktree, p))) return null
-  try { return inside(fs.realpathSync(worktree), fs.realpathSync(path.join(worktree, p))) ? p : null } catch { return p } // shortcut: a path that does not exist cannot be read, so it passes
+  try { return inside(fs.realpathSync(worktree), fs.realpathSync(path.join(worktree, p))) ? p : null } catch { return p } // shortcut: a path missing on disk skips the symlink check (nothing to read yet), check again at read time if the plan can appear in between
 }
+
+// The integration branch as git knows it, origin first as in findPlan, or null.
+const integrationRef = (cwd, b) => (b ? [`origin/${b}`, b].find(r => git(cwd, ['rev-parse', '--verify', '--quiet', `${r}^{commit}`]) !== null) ?? null : null)
 
 // Which plan a workstream follows: its note's Plan line, else the one plan file its branch adds.
 export function findPlan(worktree, name, integration) {
@@ -96,12 +99,14 @@ export function readWorkstream(row, integration) {
   const planMd = planPath ? readText(path.join(row.worktree, planPath)) : null
   if (!planPath || planMd === null || parsePlan(planMd).length === 0) return {}
   const head = git(row.worktree, ['rev-parse', 'HEAD'])?.trim() ?? ''
-  const key = `${row.worktree}|${planPath}`
+  const key = `${row.worktree}|${planPath}|${integration}`
   const cached = wsCache.get(key)
   if (cached && cached.head === head && head) return { planPath, planMd, versions: cached.versions, commits: cached.commits }
   const versions = planVersions(row.worktree, 'HEAD', planPath)
   const since = versions[0]?.at ?? Date.now() - 30 * DAY
-  const commits = commitTimes(row.worktree, [`--since=${Math.floor(since / 1000)}`, 'HEAD'])
+  // Integration commits a merge or rebase brings in would split the task gaps.
+  const base = integrationRef(row.worktree, integration)
+  const commits = commitTimes(row.worktree, [`--since=${Math.floor(since / 1000)}`, 'HEAD', ...(base ? ['--not', base] : [])])
   wsCache.set(key, { head, versions, commits })
   return { planPath, planMd, versions, commits }
 }
@@ -118,7 +123,8 @@ export function readHistory(main) {
 
 export function appendHistory(main, history, entries) {
   const known = new Set(history.map(h => `${h.plan}#${h.task}`))
-  const fresh = entries.filter(e => !known.has(`${e.plan}#${e.task}`))
+  // 0 minutes means ticked in the same commit as the task before; the file is append-only, so it would stay.
+  const fresh = entries.filter(e => e.minutes > 0 && !known.has(`${e.plan}#${e.task}`))
   if (fresh.length === 0) return history
   const lines = fresh.map(({ plan, task, agent, risk, minutes, finishedAt }) => JSON.stringify({ plan, task, agent, risk, minutes, finishedAt }))
   fs.mkdirSync(path.join(main, '.orchestra'), { recursive: true })
