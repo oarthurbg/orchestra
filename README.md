@@ -165,10 +165,17 @@ A local page for the project: plan limits with a projection to the reset, what n
 - **Auto-compact safety net at 600k tokens.** In `~/.claude/settings.json`:
 
   ```json
-  { "autoCompactWindow": 600000 }
+  {
+    "autoCompactWindow": 600000,
+    "modelSettings": { "claude-opus-5-5": { "autoCompactWindow": 600000 } }
+  }
   ```
 
-  It applies to new or restarted sessions. The real rule is earlier: a principal above 250k tokens at the end of a wave writes its handoff note and gets cleared at a natural stop. The 600k net catches the case where nobody checked in time.
+  A window under `modelSettings` beats the top-level key in the same file for that model, and `/autocompact` writes one there, so check that entry too (or remove it). It applies to new or restarted sessions. The real rule is earlier: a principal above 250k tokens at the end of a wave writes its handoff note and gets cleared at a natural stop. The 600k net catches the case where nobody checked in time.
+
+  The maestro cannot get a larger window than principals in the desktop app: the window is set per model, not per session, and a worktree session started from the app reads project settings from the main checkout's root, so a window in the main checkout's `.claude/settings.local.json` reaches every principal too. In the plain CLI, start the maestro with `claude --autocompact 800000`, which applies to that launch only.
+
+  **After a compact.** Several principals reporting at once can push the maestro over its window. When it compacts, orchestra's `SessionStart` hook rebuilds what still waits on it from disk and puts the list in its context: messages from sessions it has not answered with `SendMessage` (from its own transcript, last 24 hours), waiting band reports in `.orchestra/sessions/`, and handoff notes whose status line waits on someone. The maestro then answers each one that is still open.
 - **Auto-archive on PR close: off** (desktop app setting). Archiving a session kills its process and its background agents, and unarchiving does not bring them back. Principals open spec and plan PRs and keep working after those merge, so auto-archive would stop them mid-workstream. The maestro archives finished sessions itself, after checking nothing is running.
 - **Session models.** Subagents carry their own model and effort (the agent table above); the sessions run on what you pick:
   - **maestro:** Opus at medium effort. Its turns are short (status rounds, checklists, merges): judgment matters, long thinking mostly spends plan limits.

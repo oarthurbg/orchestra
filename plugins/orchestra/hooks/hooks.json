@@ -1,1 +1,8 @@
-{ "hooks": {}, "modules": ["./band/register.tsx"] }
+{
+  "hooks": {
+    "SessionStart": [
+      { "matcher": "compact", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/pending-asks.mjs\"" }] }
+    ]
+  },
+  "modules": ["./band/register.tsx"]
+}
