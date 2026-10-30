@@ -4,7 +4,7 @@
 
 ## Recommendation
 
-**Adopt LSP for Python, and for TypeScript too, as an optional explorer/planner tool, in place of graphify for Python and next to it for TS.** Over 9 paired questions on three codebases, LSP-first Haiku explorers used about 30% fewer work tokens and 44% fewer tool calls (97 to 54) than grep-only ones, with equal or better accuracy. Pyright found 100% of the callers on Python, where graphify found 1 of 9. Weak points: the sample is small (one run per cell, Haiku only), and orchestra has no ready-made way to call a language server (see "What it takes").
+**Adopt LSP for Python, and for TypeScript too, as an optional explorer/planner tool, in place of graphify for Python and next to it for TS.** Over 9 paired questions on three codebases, LSP-first Haiku explorers used about 30% fewer work tokens and 44% fewer tool calls (97 to 54) than grep-only ones, with equal or better accuracy. Pyright found 100% of the callers on Python, where graphify found 1 of 9. Weak points: the sample is small (one run per cell, Haiku only), and the one installed LSP plugin tried so far returned same-file references only (see "Trial with an installed plugin"), so the gain holds for a working language server, not yet for a plugin a user can install today.
 
 ## Method
 
@@ -57,6 +57,18 @@ No CLI offers find-references: `pyright` CLI has none, and no Claude Code LSP pl
 - **Pyright on the stdlib:** the stdlib's own `subprocess.py` loses to Pyright's bundled typeshed stub, so only 2 of 12 references showed. A `typeshedPath` override fixed it. Real projects do not have this problem.
 - **Per call cost:** 2 to 4 s for a cold server on 300 to 600 files; larger repos will cost more unless a server stays resident.
 - **Fresh by construction:** the server reads the working tree, so unlike graphify's graph it needs no build, no update after merges, and it sees the worktree's own branch.
+
+## Trial with an installed plugin (2026-10-30): blocked
+
+The open check from the roadmap, rerun with a real Claude Code LSP plugin instead of the hand-made wrapper, did not get as far as a token comparison.
+
+- **Setup:** Anthropic's own `typescript-lsp` plugin (claude-plugins-official, 1.0.0) with `typescript-language-server` 6.0.2, on a private Next.js app (1,282 TS/TSX files, one root `tsconfig.json`). Headless `claude -p` runs on Haiku.
+- **What the plugin exposes:** a deferred `LSP` tool, found with ToolSearch, with nine operations: `goToDefinition`, `findReferences`, `hover`, `documentSymbol`, `workspaceSymbol`, `goToImplementation`, `prepareCallHierarchy`, `incomingCalls`, `outgoingCalls`. So find-references and call hierarchy are available. Whether a subagent (the Agent tool) gets the tool was not checked; the probes ran in the top-level session.
+- **What it returned:** `findReferences` on an exported function with 33 references (the TypeScript language service called directly finds all 33) returned **1 reference, in the same file**, on every try, including after a second call and after a 20 s wait. The same server driven by hand returned the same single reference, with the app's own TypeScript 5.9 or TypeScript 7 as its tsserver, and with the drive letter in either case. The same-file-only result matches what the earlier excalidraw run showed (2 of 70). The cause is not known.
+- **Consequence:** an explorer told to use this plugin would get wrong answers, so a token and accuracy comparison would only measure how fast it gets wrong answers. It was not run.
+- **Cleanup:** the plugin and the global npm packages were uninstalled afterwards; the app copy was deleted.
+
+Next step before any spec: find why `typescript-language-server` returns same-file references here (project loading, the `tsconfig` `include`, or the server version), or try the other community plugin, and only then repeat the trial.
 
 ## Not measured
 
