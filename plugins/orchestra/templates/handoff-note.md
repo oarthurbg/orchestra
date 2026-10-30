@@ -1,6 +1,8 @@
 # Handoff note: <workstream>
 
-Updated: <date>. Delete this file in the last commit before the PR merges.
+Status: <running | idle | waiting on owner> · context <N>k · <stage>, task <N> of <M> · PR <none | #N open | #N ready> · waiting on: <none | what, for whom> · updated <YYYY-MM-DD HH:MM>
+
+Delete this file in the last commit before the PR merges.
 
 ## 1. Current task
 

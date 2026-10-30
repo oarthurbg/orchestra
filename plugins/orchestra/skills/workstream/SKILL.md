@@ -16,7 +16,7 @@ Read first: your handoff note if one exists (`docs/workstreams/<name>.md`, skill
 3. **Plan:** dispatch `planner` (it runs in ultra). Each task comes back tagged with an agent and a risk.
 4. **Implementation:** `superpowers:subagent-driven-development`, one subagent at a time, visible in the conversation. Backend, database and integrations: `implementer` or `implementer-advanced` in full. UI: `implementer` in lite with `impeccable:impeccable`. Infrastructure: ultra. Mechanical: `mechanic`.
 5. **Reviews** per task, proportional to its risk (table in `stages.md`). UI tasks get the third review: `screenshotter` (web UI with a dev server), then `impeccable:impeccable-finish-reviewer` against the approved mockup, with `design:accessibility-review`. Handle findings with `superpowers:receiving-code-review`.
-6. **Close-out:** `verifier` for the full verification; `superpowers:requesting-code-review` dispatches a whole-branch reviewer using `ponytail:ponytail-review`; `ponytail:ponytail-debt` lists the `shortcut:` comments in the PR description; `security-audit` before a PR that touches access, credentials, public pages or email; `superpowers:finishing-a-development-branch`. Open the PR into the integration branch. Delete your handoff note in the last commit before merge (its summary goes to the HANDOFF and the decisions log).
+6. **Close-out:** `verifier` for the full verification; `superpowers:requesting-code-review` dispatches a whole-branch reviewer using `ponytail:ponytail-review`; `ponytail:ponytail-debt` lists the `shortcut:` comments in the PR description; `security-audit` before a PR that touches access, credentials, public pages or email; `superpowers:finishing-a-development-branch`. Open the PR into the integration branch, listing in its description the reviews each task's risk required with their verdicts, and the `shortcut:` list; the orchestrator's merge checklist looks for both. Delete your handoff note in the last commit before merge (its summary goes to the HANDOFF and the decisions log).
 
 ## Rules
 
@@ -24,6 +24,7 @@ Read first: your handoff note if one exists (`docs/workstreams/<name>.md`, skill
 - **Modes:** switch your own ponytail mode per stage (`ponytail:ponytail` with `lite` or `ultra`, or "stop ponytail") and state the mode, model and skills in every subagent briefing.
 - **Parallelism:** at most 2 tasks at once. Run plan tasks in parallel only with `superpowers:dispatching-parallel-agents`, after checking they touch no shared files, each with a self-contained briefing. Use it too for 2 or more independent failures. Flaky or "unstable" failures get `superpowers:systematic-debugging`.
 - **Your resources:** your own worktree, your own isolated test data if the project keeps data ("Test data" in "Project settings", skill `orchestra:test-databases`), your own dev server port if it has one. Tests never touch real or dev data. Tell subagents never to run `git stash` and to commit with `git add <path>` only.
+- **Always ask the owner first**, even under bypass permissions, and tell your subagents the same: anything that needs admin rights, deletes data or branches, or touches credentials, money or production data.
 - **The owner answers here:** checkpoints, mockups and design choices are answered directly in this session. Decisions that only affect you go into the spec and the decisions log.
 
 ## Reporting to the orchestrator
@@ -38,4 +39,4 @@ You never merge your own PR, and you never touch another workstream's spec, plan
 
 ## Context
 
-At the end of each wave of tasks, check your context. Above 250k tokens: stop dispatching, update your handoff note, commit it, and ask the orchestrator to clear you (`/orchestra:close-wave`). Never ask for a clear in the middle of a task. A notice that an agent or command "did not finish before the previous session ended" needs action now: check the worktree and output, then resume the agent with `SendMessage` or dispatch a new one from the last commit.
+At the end of each wave of tasks, check your context and update the status line of your handoff note (skill `orchestra:handoff-note`). Above 250k tokens: stop dispatching, update your handoff note, commit it, and ask the orchestrator to clear you (`/orchestra:close-wave`). Never ask for a clear in the middle of a task. A notice that an agent or command "did not finish before the previous session ended" needs action now: check the worktree and output, then resume the agent with `SendMessage` or dispatch a new one from the last commit.

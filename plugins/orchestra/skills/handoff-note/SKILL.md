@@ -11,9 +11,17 @@ description: Fixed template for a workstream's handoff note and the checklist a 
 
 The last commit of the workstream, before merge, deletes the note. The lasting summary goes into `docs/HANDOFF.md` and the decisions log.
 
+## Status line
+
+The line right under the title is what the orchestrator's status round reads, so keep it current: update it at the end of every wave, when you start waiting on the owner, and before asking for a clear.
+
+`Status: <running | idle | waiting on owner> · context <N>k · <stage>, task <N> of <M> · PR <none | #N open | #N ready> · waiting on: <none | what, for whom> · updated <YYYY-MM-DD HH:MM>`
+
+It is also how a workstream reports without the desktop app: the orchestrator reads it straight from the worktree folder.
+
 ## Template
 
-Copy `${CLAUDE_PLUGIN_ROOT}/templates/handoff-note.md` and keep its 8 sections, each short:
+Copy `${CLAUDE_PLUGIN_ROOT}/templates/handoff-note.md` and keep the status line and its 8 sections, each short:
 
 1. Current task (plan path and task number)
 2. Last commit on the integration worktree
