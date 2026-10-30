@@ -1,4 +1,4 @@
-import type { BandRow, BandView, Limit, LimitView, RegistryRow, Role, SessionFile, Shape, State, StatusLine } from './types'
+import type { BandRow, BandView, Limit, LimitView, Mark, RegistryRow, Role, SessionFile, State, StatusLine } from './types'
 
 export const CONTEXT_LIMIT = 250_000
 export const STALE_MS = 30 * 60_000
@@ -127,7 +127,7 @@ const limitView = (limits: Limit[], kind: string): LimitView | null => {
 }
 
 // The liveview's order: what needs the owner first.
-const PRIORITY: Record<Shape, number> = { triangle: 0, square: 1, hollow: 2, circle: 3, half: 3 }
+const rank = (r: BandRow) => (r.mark === 'waiting' ? 0 : r.big ? 1 : r.mark === 'stale' ? 2 : 3)
 
 // A question the session asks is stored as "asks: <question>"; the band says what to do with it.
 const answer = (detail: string) => (detail ? `answer: ${detail.replace(/^asks:\s*/, '')}` : 'answer the open question')
@@ -154,38 +154,37 @@ export function buildView(i: ViewInput): BandView {
   view.running = open.filter(o => o.f?.state === 'running' && i.now - Date.parse(o.f.updatedAt) <= STALE_MS).length
   // A session waiting on the owner is idle and stops writing, so it never goes stale.
   view.waiting = open.filter(o => o.f?.state === 'waiting').length
-  const row = (f: SessionFile, name: string, shape: Shape, status: string, detail: string): BandRow =>
-    ({ key: f.session, name, link: isSafeTarget(f.link) && f.link.startsWith('claude://') ? f.link : '', shape, status, context: fmtK(f.context.tokens), detail })
+  const row = (f: SessionFile, name: string, mark: Mark, status: string, detail: string): BandRow =>
+    ({ key: f.session, name, link: isSafeTarget(f.link) && f.link.startsWith('claude://') ? f.link : '', mark, status, context: fmtK(f.context.tokens), big: (f.context.tokens ?? 0) >= CONTEXT_LIMIT, detail })
 
   if (i.role !== 'maestro') {
     const me = i.files.find(f => f.session === i.self)
     if (me) {
-      const big = (me.context.tokens ?? 0) >= CONTEXT_LIMIT
-      const shape = me.state === 'waiting' ? 'triangle' : big ? 'square' : me.state === 'running' ? 'circle' : 'half'
-      const status = me.state === 'waiting' ? 'waiting' : big ? 'over 250k' : me.state
-      view.rows = [row(me, me.title || me.workstream || me.branch, shape, status, me.state === 'waiting' ? answer(me.detail) : me.stage)]
+      view.rows = [row(me, me.title || me.workstream || me.branch, me.state, me.state, me.state === 'waiting' ? answer(me.detail) : me.stage)]
     }
     return view
   }
 
   for (const { ws, f } of open) {
     if (f === undefined) {
-      view.rows.push({ key: `none-${ws}`, name: ws, link: '', shape: 'hollow', status: 'stale', context: '?', detail: 'no report yet; check its session' })
+      view.rows.push({ key: `none-${ws}`, name: ws, link: '', mark: 'stale', status: 'stale', context: '?', big: false, detail: 'no report yet; check its session' })
       continue
     }
     const name = f.title || ws
     const old = i.now - Date.parse(f.updatedAt)
-    if (f.state === 'waiting') view.rows.push(row(f, name, 'triangle', 'waiting', answer(f.detail)))
-    else if ((f.context.tokens ?? 0) >= CONTEXT_LIMIT) view.rows.push(row(f, name, 'square', 'over 250k', 'clear context at the next wave end'))
-    else if (old > STALE_MS) view.rows.push(row(f, name, 'hollow', 'stale', `no report for ${age(old)}; open it to check`))
+    if (f.state === 'waiting') view.rows.push(row(f, name, 'waiting', 'waiting', answer(f.detail)))
+    else if ((f.context.tokens ?? 0) >= CONTEXT_LIMIT) {
+      const mark = old > STALE_MS ? 'stale' : f.state
+      view.rows.push(row(f, name, mark, mark, 'over 250k: clear context at the next wave end'))
+    } else if (old > STALE_MS) view.rows.push(row(f, name, 'stale', 'stale', `no report for ${age(old)}; open it to check`))
   }
   for (const f of i.files) {
     if (f.role === 'unregistered' && i.now - Date.parse(f.updatedAt) <= STALE_MS) {
-      view.rows.push(row(f, f.branch || f.title || 'worktree', 'hollow', 'unregistered', 'not in workstreams.md; register or close it'))
+      view.rows.push(row(f, f.branch || f.title || 'worktree', 'stale', 'unregistered', 'not in workstreams.md; register or close it'))
     }
   }
   // Stable: rows of one kind keep the registry's order.
-  view.rows.sort((a, b) => PRIORITY[a.shape] - PRIORITY[b.shape])
+  view.rows.sort((a, b) => rank(a) - rank(b))
   return view
 }
 

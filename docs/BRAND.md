@@ -34,6 +34,28 @@ On dark backgrounds only the wordmark changes, to paper. The half circle stays p
 - **Wordmark:** "orchestra", always lowercase, Archivo ExtraBold (800), tight tracking (-0.02em).
 - **Headings:** Archivo. **Body:** IBM Plex Sans. **Code:** IBM Plex Mono. All are open-licensed (SIL OFL) Google Fonts.
 
+## Symbols
+
+The band, the liveview and these docs draw every session with the same symbols. The shape and its color say who it is, after Kandinsky's pairing:
+
+| Shape | Who |
+| --- | --- |
+| Cobalt circle | The maestro |
+| Vermilion square | A principal, one per workstream |
+| Saffron triangle | A subagent |
+| Pale blue half circle | You, the rest the others build on |
+
+How the shape is drawn says what it is doing:
+
+| Drawing | State |
+| --- | --- |
+| Solid | Running |
+| Outline in its own color | Idle |
+| Smaller, over a heavy ink rule | Waiting on you |
+| Outline in grey | Stale, unregistered or not reporting |
+
+A context of 250k tokens or more has no mark of its own: the context number turns vermilion and bold. The rule is ink on paper and paper on black; in the band, where a drawing cannot follow the theme, it is ink with a paper edge. The terminal draws `■` and `□` in the role's color, underlined while waiting.
+
 ## Ponytail modes as shapes
 
 The docs page marks each ponytail mode with one shape: **full** is the circle, **lite** the triangle, **ultra** the square, **off** the half circle (the rest).

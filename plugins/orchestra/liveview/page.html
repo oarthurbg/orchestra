@@ -15,7 +15,7 @@
   --ground:#FAF8F3; --surface:#FFFFFF; --raised:#F0ECE3; --border:#E4DED2; --rule:#EFEBE3; --grid:#ECE7DD; --pause:#EDE7DC;
   --text:#111114; --muted:#5E5A52; --primary:#111114; --on-primary:#FAF8F3;
   --data:#2450E0; --data-pale:#B9C8F2; --data-tint:#C9D4F7; --negative:#C8341B;
-  --circle:#2450E0; --square:#F0442C; --triangle:#FFC21A; --half:#B9C8F2; --idle:#8FA3D9;
+  --circle:#2450E0; --square:#F0442C; --triangle:#FFC21A; --half:#B9C8F2;
   --display:"Archivo","Helvetica Neue",Arial,sans-serif;
   --body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
   --radius:4px; --gap:16px; --pad:20px; --gutter:32px;
@@ -23,11 +23,11 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --ground:#000000; --surface:#0E0E10; --raised:#18181B; --border:#232327; --rule:#1A1A1D; --grid:#202024; --pause:#19191D;
   --text:#F1EEE8; --muted:#A9A49A; --primary:#F1EEE8; --on-primary:#000000;
-  --data:#5B7FFF; --data-pale:#4A62B8; --data-tint:#2A3460; --negative:#FF6A52; --half:#B9C8F2; --idle:#B9C8F2; color-scheme:dark}}
+  --data:#5B7FFF; --data-pale:#4A62B8; --data-tint:#2A3460; --negative:#FF6A52; --half:#B9C8F2; color-scheme:dark}}
 :root[data-theme="dark"]{
   --ground:#000000; --surface:#0E0E10; --raised:#18181B; --border:#232327; --rule:#1A1A1D; --grid:#202024; --pause:#19191D;
   --text:#F1EEE8; --muted:#A9A49A; --primary:#F1EEE8; --on-primary:#000000;
-  --data:#5B7FFF; --data-pale:#4A62B8; --data-tint:#2A3460; --negative:#FF6A52; --half:#B9C8F2; --idle:#B9C8F2; color-scheme:dark}
+  --data:#5B7FFF; --data-pale:#4A62B8; --data-tint:#2A3460; --negative:#FF6A52; --half:#B9C8F2; color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--ground);color:var(--text);font:14px/20px var(--body);font-variant-numeric:tabular-nums}
 a{color:inherit}
@@ -95,7 +95,7 @@ h2{font-family:var(--display);font-weight:800;font-size:17px;line-height:24px;le
 .name{display:flex;gap:6px;min-width:0;align-items:baseline}
 .name > :first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .why2{color:var(--muted);white-space:nowrap}
-.big{color:var(--negative)}
+.big{color:var(--negative);font-weight:600}
 .track{position:relative;height:20px}
 .now{position:absolute;top:-12px;bottom:-12px;width:1px;background:var(--text)}
 .days{position:relative;height:20px}
@@ -335,15 +335,20 @@ let open = new Set()
 try { open = new Set(JSON.parse(localStorage.getItem('liveview-open') || '[]')) } catch { /* private window */ }
 const saveOpen = () => { try { localStorage.setItem('liveview-open', JSON.stringify([...open])) } catch { /* private window */ } }
 
-// The band's shapes: triangle waiting, square 250k or more, circle running, half circle idle or stale.
-const SHAPES = {
-  circle: () => $('svg:circle', { cx: 7, cy: 7, r: 6, fill: 'var(--circle)' }),
-  triangle: () => $('svg:polygon', { points: '0,13 14,13 7,1', fill: 'var(--triangle)' }),
-  square: () => $('svg:rect', { x: 1, y: 1, width: 12, height: 12, fill: 'var(--square)' }),
-  half: () => $('svg:path', { d: 'M0 13 A 7 7 0 0 1 14 13 Z', fill: 'var(--idle)' }),
-  'half-open': () => $('svg:path', { d: 'M1 12.5 A 6 6 0 0 1 13 12.5 Z', fill: 'none', stroke: 'var(--muted)', 'stroke-width': 1.5 }),
+// The band's symbols (docs/BRAND.md): the shape is the role, the way it is drawn the state.
+// Solid running, outlined idle, over a heavy rule waiting on you, outlined in grey stale. Over 250k flags the context number instead.
+const FIGURES = {
+  maestro: ['svg:circle', 'var(--circle)', { full: { cx: 7, cy: 7, r: 6 }, line: { cx: 7, cy: 7, r: 5.25 }, small: { cx: 7, cy: 5, r: 4.5 } }],
+  principal: ['svg:rect', 'var(--square)', { full: { x: 1, y: 1, width: 12, height: 12 }, line: { x: 1.75, y: 1.75, width: 10.5, height: 10.5 }, small: { x: 2.5, y: 0.5, width: 9, height: 9 } }],
+  subagent: ['svg:polygon', 'var(--triangle)', { full: { points: '0,13 14,13 7,1' }, line: { points: '1.3,12.25 12.7,12.25 7,2.5' }, small: { points: '2,9.5 12,9.5 7,0.5' } }],
 }
-const shape = (s, label) => $('svg:svg', { width: 16, height: 16, viewBox: '0 0 14 14', ...(label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': 'true' }) }, SHAPES[s]())
+const glyph = (role, mark, label) => {
+  const [tag, color, at] = FIGURES[role]
+  const kids = mark === 'running' ? [$(tag, { ...at.full, fill: color })]
+    : mark === 'waiting' ? [$(tag, { ...at.small, fill: color }), $('svg:rect', { x: 0, y: 11.5, width: 14, height: 2.5, fill: 'var(--text)' })]
+    : [$(tag, { ...at.line, fill: 'none', stroke: mark === 'stale' ? 'var(--muted)' : color, 'stroke-width': 1.5, 'stroke-linejoin': 'round' })]
+  return $('svg:svg', { width: 16, height: 16, viewBox: '0 0 14 14', ...(label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': 'true' }) }, kids)
+}
 const diamond = (filled, label) => $('svg:svg', { width: 12, height: 12, ...(label ? { role: 'img', 'aria-label': label } : { 'aria-hidden': 'true' }) },
   $('svg:polygon', { points: '6,0.5 11.5,6 6,11.5 0.5,6', fill: filled ? 'var(--text)' : 'var(--surface)', stroke: 'var(--text)' }))
 const NEEDS = new Set(['waiting', 'over 250k', 'stale', 'unregistered', 'no session'])
@@ -447,7 +452,7 @@ function needs(snap) {
   if (!rows.length) { list.replaceChildren($('li', { class: 'empty' }, 'Nothing waits on you. Sessions over 250k, stale or unregistered show here too.')); return }
   const reason = r => (r.reason === 'waiting' ? (r.detail || 'waiting on you').replace(/^asks: /, '') : r.reason === 'over 250k' ? `${ktok(r.context)} context: clear it at the next stop` : r.reason === 'stale' ? 'No report for over 30 minutes' : r.reason === 'no session' ? 'Registered, but no session is reporting' : 'A worktree session the maestro did not start')
   list.replaceChildren(...rows.map(r => $('li', {}, $(r.link ? 'a' : 'div', r.link ? { class: 'item', href: r.link, 'data-focus': `open:${r.key}`, 'aria-label': `${r.name}, Open, ${reason(r)}` } : { class: 'item' },
-    $('span', { title: r.reason }, shape(r.shape, r.reason)),
+    $('span', { title: r.reason }, glyph(r.role, r.mark, r.reason)),
     $('span', {}, r.name),
     r.link ? $('span', { class: 'open', 'aria-hidden': 'true' }, 'Open') : $('span'),
     $('span', { class: 'why' }, reason(r)),
@@ -490,7 +495,7 @@ function grid(snap) {
       class: `row${canOpen ? ' click' : ''}${isOpen ? ' open' : ''}`,
       ...(canOpen ? { onclick: e => { if (!e.target.closest('a, button')) toggle() } } : {}),
     },
-      $('span', { title: r.reason }, shape(r.shape, r.reason)),
+      $('span', { title: r.reason }, glyph(r.role, r.mark, r.reason)),
       $('span', { class: 'name' }, label, ['idle', 'running'].includes(r.reason) ? null : $('span', { class: 'why2' }, r.reason)),
       $('span', { class: r.context >= 250000 ? 'big' : '' }, ktok(r.context)),
       $('span', { class: 'meta' }, r.stage || (r.detail && r.detail !== 'no plan' ? r.detail : '')),
@@ -527,9 +532,11 @@ function grid(snap) {
   // Table semantics: every row is a row, every direct child a cell (the ETA button sits inside its cell).
   rows.forEach((row, i) => { if (row.getAttribute('role')) return; row.setAttribute('role', 'row'); for (const c of row.children) c.setAttribute('role', i ? 'cell' : 'columnheader') })
   document.getElementById('grid').replaceChildren(...rows)
-  const key = (s, text) => $('span', {}, $('span', { style: 'display:inline-block;vertical-align:-2px;margin-right:6px' }, shape(s, '')), text)
+  const key = (g, text) => $('span', {}, $('span', { style: 'display:inline-block;vertical-align:-2px;margin-right:6px' }, g), text)
   document.getElementById('legend').replaceChildren(
-    key('triangle', 'Waiting on you'), key('square', '250k context or more'), key('circle', 'Running'), key('half', 'Idle'), key('half-open', 'Stale or unregistered'),
+    key(glyph('maestro', 'running', ''), 'Maestro'), key(glyph('principal', 'running', ''), 'Principal, running'), key(glyph('principal', 'idle', ''), 'Idle'),
+    key(glyph('principal', 'waiting', ''), 'Waiting on you'), key(glyph('principal', 'stale', ''), 'Stale or unregistered'),
+    $('span', {}, $('span', { class: 'big', style: 'margin-right:6px' }, '250k'), 'Context to clear'),
     $('span', {}, $('span', { class: 'sw', style: 'background:var(--data)' }), 'Done'),
     $('span', {}, $('span', { class: 'sw', style: 'background:var(--data-tint)' }), 'Estimated'),
     $('span', {}, $('span', { class: 'sw', style: 'border:1px dashed var(--muted);border-radius:5px' }), 'Queued'),
@@ -641,7 +648,7 @@ function card(q, first) {
   const answer = $('a', { class: first ? 'btn' : 'btn quiet', href: q.link, 'data-focus': `answer:${q.session}`, onclick: () => { markOpened(q); setTimeout(() => last && render(last)) } }, `Answer in ${q.workstream}`)
   return $('section', { class: `q${isOpened ? ' is-opened' : ''}`, id, 'aria-labelledby': `h-${id}` },
     $('div', { class: 'ask' },
-      $('div', { class: 'who' }, shape('triangle', ''), $('b', {}, q.workstream), q.stage ? $('span', {}, `${q.stage} stage`) : null, wait),
+      $('div', { class: 'who' }, glyph('principal', 'waiting', ''), $('b', {}, q.workstream), q.stage ? $('span', {}, `${q.stage} stage`) : null, wait),
       $('h2', { id: `h-${id}`, title: q.question }, $('span', { class: 'sr-only' }, `${q.workstream} asks: `), q.question),
       offers(q)),
     evidence(q),

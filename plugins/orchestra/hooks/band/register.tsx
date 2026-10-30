@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import { REFRESH_MS, buildView, isSafeTarget, mainCheckout, norm, openerArgv, parseRegistry, parseSessionFile, parseStatus, pingDue, roleOf } from './logic'
-import type { BandRow, BandView, Limit, Role, SessionFile, Shape } from './types'
+import type { BandRow, BandView, Limit, Mark, Role, SessionFile } from './types'
 
 // The desktop app's session server, as Task 1 of the plan found it.
 const APP_SESSION_SERVER = 'ccd_session_mgmt'
@@ -203,16 +203,16 @@ async function watchPaths($: EngineInterface) {
 const time = (ms: number) => new Date(ms).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
 const dayTime = (ms: number) => new Date(ms).toLocaleString('en-US', { weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).replace(',', '')
 
-// The brand's shapes (docs/BRAND.md); the outlines keep each one at 3:1 on a dark and a light band.
-const SHAPE_SVG: Record<Shape, string> = {
-  triangle: '<polygon points="6,1 11.5,11 0.5,11" fill="#FFC21A" stroke="#8A5A00" stroke-width="1" stroke-linejoin="round"/>',
-  square: '<rect x="1" y="1" width="10" height="10" fill="#F0442C"/>',
-  circle: '<circle cx="6" cy="6" r="4.6" fill="#2450E0" stroke="#B9C8F2" stroke-width="1"/>',
-  half: '<path d="M0.5 10 A 5.5 5.5 0 0 1 11.5 10 Z" fill="#B9C8F2"/>',
-  hollow: '<path d="M1 10 A 5 5 0 0 1 11 10 Z" fill="none" stroke="#8C8A84" stroke-width="1.3"/>',
+// Every row is a principal's session, so its shape is the square (docs/BRAND.md); the mark is its state.
+// The rule is ink with a paper edge, so it shows on a dark and a light band.
+const MARK_SVG: Record<Mark, string> = {
+  running: '<rect x="1" y="1" width="10" height="10" fill="#F0442C"/>',
+  idle: '<rect x="1.75" y="1.75" width="8.5" height="8.5" fill="none" stroke="#F0442C" stroke-width="1.5"/>',
+  waiting: '<rect x="2.5" y="0.5" width="7" height="7" fill="#F0442C"/><rect x="0.5" y="9" width="11" height="2.5" fill="#111114" stroke="#FAF8F3" stroke-width="0.75"/>',
+  stale: '<rect x="1.75" y="1.75" width="8.5" height="8.5" fill="none" stroke="#8C8A84" stroke-width="1.5"/>',
 }
-// The terminal has no Svg: a glyph in a theme colour.
-const SHAPE_TEXT: Record<Shape, [string, string]> = { triangle: ['▲', 'warning'], square: ['■', 'error'], circle: ['●', 'suggestion'], half: ['◓', 'inactive'], hollow: ['◠', 'inactive'] }
+// The terminal has no Svg: a glyph in a theme colour, underlined while waiting.
+const MARK_TEXT: Record<Mark, [string, string]> = { running: ['■', 'error'], idle: ['□', 'error'], waiting: ['■', 'error'], stale: ['□', 'inactive'] }
 const svg = (body: string, w: number, h: number) => `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">${body}</svg>`
 // assets/brand/mark-dark.svg, scaled by its viewBox.
 const MARK = '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="6 6 88 88"><path d="M10 90 A 27 27 0 0 1 64 90 Z" fill="#B9C8F2"/><circle cx="34" cy="34" r="24" fill="#2450E0"/><rect x="62" y="10" width="28" height="42" fill="#F0442C"/><polygon points="66,90 90,90 78,56" fill="#FFC21A"/></svg>'
@@ -383,20 +383,20 @@ export const register: Register = (on, options) => {
     // Every text cell of a row opens its session: a Button holds only text, so each cell is one, and the row lights as one on hover.
     // The desktop pads a plain Button's text by about a column; headings and unlinked cells take the same inset to line up.
     const inset = desktop ? 1 : 0
-    const cell = (r: BandRow, part: string, label: string, style: { bold?: boolean; dimColor?: boolean; underline?: boolean } = {}) =>
+    const cell = (r: BandRow, part: string, label: string, style: { bold?: boolean; dimColor?: boolean; underline?: boolean; color?: string } = {}) =>
       r.link !== ''
         ? <Button key={`${r.key}-${part}`} plain onPress={() => open($, r.link)}><Text {...style}>{label}</Text></Button>
         : <Box paddingX={inset}><Text {...style}>{label}</Text></Box>
     const row = (r: BandRow, n: number) => {
-      const waiting = r.shape === 'triangle'
+      const waiting = r.mark === 'waiting'
       return (
         <Box key={`row-${r.key}`} flexDirection="row" alignItems="center" paddingX={1} {...(desktop ? { paddingY: 'xs' as const } : {})} {...(n % 2 === 1 ? { backgroundColor: STRIPE } : {})} {...(r.link !== '' ? { hover: { backgroundColor: HOVER } } : {})}>
           <Box width="24%">{cell(r, 'name', r.name, { bold: waiting, underline: r.link !== '' })}</Box>
           <Box width="18%" flexDirection="row" alignItems="center" gap={1}>
-            {desktop ? pic(svg(SHAPE_SVG[r.shape], 12, 12), r.status, 12, 12) : <Text color={SHAPE_TEXT[r.shape][1]}>{SHAPE_TEXT[r.shape][0]}</Text>}
+            {desktop ? pic(svg(MARK_SVG[r.mark], 12, 12), r.status, 12, 12) : <Text color={MARK_TEXT[r.mark][1]} underline={waiting}>{MARK_TEXT[r.mark][0]}</Text>}
             {cell(r, 'status', r.status, { bold: waiting })}
           </Box>
-          <Box width="9%" justifyContent="flex-end">{cell(r, 'context', r.context)}</Box>
+          <Box width="9%" justifyContent="flex-end">{cell(r, 'context', r.context, r.big ? { bold: true, color: 'error' } : {})}</Box>
           <Box flexGrow={1} paddingLeft={3}>{r.detail !== '' ? cell(r, 'detail', r.detail, { dimColor: true }) : null}</Box>
         </Box>
       )
@@ -421,24 +421,27 @@ export const register: Register = (on, options) => {
     const narrow = e.props.bodyColumns < wide
     // Narrower still, the bars go and "Weekly" shortens.
     const tight = e.props.bodyColumns < 48
-    const short = (label: string, l: { pct: number } | null, alarm: boolean) => (
+    // The same words as the wide line, without the reset times; a run-out time stays.
+    const runOutTail = runOutAt !== null ? `runs out ${dayTime(runOutAt)}` : ''
+    const short = (label: string, l: { pct: number } | null, tail: string, alarm: boolean) => (
       <Box flexDirection="row" alignItems="center" gap={1}>
         <Text size="footnote" dimColor>{label}</Text>
         {l === null ? <Text size="footnote" dimColor>-</Text> : !tight && pic(bar(l.pct, alarm), `${l.pct}% of the ${label} limit`, 44, 4)}
-        {l !== null && <Text size="footnote" color={alarm ? 'error' : undefined}>{l.pct}%</Text>}
+        {l !== null && <Text size="footnote" color={alarm ? 'error' : undefined}>{l.pct}% used</Text>}
+        {l !== null && tail !== '' && <Text size="footnote" color="error">{tail}</Text>}
       </Box>
     )
 
     // The compact line keeps the name while it has the room (about 10 cells), then the mark alone.
-    const shortCells = (label: string, l: { pct: number } | null) => label.length + (l === null ? 2 : 8 + `${l.pct}%`.length)
-    const compact = 6 + (show5 ? shortCells('5h', v.fiveHour) : 0) + (showWeek ? 2 + shortCells('Weekly', v.week) : 0)
+    const shortCells = (label: string, l: { pct: number } | null, tail = '') => label.length + (l === null ? 2 : 8 + `${l.pct}% used`.length + (tail ? tail.length + 1 : 0))
+    const compact = 6 + (show5 ? shortCells('5h', v.fiveHour) : 0) + (showWeek ? 2 + shortCells('Weekly', v.week, runOutTail) : 0)
       + (counted ? `${v.running}/${v.total}`.length + 2 : 0) + (toggleButton ? 4 : 0)
     const named = !desktop || e.props.bodyColumns >= compact + 10
 
     // The app scrolls a band taller than maxRows, which hides the footer: open, the list keeps to the rows left beside
     // the header, headings and footer (one more on the desktop for its rules and gaps), with a count for the rest.
     const hasFooter = pt.shown || v.pings > 0 || v.liveview !== ''
-    const fixedRows = (narrow && runOutAt !== null ? 2 : 1) + (maestro && isOpen ? 1 : 0) + (hasFooter ? 1 : 0) + (desktop ? 1 : 0)
+    const fixedRows = 1 + (maestro && isOpen ? 1 : 0) + (hasFooter ? 1 : 0) + (desktop ? 1 : 0)
     const room = e.props.maxRows - fixedRows
     const shown = maestro && !isOpen ? v.rows.slice(0, 2) : v.rows.length <= room ? v.rows : v.rows.slice(0, Math.max(2, room - 1))
     const hidden = v.rows.slice(shown.length)
@@ -455,24 +458,16 @@ export const register: Register = (on, options) => {
     )
 
     const header = narrow ? (
-      <Box flexDirection="row" alignItems="flex-start" gap={2}>
+      <Box flexDirection="row" alignItems="center" gap={2}>
         <Box flexShrink={0} flexDirection="row" alignItems="center" gap={1}>
           {desktop && pic(MARK, 'orchestra mark', 20, 20)}
           {named && <Text bold>orchestra</Text>}
         </Box>
-        <Box flexDirection="column" flexGrow={1}>
-          <Box flexDirection="row" alignItems="center" gap={2}>
-            {show5 && short('5h', v.fiveHour, false)}
-            {showWeek && short(tight ? 'Wk' : 'Weekly', v.week, runOutAt !== null)}
-            <Box width={0} flexGrow={1} />
-            {counted && <Text size="footnote" dimColor>{v.running}/{v.total}</Text>}
-            {toggleButton}
-          </Box>
-          {/* The run-out warning keeps its time on a line of its own, only while the week runs out. */}
-          {runOutAt !== null && (
-            <Text size="footnote" color="error">{tight ? `Runs out ${dayTime(runOutAt)}` : `Weekly limit runs out ${dayTime(runOutAt)}, before it resets`}</Text>
-          )}
-        </Box>
+        {show5 && short('5h', v.fiveHour, '', false)}
+        {showWeek && short(tight ? 'Wk' : 'Weekly', v.week, runOutTail, runOutAt !== null)}
+        <Box width={0} flexGrow={1} />
+        {counted && <Text size="footnote" dimColor>{v.running}/{v.total}</Text>}
+        {toggleButton}
       </Box>
     ) : (
       <Box flexDirection="row" alignItems="center">
