@@ -273,15 +273,15 @@ function inboxOf(sessions, registry, workstreams, origin, now) {
   const repo = GITHUB.exec(origin ?? '')?.[1]
   const ms = iso => { const t = Date.parse(iso ?? ''); return Number.isFinite(t) ? t : null }
   // A waiting report a day old belongs to a session nobody will come back to: it leaves the inbox.
+  // Never stale before that: the band writes nothing while a question is open, so an old report is no sign the session is gone.
   return sessions.filter(s => s.state === 'waiting' && !(now - (ms(s.updatedAt) ?? now) > DAY)).map(s => {
     const registered = registry.some(r => r.name === s.workstream)
     const pr = !s.pr || s.pr === 'none' ? null
       : { label: s.pr, href: /^https:\/\/\S+$/.test(s.pr) ? s.pr : repo && /^#\d+$/.test(s.pr) ? `https://github.com/${repo}/pull/${s.pr.slice(1)}` : '' }
-    const reportedAt = ms(s.updatedAt)
     return {
       session: s.session, workstream: s.workstream || s.title || s.branch || s.session, stage: s.stage ?? '',
       question: typeof s.detail === 'string' ? s.detail.replace(/^asks: /, '') : '', options: Array.isArray(s.options) ? s.options.filter(o => typeof o === 'string') : [],
-      since: ms(s.waitingSince), reportedAt, stale: reportedAt !== null && now - reportedAt > STALE_MS, link: safeLink(s.link),
+      since: ms(s.waitingSince), link: safeLink(s.link),
       files: ((registered && workstreams[s.workstream]?.files) || []).map((f, n) => ({ n, ...f })), pr,
     }
   }).sort((a, b) => (a.since ?? Infinity) - (b.since ?? Infinity) || 0)

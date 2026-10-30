@@ -141,9 +141,8 @@ h2{font-family:var(--display);font-weight:800;font-size:17px;line-height:24px;le
 .act{grid-area:act;align-self:start;margin-top:20px;display:flex;align-items:center;gap:12px}
 .who{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;color:var(--muted)}
 .who b{color:var(--text);font-weight:600}
-.who b, .who > span:not(.late){white-space:nowrap}
+.who b, .who > span{white-space:nowrap}
 .who time{margin-left:auto;text-align:right}
-.who .late{flex-basis:100%;text-align:left}
 .who time.long{color:var(--negative)}
 .q h2{font-family:var(--display);font-weight:800;font-size:22px;line-height:28px;letter-spacing:-.015em;margin:12px 0 0;max-width:36ch;text-wrap:balance;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;overflow:hidden}
 .opts{margin:16px 0 0;font-size:16px;line-height:24px;color:var(--muted);max-width:60ch}
@@ -592,7 +591,6 @@ const qid = s => `q-${s.replace(/[^A-Za-z0-9_-]/g, '_')}`
 const mins = t => Math.max(0, Math.round((Date.now() - t) / MIN))
 const waited = t => { const m = mins(t); return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} m` : `${m} m` }
 const spoken = t => { const m = mins(t), h = Math.floor(m / 60), r = m % 60; return [h && `${h} hour${h > 1 ? 's' : ''}`, r && `${r} minute${r > 1 ? 's' : ''}`].filter(Boolean).join(' ') || 'less than a minute' }
-const lag = t => (mins(t) >= 60 ? waited(t) : `${mins(t)} min`)
 const long = q => q.since != null && Date.now() - q.since > 2 * HOUR
 const fileName = p => p.split('/').pop()
 const fileUrl = (q, f) => `/api/file?s=${encodeURIComponent(q.session)}&n=${f.n}`
@@ -638,14 +636,12 @@ function evidence(q) {
 function card(q, first) {
   const id = qid(q.session)
   const isOpened = opened.has(openedKey(q))
-  const wait = q.stale
-    ? $('span', { class: 'late' }, `No report for ${q.reportedAt == null ? 'a while' : lag(q.reportedAt)}; the question may be answered already.`)
-    : q.since != null ? $('time', { class: long(q) ? 'long' : null, datetime: new Date(q.since).toISOString(), }, $('span', { 'aria-hidden': 'true' }, `Waiting ${waited(q.since)}`), $('span', { class: 'sr-only' }, `waiting ${spoken(q.since)}`)) : null
+  const wait = q.since != null ? $('time', { class: long(q) ? 'long' : null, datetime: new Date(q.since).toISOString(), }, $('span', { 'aria-hidden': 'true' }, `Waiting ${waited(q.since)}`), $('span', { class: 'sr-only' }, `waiting ${spoken(q.since)}`)) : null
   // Redrawn after the click, so the link is still in the page when it navigates.
   const answer = $('a', { class: first ? 'btn' : 'btn quiet', href: q.link, 'data-focus': `answer:${q.session}`, onclick: () => { markOpened(q); setTimeout(() => last && render(last)) } }, `Answer in ${q.workstream}`)
   return $('section', { class: `q${isOpened ? ' is-opened' : ''}`, id, 'aria-labelledby': `h-${id}` },
     $('div', { class: 'ask' },
-      $('div', { class: 'who' }, shape(q.stale ? 'half-open' : 'triangle', ''), $('b', {}, q.workstream), q.stage ? $('span', {}, `${q.stage} stage`) : null, wait),
+      $('div', { class: 'who' }, shape('triangle', ''), $('b', {}, q.workstream), q.stage ? $('span', {}, `${q.stage} stage`) : null, wait),
       $('h2', { id: `h-${id}`, title: q.question }, $('span', { class: 'sr-only' }, `${q.workstream} asks: `), q.question),
       offers(q)),
     evidence(q),
@@ -664,7 +660,7 @@ function inbox(snap) {
   index.hidden = list.length <= 4
   index.replaceChildren(...(list.length > 4 ? list.map(q => $('li', {}, $('a', { href: `#${qid(q.session)}`, 'data-focus': `index:${q.session}` },
     $('b', {}, q.workstream), $('span', { class: 'line' }, q.question),
-    $('span', { class: long(q) ? 'long' : null }, q.stale ? 'stale' : q.since != null ? waited(q.since) : '')))) : []))
+    $('span', { class: long(q) ? 'long' : null }, q.since != null ? waited(q.since) : '')))) : []))
   document.getElementById('questions').replaceChildren(...(list.length ? list.map((q, i) => card(q, i === 0)) : [
     $('section', { class: 'inbox-empty', 'aria-label': 'Inbox is empty' },
       $('p', {}, 'When a workstream asks you something, its question and the files to look at show up here.'),

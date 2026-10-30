@@ -256,7 +256,7 @@ test('limitPauses waits for the reset of a spent limit even when its recent rate
   assert.deepEqual(limitPauses([{ start: NOW, end: NOW + 3 * HOUR }], [week], NOW), [{ kind: 'seven_day', from: NOW, to: NOW + 2 * HOUR }])
 })
 
-test('buildSnapshot lists the waiting sessions oldest first, with options, files and staleness', () => {
+test('buildSnapshot lists the waiting sessions oldest first, with options and files, until a report is a day old', () => {
   const iso = t => new Date(t).toISOString()
   const mk = (session, over) => ({ v: 1, session, role: 'principal', workstream: null, branch: '', title: '', link: '', state: 'waiting', detail: '', stage: '', pr: '', context: { tokens: 1000 }, updatedAt: iso(NOW), limits: [], ...over })
   const files = [{ path: 'docs/mockups/a.png', kind: 'Mockup', change: 'added', picture: true }]
@@ -266,7 +266,7 @@ test('buildSnapshot lists the waiting sessions oldest first, with options, files
     history: [], events: [], merges: [], releases: [], queued: [],
     sessions: [
       mk('new', { workstream: 'billing', detail: 'asks: Approve the mockup?', options: ['Yes', 'No'], waitingSince: iso(NOW - 10 * MIN), stage: 'build', pr: '#14', link: 'claude://claude.ai/epitaxy/new' }),
-      mk('old', { workstream: 'reports', detail: 'pick the colours', waitingSince: iso(NOW - 2 * HOUR), updatedAt: iso(NOW - 31 * MIN), pr: 'https://example.com/pr/3' }),
+      mk('old', { workstream: 'reports', detail: 'pick the colours', waitingSince: iso(NOW - 3 * HOUR), updatedAt: iso(NOW - 3 * HOUR), pr: 'https://example.com/pr/3' }),
       mk('nosince', { role: 'unregistered', branch: 'fix-typo', title: 'billing', detail: 'asks: Merge it?', pr: 'none', link: 'claude://x" onmouseover=alert(1)' }),
       mk('busy', { workstream: 'billing', state: 'running' }),
       mk('gone', { workstream: 'billing', detail: 'asks: Still there?', waitingSince: iso(NOW - 26 * HOUR), updatedAt: iso(NOW - 25 * HOUR) }),
@@ -276,10 +276,11 @@ test('buildSnapshot lists the waiting sessions oldest first, with options, files
   const [old, neu, stray] = snap.inbox
   assert.deepEqual(neu, {
     session: 'new', workstream: 'billing', stage: 'build', question: 'Approve the mockup?', options: ['Yes', 'No'],
-    since: NOW - 10 * MIN, reportedAt: NOW, stale: false, link: 'claude://claude.ai/epitaxy/new',
+    since: NOW - 10 * MIN, link: 'claude://claude.ai/epitaxy/new',
     files: [{ n: 0, ...files[0] }], pr: { label: '#14', href: 'https://github.com/acme/shop/pull/14' },
   })
-  assert.deepEqual([old.question, old.options, old.stale, old.reportedAt, old.files, old.pr], ['pick the colours', [], true, NOW - 31 * MIN, [], { label: 'https://example.com/pr/3', href: 'https://example.com/pr/3' }])
+  // A question open 3 hours with no report since is still waiting, never stale: the band writes nothing while it is open.
+  assert.deepEqual([old.question, old.options, old.since, 'stale' in old, old.files, old.pr], ['pick the colours', [], NOW - 3 * HOUR, false, [], { label: 'https://example.com/pr/3', href: 'https://example.com/pr/3' }])
   assert.deepEqual([stray.workstream, stray.since, stray.link, stray.files, stray.pr], ['billing', null, '', [], null], 'an unregistered session gets no files, even under a registered name')
 })
 

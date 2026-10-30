@@ -77,7 +77,7 @@ session('s-reports', { workstream: 'reports', context: { tokens: 96_000, window:
 session('s-search', { workstream: 'search', link: 'claude://claude.ai/epitaxy/demo-search', stage: 'review', pr: '#12 open', context: { tokens: 254_000, window: 1_000_000 } })
 session('u', { role: 'unregistered', branch: 'fix-typo', state: 'idle', stage: '', context: { tokens: 12_000, window: 1_000_000 } })
 if (inboxMode !== 'none') {
-  // A stale question with six options, and one with no link, no options and nothing on its branch.
+  // A question with six options whose report is 42 minutes old, and one with no link, no options and nothing on its branch.
   session('x-search', { role: 'unregistered', branch: 'search-filters', state: 'waiting', stage: 'review', link: 'claude://claude.ai/epitaxy/demo-search-filters', detail: 'asks: Which filters stay next to the new search box?', options: ['Category', 'Price', 'Brand', 'Rating', 'Size', 'Colour'], waitingSince: iso(now - 50 * MIN), updatedAt: iso(now - 42 * MIN) })
   session('x-exports', { role: 'unregistered', branch: 'exports', state: 'waiting', stage: 'plan', detail: 'Send a sample export file to test the parser against.', waitingSince: iso(now - 9 * MIN) })
 }
