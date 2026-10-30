@@ -1,0 +1,22 @@
+# Local Postgres for the dev database and the per-workstream test databases.
+# Local development only: the credentials below are throwaway defaults and the
+# port is bound to 127.0.0.1. Never point this at a shared or production server.
+services:
+  postgres:
+    image: postgres:17
+    container_name: ${PG_CONTAINER:-orchestra-postgres}
+    environment:
+      POSTGRES_USER: ${PG_USER:-app}
+      POSTGRES_PASSWORD: ${PG_PASSWORD:-app}
+      POSTGRES_DB: ${DEV_DB:-app}
+    ports:
+      - "127.0.0.1:${PG_PORT:-5432}:5432"
+    volumes:
+      - orchestra-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PG_USER:-app}"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  orchestra-pgdata:
