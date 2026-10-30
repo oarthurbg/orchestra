@@ -279,7 +279,7 @@ function inboxOf(sessions, registry, workstreams, origin, now) {
     const reportedAt = ms(s.updatedAt)
     return {
       session: s.session, workstream: s.workstream || s.title || s.branch || s.session, stage: s.stage ?? '',
-      question: (s.detail ?? '').replace(/^asks: /, ''), options: Array.isArray(s.options) ? s.options.filter(o => typeof o === 'string') : [],
+      question: typeof s.detail === 'string' ? s.detail.replace(/^asks: /, '') : '', options: Array.isArray(s.options) ? s.options.filter(o => typeof o === 'string') : [],
       since: ms(s.waitingSince), reportedAt, stale: reportedAt !== null && now - reportedAt > STALE_MS, link: safeLink(s.link),
       files: ((registered && workstreams[s.workstream]?.files) || []).map((f, n) => ({ n, ...f })), pr,
     }

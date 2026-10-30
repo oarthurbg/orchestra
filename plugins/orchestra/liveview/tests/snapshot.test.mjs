@@ -298,3 +298,13 @@ test('the inbox links a PR only from an https URL, or #N on a github.com origin'
   assert.equal(pr('none', ''), null)
   assert.equal(pr('', ''), null)
 })
+
+test('a non-string detail in a waiting session file gives an empty question and does not throw', () => {
+  const at = new Date(NOW).toISOString()
+  const snap = () => buildSnapshot({
+    now: NOW, project: 'repo', registry: [], workstreams: {}, history: [], events: [], merges: [], releases: [], queued: [], origin: '',
+    sessions: [{ v: 1, session: 'a', role: 'unregistered', workstream: null, branch: 'x', state: 'waiting', detail: 5, pr: '', context: { tokens: 1 }, updatedAt: at, limits: [] }],
+  })
+  assert.doesNotThrow(snap)
+  assert.equal(snap().inbox[0].question, '')
+})
