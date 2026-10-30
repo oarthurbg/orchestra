@@ -41,6 +41,8 @@ Send one line (in the desktop app, `SendMessage` to the maestro session; without
 - you close a wave of tasks or get close to 250k tokens, with your context size (`get_usage` on yourself; without the desktop app, see `/orchestra:close-wave` step 2);
 - the PR is ready to check and merge.
 
+When you wait on the maestro's answer, also write it in your status line (`waiting on: maestro, <what>`), so the maestro still finds it after its context is compacted.
+
 You never merge your own PR, and you never touch another workstream's spec, plan or code.
 
 ## Context

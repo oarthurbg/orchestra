@@ -44,7 +44,7 @@ The other six (planner, implementers, reviewers, screenshotter) are for principa
 
 1. If `docs/HANDOFF.md` does not exist, run `/orchestra:init`.
 2. Confirm "Project settings" and "Owner authorizations" in `CLAUDE.md` with the owner.
-3. Check the recommended settings (README): bypass permissions for this project, this session on Opus at medium effort, `autoCompactWindow: 600000`, auto-archive on PR close off, the branch guard from `/orchestra:init` installed, and branch protection on GitHub for the integration and production branches.
+3. Check the recommended settings (README): bypass permissions for this project, this session on Opus at medium effort, `autoCompactWindow: 600000` at the top level and under `modelSettings` for Opus, auto-archive on PR close off, the branch guard from `/orchestra:init` installed, and branch protection on GitHub for the integration and production branches.
 4. Plan the app with the owner: write the backlog in "Next workstreams" in the HANDOFF, each item with what it waits on.
 5. Open every item that is ready and fits (see "Capacity") with `/orchestra:start-workstream`, then run the first `/orchestra:status`.
 
@@ -93,7 +93,17 @@ No number is fixed. How much runs at once depends on the machine, the token limi
 
 ## Context and clearing
 
-- The auto-compact safety net sits at 600k tokens (`autoCompactWindow: 600000` in `~/.claude/settings.json`; it applies to new or restarted sessions). It is the net for when nobody checked in time, not the plan.
+- The auto-compact safety net sits at 600k tokens (`autoCompactWindow: 600000` in `~/.claude/settings.json`, at the top level and under `modelSettings` for the session's model, since a per-model value wins in the same file; it applies to new or restarted sessions). It is the net for when nobody checked in time, not the plan. In the desktop app every session on a model shares one window, yours included; only a CLI maestro can get a larger one (`claude --autocompact 800000`).
+
+## After a compact
+
+When your context is compacted, orchestra's hook adds a list headed "orchestra: your context was just compacted" with what may still wait on you: messages from sessions you have not answered with `SendMessage` (last 24 hours), waiting band reports and handoff notes whose status line waits on someone. Before anything else:
+
+1. Take each item in turn. Check whether it is already settled: the PR merged, the decision sent, the session moved on (its band report or status line no longer waits).
+2. Answer every open one now, with `SendMessage` to that session. One line is enough when the answer is "noted" or "merged".
+3. Run `/orchestra:status`.
+
+Without the list (the hook did not run, or you are not sure the summary kept everything), rebuild it by hand: read `.orchestra/sessions/*.json` for `waiting` states and their `detail`, the status line of each registered workstream's handoff note, and ask the owner whether a principal is waiting on you.
 - Each principal checks its own context (`get_usage` on itself) when it closes a wave of tasks. Above 250k tokens it stops dispatching, updates its handoff note (skill `orchestra:handoff-note`) and asks you to clear it. Below 250k clearing does not pay off, because the restart rereads the note, the HANDOFF, the spec and the plan.
 - You check every session's usage at each progress question from the owner and whenever a principal closes a wave. At a natural stop (PR merged, wave done, checkpoint, no agent or command running): ask the session to update its handoff note, clear it with `clear_session` (at its level in "Owner authorizations"), then send the briefing back: "Read the note `docs/workstreams/<name>.md` and the plan, continue from task N". Use `/orchestra:close-wave`.
 - Never clear a session in the middle of a task.
