@@ -77,7 +77,7 @@ The open check from the roadmap, rerun with a real Claude Code LSP plugin instea
 - **What a user does today:** the official plugin's entry has no `initializationOptions`, so a user needs their own plugin or LSP config that adds the option above; the official plugin as shipped gives wrong answers at session start.
 - **Cleanup:** the plugin and the global npm packages were uninstalled afterwards; the app copy was deleted.
 
-Next: rerun the paired trial with the fixed config on a public TypeScript repo of 1,000+ files (candidates by count of non-test `.ts`/`.tsx` files: outline/outline about 1,900, tldraw/tldraw about 2,100), which needs the owner's yes to download. Also check whether subagents get the `LSP` tool, and the same early-request problem for Pyright (`pyright-lsp`), which was not tested through the plugin.
+The paired trial with the fixed config was run afterwards on a public 1,960-file app; see the next section. What is still open is listed under "Not measured".
 
 ## Paired trial with the fixed plugin on a public app (Outline, 1,960 files)
 
