@@ -41,6 +41,8 @@ To investigate: whether the mod can answer inside the app. App sessions are neve
 
 ### 4. The maestro decides when to build a code graph
 
+**Parked in favour of item 5.** The code graph was built on branch `claude/graphify-e5bb5f` (PR #6, closed, branch kept) and measured: about 25% fewer work tokens on a large TypeScript app, none on Python. The language server in item 5 matched or beat it on both, so item 5 is the way forward. The text below is the original idea.
+
 [graphify](https://github.com/Graphify-Labs/graphify) (Apache-2.0, installed with `pip install graphifyy`, not a Claude Code plugin) turns the codebase into a knowledge graph that agents query instead of sweeping files. Idea, to be brainstormed and specced after the band:
 - At `/orchestra:init` and at every wave end, the maestro measures the integration branch (files, lines of code, and later the tokens explorers and planners spend per task, from the band's session reports).
 - Past a threshold it proposes building the graph on the integration branch in the main checkout. The build costs LLM tokens, so it gets its own level in "Owner authorizations" (default `ask`).
@@ -48,3 +50,13 @@ To investigate: whether the mod can answer inside the app. App sessions are neve
 - When `graphify-out/` exists, the explorer and planner query it first, and treat it as a map of the integration branch, not of their own branch.
 - Building late is cheaper than building early for the paid semantic pass: a young project rewrites files often, and each version is paid again. The free structural pass could run from the start, if graphify can run it alone (to check).
 - The thresholds (a first guess: 500 files or 50k lines) are calibrated in the real-project trial: the same task with and without the graph, tokens compared.
+
+### 5. A language server for code navigation
+
+Two measured trials. A command that prints references with their source line and callers as function names (a thin wrapper around Pyright or the TypeScript language service) cut explorer work tokens about 30% on networkx, the Python standard library and a public TypeScript app, and 65% (75% fewer tool calls) on a 1,960-file public app. The real Claude Code `LSP` tool, whose output is bare positions, saved nothing on that app. With Opus (high effort) as the explorer the saving shrinks to about 16%, but grep alone missed 2 of 8 callers on the trace question in every run and the language server did not. See [`docs/superpowers/specs/2026-10-30-lsp-measurement.md`](superpowers/specs/2026-10-30-lsp-measurement.md).
+
+Idea, to be brainstormed and specced:
+- Explorer and planner use a language-server command (references with source lines, callers as function names) when one is available, and fall back to grep otherwise. Either orchestra ships the thin command or the plugin's tool output improves.
+- No build step and no update after merges: the server reads the working tree, so it also sees a worktree's own branch.
+
+Still open: a planner task on Opus, Python through `pyright-lsp`, whether subagents get the `LSP` tool, and the shape of the command orchestra would ship. Setup note: Anthropic's `typescript-lsp` plugin returns same-file references until `initializationOptions: {"tsserver": {"useSyntaxServer": "never"}}` is set; details in the measurement doc.
