@@ -14,3 +14,10 @@ Run on 2026-10-30 with a throwaway mod in the desktop app (engine 2.1.309) and u
 Also seen: `session.measure` carries real `five_hour` and `seven_day` readings with `resetsAt`, and it fires during a turn as well as at its end.
 
 Decision: every check the plan gates on passed, so Tasks 2 to 6 run as written with `APP_SESSION_SERVER = 'ccd_session_mgmt'`. Risk left open: an older Claude Code that does not know hooks modules.
+
+## Second check (after the final review)
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| A fork works while a main-thread tool call is open | yes | A fork from a timer tick while a shell call was running answered `ok` with `cache_read_input_tokens` 396,169 of a 396,564-token context. So keep-warm also covers foreground subagents and long tool calls, and needs no "not during a turn" guard. |
+| Main-thread requests can be told apart | yes, from the types | `turn.step` fires per model request and carries `agentId` only for a subagent's requests ("absent on main"). |
