@@ -1,0 +1,496 @@
+{
+  "benchmark": "codenav-tokens",
+  "source": "docs/superpowers/specs/2026-10-30-lsp-measurement.md",
+  "note": "Transcribed from docs/superpowers/specs/2026-10-30-lsp-measurement.md; no new runs. Work tokens are in thousands. Recall is found over expected; in 3-run cells it held in every run unless foundPerRun lists each run.",
+  "tables": [
+    {
+      "id": "haiku-three-codebases",
+      "model": "Haiku",
+      "section": "the first results table",
+      "codebases": "a public Python graph library (288 files), the Python 3.11 standard library (567 files), a public TypeScript drawing app (599 TS/TSX files)",
+      "accounting": "Subagent total minus 77,842 tokens of a no-tool Haiku agent. One run per cell (N1 also repeated for noise). Not comparable with the two 1,960-file app tables.",
+      "arms": {
+        "grep": "grep only",
+        "lspFirst": "a one-line lsp refs|calls|defs wrapper command, then grep to confirm"
+      },
+      "cells": [
+        {
+          "question": "N1 who-calls shortest_path",
+          "arm": "grep",
+          "workTokensK": 25.8,
+          "toolCalls": 7,
+          "recall": {
+            "found": 11,
+            "expected": 11
+          }
+        },
+        {
+          "question": "N1 who-calls shortest_path",
+          "arm": "lspFirst",
+          "workTokensK": 18.4,
+          "toolCalls": 4,
+          "recall": {
+            "found": 11,
+            "expected": 11
+          }
+        },
+        {
+          "question": "N2 impact pairwise",
+          "arm": "grep",
+          "workTokensK": 43.4,
+          "toolCalls": 7,
+          "recall": {
+            "found": 33,
+            "expected": 33
+          }
+        },
+        {
+          "question": "N2 impact pairwise",
+          "arm": "lspFirst",
+          "workTokensK": 25.7,
+          "toolCalls": 3,
+          "recall": {
+            "found": 33,
+            "expected": 33
+          }
+        },
+        {
+          "question": "N3 trace _accumulate_edges",
+          "arm": "grep",
+          "workTokensK": 29.8,
+          "toolCalls": 14,
+          "recall": {
+            "found": 3,
+            "expected": 3
+          }
+        },
+        {
+          "question": "N3 trace _accumulate_edges",
+          "arm": "lspFirst",
+          "workTokensK": 23.1,
+          "toolCalls": 6,
+          "recall": {
+            "found": 3,
+            "expected": 3
+          }
+        },
+        {
+          "question": "S1 who-calls check_output",
+          "arm": "grep",
+          "workTokensK": 23.5,
+          "toolCalls": 3,
+          "recall": {
+            "found": 10,
+            "expected": 10
+          }
+        },
+        {
+          "question": "S1 who-calls check_output",
+          "arm": "lspFirst",
+          "workTokensK": 16.3,
+          "toolCalls": 4,
+          "recall": {
+            "found": 10,
+            "expected": 10
+          }
+        },
+        {
+          "question": "S2 impact os.makedirs",
+          "arm": "grep",
+          "workTokensK": 19.5,
+          "toolCalls": 5,
+          "recall": {
+            "found": 16,
+            "expected": 16
+          }
+        },
+        {
+          "question": "S2 impact os.makedirs",
+          "arm": "lspFirst",
+          "workTokensK": 17.3,
+          "toolCalls": 7,
+          "recall": {
+            "found": 16,
+            "expected": 16
+          }
+        },
+        {
+          "question": "S3 trace _rmtree_safe_fd",
+          "arm": "grep",
+          "workTokensK": 42.9,
+          "toolCalls": 14,
+          "recall": {
+            "found": 7,
+            "expected": 8
+          },
+          "note": "missed onerror"
+        },
+        {
+          "question": "S3 trace _rmtree_safe_fd",
+          "arm": "lspFirst",
+          "workTokensK": 33.4,
+          "toolCalls": 6,
+          "recall": {
+            "found": 8,
+            "expected": 8
+          }
+        },
+        {
+          "question": "T1 who-calls isBindingEnabled",
+          "arm": "grep",
+          "workTokensK": 54.7,
+          "toolCalls": 18,
+          "recall": {
+            "found": 13,
+            "expected": 13
+          },
+          "note": "one function label wrong"
+        },
+        {
+          "question": "T1 who-calls isBindingEnabled",
+          "arm": "lspFirst",
+          "workTokensK": 34.6,
+          "toolCalls": 5,
+          "recall": {
+            "found": 13,
+            "expected": 13
+          }
+        },
+        {
+          "question": "T2 impact redrawTextBoundingBox",
+          "arm": "grep",
+          "workTokensK": 41.6,
+          "toolCalls": 6,
+          "recall": {
+            "found": 19,
+            "expected": 19
+          }
+        },
+        {
+          "question": "T2 impact redrawTextBoundingBox",
+          "arm": "lspFirst",
+          "workTokensK": 27.6,
+          "toolCalls": 12,
+          "recall": {
+            "found": 19,
+            "expected": 19
+          }
+        },
+        {
+          "question": "T3 trace isElementInViewport",
+          "arm": "grep",
+          "workTokensK": 58.1,
+          "toolCalls": 23,
+          "recall": null,
+          "note": "same 15 functions in both arms; no truth fraction given"
+        },
+        {
+          "question": "T3 trace isElementInViewport",
+          "arm": "lspFirst",
+          "workTokensK": 42.6,
+          "toolCalls": 7,
+          "recall": null,
+          "note": "same 15 functions in both arms; no truth fraction given"
+        }
+      ],
+      "totals": {
+        "grep": {
+          "workTokensK": 339.2,
+          "toolCalls": 97
+        },
+        "lspFirst": {
+          "workTokensK": 238.9,
+          "toolCalls": 54
+        }
+      }
+    },
+    {
+      "id": "haiku-ts-app",
+      "model": "Haiku",
+      "section": "the paired trial on a public 1,960-file TypeScript app",
+      "codebases": "a public TypeScript app, tests removed, 1,960 TS/TSX files",
+      "accounting": "Run total (input, cache and output, summed over turns) minus 72,978 tokens of a no-tool run. Mean of 3 runs per cell; tool calls are means.",
+      "arms": {
+        "grep": "Grep, Glob, Read",
+        "lspPlugin": "the plugin LSP tool (useSyntaxServer never) plus Grep, Glob, Read",
+        "lspWrapper": "a refs/calls command printing source lines and caller names, plus Grep, Glob, Read",
+        "lspGraphify": "plugin LSP tool plus graphify affected, then confirm"
+      },
+      "cells": [
+        {
+          "question": "O1 who-calls hash",
+          "arm": "grep",
+          "workTokensK": 328,
+          "toolCalls": 15,
+          "recall": {
+            "found": 18,
+            "expected": 18
+          }
+        },
+        {
+          "question": "O1 who-calls hash",
+          "arm": "lspPlugin",
+          "workTokensK": 423,
+          "toolCalls": 11,
+          "recall": {
+            "found": 18,
+            "expected": 18
+          }
+        },
+        {
+          "question": "O1 who-calls hash",
+          "arm": "lspWrapper",
+          "workTokensK": 164,
+          "toolCalls": 2,
+          "recall": {
+            "found": 18,
+            "expected": 18
+          }
+        },
+        {
+          "question": "O1 who-calls hash",
+          "arm": "lspGraphify",
+          "workTokensK": 323,
+          "toolCalls": 11,
+          "recall": {
+            "found": 18,
+            "expected": 18
+          }
+        },
+        {
+          "question": "O2 impact parseDomain",
+          "arm": "grep",
+          "workTokensK": 333,
+          "toolCalls": 24,
+          "recall": {
+            "found": 22,
+            "expected": 22
+          }
+        },
+        {
+          "question": "O2 impact parseDomain",
+          "arm": "lspPlugin",
+          "workTokensK": 497,
+          "toolCalls": 30,
+          "recall": {
+            "found": 22,
+            "expected": 22
+          }
+        },
+        {
+          "question": "O2 impact parseDomain",
+          "arm": "lspWrapper",
+          "workTokensK": 354,
+          "toolCalls": 11,
+          "recall": {
+            "found": 22,
+            "expected": 22
+          }
+        },
+        {
+          "question": "O2 impact parseDomain",
+          "arm": "lspGraphify",
+          "workTokensK": 487,
+          "toolCalls": 31,
+          "recall": {
+            "found": 22,
+            "expected": 22
+          }
+        },
+        {
+          "question": "O3 trace canUserAccessDocument",
+          "arm": "grep",
+          "workTokensK": 1208,
+          "toolCalls": 23,
+          "recall": {
+            "foundPerRun": [
+              8,
+              8,
+              7
+            ],
+            "expected": 8
+          },
+          "note": "one run missed init"
+        },
+        {
+          "question": "O3 trace canUserAccessDocument",
+          "arm": "lspPlugin",
+          "workTokensK": 1226,
+          "toolCalls": 31,
+          "recall": {
+            "found": 8,
+            "expected": 8
+          }
+        },
+        {
+          "question": "O3 trace canUserAccessDocument",
+          "arm": "lspWrapper",
+          "workTokensK": 139,
+          "toolCalls": 2,
+          "recall": {
+            "found": 8,
+            "expected": 8
+          }
+        },
+        {
+          "question": "O3 trace canUserAccessDocument",
+          "arm": "lspGraphify",
+          "workTokensK": 928,
+          "toolCalls": 27,
+          "recall": {
+            "found": 8,
+            "expected": 8
+          }
+        }
+      ],
+      "totals": {
+        "grep": {
+          "workTokensK": 1870,
+          "toolCalls": 62,
+          "costUSD": 0.201,
+          "perRunStdDevK": 449
+        },
+        "lspPlugin": {
+          "workTokensK": 2146,
+          "toolCalls": 72,
+          "costUSD": 0.176,
+          "perRunStdDevK": 441
+        },
+        "lspWrapper": {
+          "workTokensK": 657,
+          "toolCalls": 15,
+          "costUSD": 0.046,
+          "perRunStdDevK": 114
+        },
+        "lspGraphify": {
+          "workTokensK": 1737,
+          "toolCalls": 68,
+          "costUSD": 0.139,
+          "perRunStdDevK": 266
+        }
+      }
+    },
+    {
+      "id": "opus-ts-app",
+      "model": "Opus, effort high",
+      "section": "the same trial on Opus (high effort)",
+      "codebases": "a public TypeScript app, tests removed, 1,960 TS/TSX files",
+      "accounting": "Run total minus 72,820 tokens of a no-tool run on this model. Mean of 3 runs per cell; tool calls are means.",
+      "arms": {
+        "grep": "Grep, Glob, Read",
+        "lspPlugin": "the plugin LSP tool plus Grep, Glob, Read",
+        "lspWrapper": "the refs/calls command plus Grep, Glob, Read"
+      },
+      "cells": [
+        {
+          "question": "O1 who-calls hash",
+          "arm": "grep",
+          "workTokensK": 503,
+          "toolCalls": 15,
+          "recall": {
+            "found": 18,
+            "expected": 18
+          }
+        },
+        {
+          "question": "O1 who-calls hash",
+          "arm": "lspPlugin",
+          "workTokensK": 211,
+          "toolCalls": 5,
+          "recall": {
+            "found": 18,
+            "expected": 18
+          }
+        },
+        {
+          "question": "O1 who-calls hash",
+          "arm": "lspWrapper",
+          "workTokensK": 236,
+          "toolCalls": 3,
+          "recall": {
+            "found": 18,
+            "expected": 18
+          }
+        },
+        {
+          "question": "O2 impact parseDomain",
+          "arm": "grep",
+          "workTokensK": 546,
+          "toolCalls": 20,
+          "recall": {
+            "found": 22,
+            "expected": 22
+          }
+        },
+        {
+          "question": "O2 impact parseDomain",
+          "arm": "lspPlugin",
+          "workTokensK": 536,
+          "toolCalls": 12,
+          "recall": {
+            "found": 22,
+            "expected": 22
+          }
+        },
+        {
+          "question": "O2 impact parseDomain",
+          "arm": "lspWrapper",
+          "workTokensK": 501,
+          "toolCalls": 12,
+          "recall": {
+            "found": 22,
+            "expected": 22
+          }
+        },
+        {
+          "question": "O3 trace canUserAccessDocument",
+          "arm": "grep",
+          "workTokensK": 550,
+          "toolCalls": 12,
+          "recall": {
+            "found": 6,
+            "expected": 8
+          },
+          "note": "missed init and send in all 3 runs"
+        },
+        {
+          "question": "O3 trace canUserAccessDocument",
+          "arm": "lspPlugin",
+          "workTokensK": 959,
+          "toolCalls": 24,
+          "recall": {
+            "found": 8,
+            "expected": 8
+          }
+        },
+        {
+          "question": "O3 trace canUserAccessDocument",
+          "arm": "lspWrapper",
+          "workTokensK": 613,
+          "toolCalls": 11,
+          "recall": {
+            "found": 8,
+            "expected": 8
+          }
+        }
+      ],
+      "totals": {
+        "grep": {
+          "workTokensK": 1599,
+          "toolCalls": 47,
+          "costUSD": 2.18
+        },
+        "lspPlugin": {
+          "workTokensK": 1707,
+          "toolCalls": 40,
+          "costUSD": 1.98
+        },
+        "lspWrapper": {
+          "workTokensK": 1351,
+          "toolCalls": 26,
+          "costUSD": 1.82
+        }
+      }
+    }
+  ]
+}
