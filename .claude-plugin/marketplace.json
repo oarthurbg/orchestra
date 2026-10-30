@@ -30,7 +30,7 @@
     },
     {
       "name": "impeccable",
-      "source": { "source": "git-subdir", "url": "pbakaus/impeccable", "path": "plugin" },
+      "source": { "source": "git-subdir", "url": "https://github.com/pbakaus/impeccable.git", "path": "plugin" },
       "description": "Upstream: Paul Bakaus (pbakaus/impeccable). Frontend design fluency, anti-pattern detector and finish reviewer.",
       "homepage": "https://impeccable.style",
       "category": "design"
@@ -44,14 +44,14 @@
     },
     {
       "name": "frontend-design",
-      "source": { "source": "git-subdir", "url": "anthropics/claude-plugins-official", "path": "plugins/frontend-design" },
+      "source": { "source": "git-subdir", "url": "https://github.com/anthropics/claude-plugins-official.git", "path": "plugins/frontend-design" },
       "description": "Upstream: Anthropic (claude-plugins-official). Distinctive visual direction for mockups.",
       "homepage": "https://github.com/anthropics/claude-plugins-official/tree/main/plugins/frontend-design",
       "category": "design"
     },
     {
       "name": "design",
-      "source": { "source": "git-subdir", "url": "anthropics/knowledge-work-plugins", "path": "design" },
+      "source": { "source": "git-subdir", "url": "https://github.com/anthropics/knowledge-work-plugins.git", "path": "design" },
       "description": "Upstream: Anthropic (knowledge-work-plugins). Design critique and accessibility review.",
       "homepage": "https://github.com/anthropics/knowledge-work-plugins/tree/main/design",
       "category": "design"
