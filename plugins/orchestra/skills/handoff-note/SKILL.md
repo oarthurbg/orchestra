@@ -13,11 +13,11 @@ The last commit of the workstream, before merge, deletes the note. The lasting s
 
 ## Status line
 
-The line right under the title is what the orchestrator's status round reads, so keep it current: update it at the end of every wave, when you start waiting on the owner, and before asking for a clear.
+The line right under the title is what the maestro's status round reads, so keep it current: update it at the end of every wave, when you start waiting on the owner, and before asking for a clear.
 
 `Status: <running | idle | waiting on owner> · context <N>k · <stage>, task <N> of <M> · PR <none | #N open | #N ready> · waiting on: <none | what, for whom> · updated <YYYY-MM-DD HH:MM>`
 
-It is also how a workstream reports without the desktop app: the orchestrator reads it straight from the worktree folder.
+It is also how a workstream reports without the desktop app: the maestro reads it straight from the worktree folder.
 
 ## Template
 

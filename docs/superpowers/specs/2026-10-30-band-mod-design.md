@@ -27,13 +27,13 @@ One hooks module with four parts. The logic lives in pure functions in a separat
 On every `session.measure`, the mod writes `.orchestra/sessions/<session-id>.json` in the main checkout. Each session writes only its own file, so two sessions never write the same file.
 
 - **Main checkout:** in the main checkout, `.git` is a folder and the session's root is the main checkout. In a worktree, `.git` is a file that reads `gitdir: <main>/.git/worktrees/<name>`, and the main checkout is the folder that holds that `.git`. No shell call is needed.
-- **Role and workstream:** a session whose root is the main checkout is the orchestrator. Otherwise its root is matched against the worktree paths in `.orchestra/workstreams.md`; no match makes it `unregistered`, shown with its branch. A relative worktree path in the registry is resolved against the main checkout, `.` and `..` segments included; `/orchestra:start-workstream` writes it absolute.
+- **Role and workstream:** a session whose root is the main checkout is the maestro. Otherwise its root is matched against the worktree paths in `.orchestra/workstreams.md`; no match makes it `unregistered`, shown with its branch. A relative worktree path in the registry is resolved against the main checkout, `.` and `..` segments included; `/orchestra:start-workstream` writes it absolute.
 - Outside an orchestra project (not a git repository, or no `.orchestra/` folder in the main checkout) the mod writes nothing.
 
 File format:
 
 ```json
-{ "v": 1, "session": "<id>", "role": "orchestrator | workstream | unregistered",
+{ "v": 1, "session": "<id>", "role": "maestro | workstream | unregistered",
   "workstream": "<name or null>", "branch": "<branch>",
   "title": "<sidebar title or empty>", "link": "<claude:// link or empty>",
   "state": "running | idle | waiting", "detail": "<text or empty>",
@@ -91,7 +91,7 @@ Guards:
 
 - **`cacheMinutes`** (plugin setting, default 60): the cache lifetime, which a mod cannot read. Use 5 for API keys and overage. The ping goes out one minute before it ends (30 seconds when it is 5).
 - **`warmMaxHours`** (plugin setting, default 2): after a subagent has run this long, the mod stops pinging for it. Pings stop once every running subagent is older than the limit.
-- No subagent running means no pings. An idle orchestrator is never pinged.
+- No subagent running means no pings. An idle maestro is never pinged.
 - No turn guard: the second live check showed that a fork during an open main-thread tool call reads the cache, so a long foreground subagent or tool call is kept warm too. While the main thread is making requests, each `turn.step` pushes the schedule back, so no ping is due.
 - **Cache miss:** after an answered fork, when the session's context tokens are known and `usage.cache_read_input_tokens` is below half of them, the fork missed the cache. It is counted as `warm.misses`, not as a ping; pings stop until the next main-thread `turn.step`; and the mod toasts once per session: `orchestra band: keep-warm missed the cache; set cacheMinutes lower (5 for API keys and overage)`.
 - Every ping is counted in the session file and shown on the summary line (`warm 2x`) in every role and outside orchestra projects.
@@ -103,7 +103,7 @@ The same timer as the band's drives it.
 
 - `plugin.json`: the hooks module, the two settings, version 0.2.0.
 - `/orchestra:status`: reads `.orchestra/sessions/` first for each session's context and state, and falls back to `get_usage` and `list_events` when a file is missing or stale.
-- Merge checklist (`skills/orchestrator/checklists.md`): after merging, delete the workstream's session file.
+- Merge checklist (`skills/maestro/checklists.md`): after merging, delete the workstream's session file.
 - README: a band section with screenshots, the two settings and the keep-warm trade-off, and a note that ponytail's level is one flag for every session (`~/.claude/.ponytail-active`): switching it in one session switches all of them, while each agent's per-stage mode stays in its own prompt.
 - ROADMAP: item 1 links to this spec and notes keep-warm as part of it.
 
@@ -127,7 +127,7 @@ The same timer as the band's drives it.
   - opening a `claude://` link from the mod moves the app to that session.
 
   If the session server is out of reach or the link does not move the app, names stay plain text. If the timer does not fire while idle, the band refreshes on the next prompt instead and the README says so. If the fork does not read the main cache, keep-warm is dropped from this spec.
-- **Screenshots** of the band in an orchestrator session and a workstream session, for the README.
+- **Screenshots** of the band in a maestro session and a workstream session, for the README.
 
 ## Out of scope
 

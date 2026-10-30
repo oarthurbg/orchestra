@@ -107,8 +107,8 @@ footer{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padd
   <section aria-labelledby="t-roles">
     <h2 id="t-roles">Who does what</h2>
     <div class="roles">
-      <div class="role"><h3>Main session (orchestrator)</h3><p>Opens workstreams, sets order and the schema queue, watches machine load and context size, merges PRs, talks to the owner. Writes no code, not even through subagents.</p></div>
-      <div class="role"><h3>Workstream session</h3><p>Owns one feature end to end: spec, plan, subagents, reviews, PR. Answers the owner directly on checkpoints and mockups, and reports cross-workstream decisions to the orchestrator in one line.</p></div>
+      <div class="role"><h3>Main session (maestro)</h3><p>Opens workstreams, sets order and the schema queue, watches machine load and context size, merges PRs, talks to the owner. Writes no code, not even through subagents.</p></div>
+      <div class="role"><h3>Workstream session</h3><p>Owns one feature end to end: spec, plan, subagents, reviews, PR. Answers the owner directly on checkpoints and mockups, and reports cross-workstream decisions to the maestro in one line.</p></div>
       <div class="role"><h3>Subagents</h3><p>Do one task each (implementer, reviewers, planner, explorer) and never spawn other agents. They get their mode and skills from the briefing.</p></div>
     </div>
   </section>
@@ -148,7 +148,7 @@ footer{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padd
   <section aria-labelledby="t-rhythm">
     <h2 id="t-rhythm">Session rhythm</h2>
     <div class="rules">
-      <div class="rule"><div class="big">250k</div><p>Tokens. When a wave of tasks closes above this, the workstream writes its handoff note and the orchestrator clears its context, then sends a short briefing back.</p></div>
+      <div class="rule"><div class="big">250k</div><p>Tokens. When a wave of tasks closes above this, the workstream writes its handoff note and the maestro clears its context, then sends a short briefing back.</p></div>
       <div class="rule"><div class="big">600k</div><p>Auto-compact safety net (<code>autoCompactWindow</code>), for when nobody checked in time.</p></div>
       <div class="rule"><div class="big">2</div><p>Tasks at once per workstream, because every workstream shares one machine.</p></div>
       <div class="rule"><div class="big">docs/workstreams/</div><p>Where each workstream keeps its handoff note, on its own branch, with a fixed template and a clean-session checklist.</p></div>
@@ -168,7 +168,7 @@ const STAGES=[
  {n:"Backend implementation",who:"The workstream dispatches one subagent per task (subagent-driven-development); the subagent uses the rest",agent:"implementer · Sonnet\nor advanced · Opus",mode:"full",skills:["subagent-driven-development","dispatching-parallel-agents","test-driven-development","verification-before-completion","systematic-debugging"]},
  {n:"UI implementation",who:"The workstream dispatches one subagent per task (subagent-driven-development); the subagent uses the rest",agent:"implementer · Sonnet",mode:"lite",skills:["subagent-driven-development","dispatching-parallel-agents","impeccable","test-driven-development","verification-before-completion","dataviz"]},
  {n:"Reviews",who:"Read-only subagents",agent:"spec compliance · Sonnet\ncode quality · Opus\nfinish-reviewer",mode:"off",skills:["verification-before-completion","receiving-code-review","impeccable-finish-reviewer","accessibility-review","dispatching-parallel-agents"]},
- {n:"PR and wrap-up",who:"Workstream and orchestrator",agent:"orchestrator merges",mode:"full",skills:["requesting-code-review","security-audit","finishing-a-development-branch","dispatching-parallel-agents","systematic-debugging"]}
+ {n:"PR and wrap-up",who:"Workstream and maestro",agent:"maestro merges",mode:"full",skills:["requesting-code-review","security-audit","finishing-a-development-branch","dispatching-parallel-agents","systematic-debugging"]}
 ];
 const MODE={off:["m-off","off"],lite:["m-lite","lite"],full:["m-full","full"],ultra:["m-ultra","ultra"]};
 const GROUPS=[

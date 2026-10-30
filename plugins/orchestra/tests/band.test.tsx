@@ -46,7 +46,7 @@ function disk(on: On, files: Record<string, string>, failWrites = false) {
   return { reads, touch: (path: string) => { mtime[path] = ++tick } }
 }
 
-function session(on: On, root: string, id: string, agents: () => unknown[] = () => [], title: () => string | null = () => 'Orchestrator') {
+function session(on: On, root: string, id: string, agents: () => unknown[] = () => [], title: () => string | null = () => 'Maestro') {
   const clock = mock.clock(on, { now: Date.now() })
   on('session.root', () => ({ value: root }))
   on('session.cwd', () => ({ value: root }))
@@ -59,7 +59,7 @@ function session(on: On, root: string, id: string, agents: () => unknown[] = () 
   return clock
 }
 
-test('the orchestrator band shows the summary and only the workstreams that need attention', async ($, on) => {
+test('the maestro band shows the summary and only the workstreams that need attention', async ($, on) => {
   const files: Record<string, string> = {
     [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY,
     [`${ROOT}/.orchestra/sessions/s2.json`]: report('s2', { workstream: 'reports', state: 'waiting', detail: 'asks: pick chart library', link: 'claude://claude.ai/epitaxy/local_s2', title: 'Reports' }),
@@ -79,7 +79,7 @@ test('the orchestrator band shows the summary and only the workstreams that need
     await ui.unmount()
   }
   // Its own report landed in the main checkout.
-  expect(JSON.parse(files[`${ROOT}/.orchestra/sessions/o.json`]!).role).toBe('orchestrator')
+  expect(JSON.parse(files[`${ROOT}/.orchestra/sessions/o.json`]!).role).toBe('maestro')
 })
 
 test('a project without .orchestra/ shows the limits line only and writes nothing', async ($, on) => {
@@ -397,7 +397,7 @@ test('a fork that missed the cache is no ping: it counts a miss, toasts once and
   expect(toasts).toHaveLength(1)
 })
 
-test('the summary line shows the ping count in an orchestrator session', { options: { cacheMinutes: 5, warmMaxHours: 2 } }, async ($, on) => {
+test('the summary line shows the ping count in a maestro session', { options: { cacheMinutes: 5, warmMaxHours: 2 } }, async ($, on) => {
   const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
   disk(on, files)
   const clock = session(on, ROOT, 'o', () => [AGENT('a1')])
@@ -524,7 +524,7 @@ test('a subagent turn is not the session turn: the ping goes out and the report 
 test('a get_session call that rejects later keeps the title and link already read', async ($, on) => {
   const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
   disk(on, files)
-  let title: string | null = 'Orchestrator'
+  let title: string | null = 'Maestro'
   session(on, ROOT, 'o', () => [], () => title)
   on('turn.complete', ($, e) => ({ text: e.answer }))
   await start($)
@@ -532,5 +532,5 @@ test('a get_session call that rejects later keeps the title and link already rea
   await $.turn.complete({ reason: 'answer', answer: '', durationMs: 1, isAborted: false, turnId: 't1' })
   await $.turn.complete({ reason: 'answer', answer: '', durationMs: 1, isAborted: false, turnId: 't2' })
   const mine = JSON.parse(files[`${ROOT}/.orchestra/sessions/o.json`]!)
-  expect(mine).toMatchObject({ title: 'Orchestrator', link: 'claude://claude.ai/epitaxy/local_o' })
+  expect(mine).toMatchObject({ title: 'Maestro', link: 'claude://claude.ai/epitaxy/local_o' })
 })

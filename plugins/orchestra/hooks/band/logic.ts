@@ -42,7 +42,7 @@ export function resolvePath(base: string, path: string): string {
 
 export function roleOf(root: string, main: string, rows: RegistryRow[]): { role: Role; workstream: string | null } {
   const r = norm(root)
-  if (r === norm(main)) return { role: 'orchestrator', workstream: null }
+  if (r === norm(main)) return { role: 'maestro', workstream: null }
   const row = rows.find(x => resolvePath(main, x.worktree) === r)
   return row ? { role: 'workstream', workstream: row.workstream } : { role: 'unregistered', workstream: null }
 }
@@ -145,7 +145,7 @@ export function buildView(i: ViewInput): BandView {
   const row = (f: SessionFile, name: string, shape: BandRow['shape'], reason: string, detail: string): BandRow =>
     ({ key: f.session, name, link: isSafeTarget(f.link) && f.link.startsWith('claude://') ? f.link : '', shape, reason, context: fmtK(f.context.tokens), detail })
 
-  if (i.role !== 'orchestrator') {
+  if (i.role !== 'maestro') {
     const me = i.files.find(f => f.session === i.self)
     if (me) {
       const big = (me.context.tokens ?? 0) >= CONTEXT_LIMIT

@@ -36,7 +36,7 @@ type Ctx = {
 }
 
 const fresh = (): Ctx => ({
-  main: null, root: '', id: '', role: 'orchestrator', workstream: null, branch: '', title: '', link: '', turn: false, question: '',
+  main: null, root: '', id: '', role: 'maestro', workstream: null, branch: '', title: '', link: '', turn: false, question: '',
   context: { tokens: null, window: 0 }, limits: [], lastRequestAt: 0, pings: 0, lastPing: null, misses: 0, missed: false, toasted: false,
   seen: new Map(), reports: new Map(),
 })

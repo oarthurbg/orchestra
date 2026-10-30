@@ -2,7 +2,7 @@
 
 ## Phase 1: base package (done)
 
-Orchestrator and workstream roles, 9 agents, handoff notes, isolated test data per workstream, `/orchestra:init`, `/orchestra:start-workstream`, `/orchestra:close-wave`, and a marketplace that lists the third-party plugins from their upstream repositories.
+Maestro and workstream roles, 9 agents, handoff notes, isolated test data per workstream, `/orchestra:init`, `/orchestra:start-workstream`, `/orchestra:close-wave`, and a marketplace that lists the third-party plugins from their upstream repositories.
 
 ## Phase 2: backlog
 
@@ -18,7 +18,7 @@ Complements ponytail's own band and does not duplicate it. Shows:
 - the context size of each linked session, with a warning near 250k tokens;
 - each workstream's state: running, idle, or waiting on the owner.
 
-First step: confirm what a mod can read directly (with the plugin-authoring skill) and what has to come from the orchestrator.
+First step: confirm what a mod can read directly (with the plugin-authoring skill) and what has to come from the maestro.
 
 ### 2. A localhost dashboard
 
@@ -29,7 +29,7 @@ A plain local process that uses zero LLM tokens to stay live. Shows:
 - a timeline and the rollout plan;
 - a weekly-limit projection from the token usage in Claude Code's on-disk transcripts, calibrated by the last plan-limit % snapshot.
 
-The only data not on disk (plan-limit % and the official session list) comes from a `status.json` the orchestrator writes when it already checks progress. Writing it never costs an extra call.
+The only data not on disk (plan-limit % and the official session list) comes from a `status.json` the maestro writes when it already checks progress. Writing it never costs an extra call.
 
 ### 3. A single decision inbox
 
@@ -39,10 +39,10 @@ The only data not on disk (plan-limit % and the official session list) comes fro
 
 To investigate: whether the mod can answer inside the app. App sessions are never resumed from the CLI.
 
-### 4. The orchestrator decides when to build a code graph
+### 4. The maestro decides when to build a code graph
 
 [graphify](https://github.com/Graphify-Labs/graphify) (Apache-2.0, installed with `pip install graphifyy`, not a Claude Code plugin) turns the codebase into a knowledge graph that agents query instead of sweeping files. Idea, to be brainstormed and specced after the band:
-- At `/orchestra:init` and at every wave end, the orchestrator measures the integration branch (files, lines of code, and later the tokens explorers and planners spend per task, from the band's session reports).
+- At `/orchestra:init` and at every wave end, the maestro measures the integration branch (files, lines of code, and later the tokens explorers and planners spend per task, from the band's session reports).
 - Past a threshold it proposes building the graph on the integration branch in the main checkout. The build costs LLM tokens, so it gets its own level in "Owner authorizations" (default `ask`).
 - The merge checklist runs `graphify --update` after each workstream merge, so the graph follows the integration branch.
 - When `graphify-out/` exists, the explorer and planner query it first, and treat it as a map of the integration branch, not of their own branch.
