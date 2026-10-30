@@ -53,10 +53,10 @@ To investigate: whether the mod can answer inside the app. App sessions are neve
 
 ### 5. A language server for code navigation
 
-Two measured trials, with different results. With a wrapper that prints source lines, Pyright and the TypeScript language service cut explorer work tokens about 30% on networkx, the Python standard library and a public TypeScript app. With the real Claude Code `LSP` tool on a 1,960-file public app, LSP alone was not cheaper than grep (the tool returns bare positions), while LSP plus graphify was the cheapest arm in a single run. See [`docs/superpowers/specs/2026-10-30-lsp-measurement.md`](superpowers/specs/2026-10-30-lsp-measurement.md).
+Two measured trials. A command that prints references with their source line and callers as function names (a thin wrapper around Pyright or the TypeScript language service) cut explorer work tokens about 30% on networkx, the Python standard library and a public TypeScript app, and 65% (75% fewer tool calls) on a 1,960-file public app. The real Claude Code `LSP` tool, whose output is bare positions, saved nothing on that app. See [`docs/superpowers/specs/2026-10-30-lsp-measurement.md`](superpowers/specs/2026-10-30-lsp-measurement.md).
 
 Idea, to be brainstormed and specced:
-- Explorer and planner call a Claude Code LSP plugin (`find references`, call hierarchy) when one is installed, and fall back to grep otherwise.
+- Explorer and planner use a language-server command (references with source lines, callers as function names) when one is available, and fall back to grep otherwise. Either orchestra ships the thin command or the plugin's tool output improves.
 - No build step and no update after merges: the server reads the working tree, so it also sees a worktree's own branch.
 
-Still open: a planner task on Opus, several runs of the LSP + graphify arm, a tool output that includes the source line, and Python through `pyright-lsp`. Setup note: Anthropic's `typescript-lsp` plugin returns same-file references until `initializationOptions: {"tsserver": {"useSyntaxServer": "never"}}` is set; details in the measurement doc.
+Still open: a planner task on Opus, Python through `pyright-lsp`, whether subagents get the `LSP` tool, and the shape of the command orchestra would ship. Setup note: Anthropic's `typescript-lsp` plugin returns same-file references until `initializationOptions: {"tsserver": {"useSyntaxServer": "never"}}` is set; details in the measurement doc.

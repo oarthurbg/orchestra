@@ -4,12 +4,13 @@
 
 ## Recommendation
 
-**Keep language-server navigation on the roadmap, but do not yet tell explorers to use the plugin's LSP tool on its own.** Two trials point different ways:
+**Adopt language-server navigation for explorers and planners, in the form of a command or tool whose output includes the source line of each reference and the function name of each caller.** The plugin's `LSP` tool as it ships is not enough on its own.
 
-- With a hand-made wrapper that prints each reference with its source line and call hierarchies with function names, LSP-first Haiku explorers used about 30% fewer work tokens and 44% fewer tool calls than grep-only on 9 questions (networkx, the Python standard library, excalidraw), with equal or better accuracy. Pyright found every caller on Python, where graphify found 1 of 9.
-- With the real Claude Code `LSP` tool (plugin) on a 1,960-file public app, LSP-first alone was **not cheaper than grep**: work tokens +2% (noise is ±30%), more tool calls, same accuracy. The tool returns bare positions, so agents spend calls working out the enclosing function. A first, single run of **LSP plus graphify** was the cheapest arm (8% fewer tokens, half the tool calls, 37% lower cost than grep), but one run per cell cannot separate that from noise.
+- With such a wrapper (references printed with their source line, `calls` printed as function names with file and line), Haiku explorers on a public 1,960-file TypeScript app used **65% fewer work tokens, 75% fewer tool calls and 77% lower cost than grep-only**, over 3 runs per question, with the same accuracy. On the earlier three-codebase trial (networkx, the Python standard library, excalidraw) the same kind of wrapper saved about 30% of tokens and 44% of calls, and Pyright found every caller on Python, where graphify found 1 of 9.
+- With the real Claude Code `LSP` tool (plugin) on the same app, LSP alone was **not cheaper than grep** (+15% work tokens, within noise, 16% more tool calls, 12% lower cost). It returns bare positions, so agents spend calls working out the enclosing function. LSP plus graphify was in between (7% fewer tokens, 31% lower cost than grep, again within noise).
+- graphify added little on top of what the language server gives; on the app it did not beat grep by itself.
 
-Next: repeat the combined arm with several runs per question, and try a tool output that includes the source line (a wrapper or an `LSP` result format change). Python through the plugin (`pyright-lsp`) is untested.
+What to build: a small `lsp` command (references with source lines, callers as names) that explorer and planner use before grep when a language server is available, or a change to the plugin's tool output. Not measured: Python through the plugin (`pyright-lsp`), an Opus planner task, and whether subagents get the `LSP` tool. The accuracy comparison favours the wrapper arm slightly by construction: the truth sets come from the same TypeScript engine it calls.
 
 ## Method
 
@@ -79,36 +80,35 @@ Next: rerun the paired trial with the fixed config on a public TypeScript repo o
 
 ## Paired trial with the fixed plugin on a public app (Outline, 1,960 files)
 
-Public repo `outline/outline` (shallow clone `def01b0`, tests removed, one root `tsconfig.json`, 1,960 TS/TSX files, no `node_modules` installed except TypeScript 5.9.3 so the language server uses a known tsserver). Four arms, each a headless `claude -p` run on Haiku with the same plugin directory loaded, so the fixed overhead is identical; only the allowed tools differ:
+Public repo `outline/outline` (shallow clone `def01b0`, tests removed, one root `tsconfig.json`, 1,960 TS/TSX files; only TypeScript 5.9.3 installed, so the language server uses a known tsserver). Four arms, each a headless `claude -p` run on Haiku with the same plugin directory loaded, so the fixed overhead is identical; only the allowed tools differ:
 
 - **grep**: Grep, Glob, Read.
-- **LSP**: the plugin's `LSP` tool (fixed config, `useSyntaxServer: "never"`) plus Grep, Glob, Read.
-- **graphify**: `graphify affected` / `explain` (graph built in 2 min 6 s, 20 MB, `extract --code-only`) plus Grep, Glob, Read.
-- **LSP + graphify**: the language server for direct callers, graphify for the multi-hop chain, then confirm.
+- **LSP (plugin)**: the plugin's `LSP` tool (fixed config, `useSyntaxServer: "never"`) plus Grep, Glob, Read.
+- **LSP (wrapper)**: a shell command around the same TypeScript language service. `refs` prints each reference with its source line; `calls` prints incoming callers as function name, file and line, to a chosen depth. Plus Grep, Glob, Read.
+- **LSP + graphify**: the plugin's `LSP` tool for direct callers, `graphify affected` (graph built in 2 min, 20 MB, `extract --code-only`) for the multi-hop chain, then confirm.
 
-Three questions: **O1** who-calls `hash` (`server/utils/crypto.ts`, a name that is also a property in many places; 18 call sites), **O2** impact of a signature change to `parseDomain` (22 call sites), **O3** callers up to three levels of `canUserAccessDocument` (8 functions). Truth: the TypeScript language service called directly, filtered for imports and comments.
+Three questions: **O1** who-calls `hash` (`server/utils/crypto.ts`, a name that is also a property in many places; 18 call sites), **O2** impact of a signature change to `parseDomain` (22 call sites), **O3** callers up to three levels of `canUserAccessDocument` (8 functions). Truth: the TypeScript language service called directly, filtered for imports and comments. **3 fresh runs per cell**, 36 runs.
 
-Work tokens are the run's total (input, cache and output, summed over turns) minus 72,978 for a no-tool run measured the same way. This sums the context re-read on every turn, so it grows with the number of turns and is **not comparable with the subagent figures above**. In thousands; tool calls in brackets; cost in USD in the last column.
+Work tokens are the run's total (input, cache and output, summed over turns) minus 72,978 for a no-tool run measured the same way. This sums the context re-read on every turn, so it grows with the number of turns and is **not comparable with the subagent figures above**. Cells show the mean of 3 runs in thousands, with tool calls in brackets.
 
-| Question | Grep | LSP | graphify | LSP + graphify |
+| Question | Grep | LSP (plugin) | LSP (wrapper) | LSP + graphify |
 | --- | --- | --- | --- | --- |
-| O1 first run | 326.8 [7] | 425.6 [22] | 372.3 [16] | 245.7 [7] |
-| O1 repeat | 540.6 [26] | 529.3 [15] | | |
-| O2 first run | 289.1 [28] | 389.7 [22] | 403.7 [25] | 442.6 [11] |
-| O2 repeat | 375.9 [33] | 390.7 [23] | 492.3 [27] | |
-| O3 first run | 834.0 [21] | 833.5 [30] | 778.6 [21] | 650.2 [10] |
-| O3 repeat | 981.5 [15] | 865.9 [27] | 1,566.3 [25] | |
-| **Sum, first runs** | **1,450 [56]** | **1,649 [74]** | **1,555 [62]** | **1,339 [28]** |
-| Sum, mean of runs | 1,674 | 1,717 | 1,993 | 1,339 (one run) |
-| Cost, first runs | $0.140 | $0.152 | $0.178 | $0.088 |
+| O1 who-calls | 328 [15] | 423 [11] | **164 [2]** | 323 [11] |
+| O2 impact | 333 [24] | 497 [30] | **354 [11]** | 487 [31] |
+| O3 trace | 1,208 [23] | 1,226 [31] | **139 [2]** | 928 [27] |
+| **Sum of cell means** | **1,870 [62]** | **2,146 [72]** | **657 [15]** | **1,737 [68]** |
+| Cost, sum of cell means | $0.201 | $0.176 | $0.046 | $0.139 |
+| Per-run spread (std dev) | 449 | 441 | 114 | 266 |
 
-Accuracy: every arm found 18/18 (O1) and 22/22 (O2); on O3 grep, LSP and graphify found all 8 functions except that LSP and LSP + graphify each missed the `init` entry once. One false positive (graphify, O2). Repeating a question moved a cell by up to 2x (graphify O3: 779k and 1,566k; grep O1: 327k and 541k), so only the sums and large gaps mean anything.
+Accuracy: all four arms found 18/18 (O1) and 22/22 (O2) in every run. On O3 every run found all 8 functions except one grep run that missed `init` (and listed five task entry points that call it indirectly). Grep and plugin-LSP runs also added a ninth, `start`, an indirect caller, which is not counted against them.
+
+Earlier pilot (1 to 2 runs per cell, same questions, plus a graphify-only arm): the same ordering for the first three arms; graphify alone was 7% worse than grep in the first runs and 19% worse over the repeats (one run cost 2x another). It was dropped from the repeat.
 
 What this says:
-- **LSP alone gave no saving** here (+2% to +14%), unlike the wrapper trial. The `LSP` tool's `findReferences` returns locations without the source line, so agents either read files (17 reads in one O1 run) or issue one more LSP call per location (19 calls on O2) to learn the enclosing function; the wrapper printed the line text.
-- **graphify alone was worse than grep on average** at this size, mostly from one costly O3 repeat.
-- **LSP + graphify** had the lowest tokens, tool calls and cost, but it is one run per question; treat it as a lead.
-- Tool-call counts and token totals both varied a lot between repeats of the same question (grep O1: 7 and 26 calls).
+- **Output shape decides.** The wrapper answered the trace question in 1 to 3 calls because `calls` returns function names; grep and the plugin tool needed 20 to 30. For who-calls and impact the token saving is smaller or absent (O1: half the tokens of grep; O2: 6% more, with 11 calls instead of 24) because the agent still has to name the enclosing function of each of 22 sites.
+- **The plugin's `LSP` tool alone gave no saving.** `findReferences` returns locations without the source line, so agents read files (17 reads in one O1 run) or issue another LSP call per location (19 calls on O2).
+- **LSP + graphify** helped on the trace question (23% fewer tokens than grep) and hurt on O2; neither gap is clearly outside the noise.
+- **Noise is large.** The same question on the same arm varied up to 2.7x (plugin LSP, O1: 232k to 624k), so single runs say little; the wrapper's gap to grep is the only one that clearly exceeds it.
 
 ## Not measured
 
