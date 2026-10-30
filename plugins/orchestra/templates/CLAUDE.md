@@ -35,3 +35,17 @@ The orchestra agents read this section for every project-specific value. Keep it
 - Confidential paths agents must never read or copy: `none` | <paths>
 - Commit trailer: `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`
 - Language for code, commits and docs: English
+
+## Owner authorizations
+
+The orchestrator reads this before each action below and acts at its level: `ask` (wait for the owner's yes), `tell` (do it, then report right away) or `auto` (do it, report in the next status round). orchestra runs under bypass permissions, so this list is the gate. Change a level only on the owner's own word, and date the change in `docs/HANDOFF.md`.
+
+- Merge a workstream PR into the integration branch: `ask`
+- Release (integration branch into production branch): `ask`
+- Hotfix into the production branch, and its back-merge: `ask`
+- Clear a workstream session at a natural stop: `ask`
+- Archive a finished workstream session: `ask`
+- Start a new workstream session: `ask`
+- Server commands that need no admin rights and touch no production data (send files, read health and logs): `ask`
+
+Always `ask`, whatever is written above, for the orchestrator, workstream sessions and every subagent: anything that needs admin rights, deletes data or branches, or touches credentials, money or production data.
