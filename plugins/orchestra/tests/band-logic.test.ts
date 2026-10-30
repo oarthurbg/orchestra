@@ -141,12 +141,12 @@ describe('view', () => {
       file({ session: 'd', role: 'unregistered', workstream: null, branch: 'old-try' }),
     ]
     const v = buildView({ inProject: true, role: 'maestro', self: 'o', files, registry: rows, now: NOW, liveview: '' })
-    expect([v.fiveHour, v.week, v.runOut]).toEqual([42, 80, NOW + 86_400_000])
-    expect([v.running, v.waiting]).toEqual([1, 1])
-    expect(v.rows.map(r => [r.name, r.shape, r.reason])).toEqual([
-      ['Reports', 'triangle', 'waiting on you'],
-      ['auth', 'square', 'over 250k'],
-      ['unregistered old-try', 'half', 'unregistered'],
+    expect([v.fiveHour?.pct, v.week?.pct, v.week?.runOut]).toEqual([42, 80, NOW + 86_400_000])
+    expect([v.role, v.running, v.waiting, v.total]).toEqual(['maestro', 1, 1, 3])
+    expect(v.rows.map(r => [r.name, r.shape, r.status, r.detail])).toEqual([
+      ['Reports', 'triangle', 'waiting', 'answer: pick chart library'],
+      ['auth', 'square', 'over 250k', 'clear context at the next wave end'],
+      ['old-try', 'hollow', 'unregistered', 'not in workstreams.md; register or close it'],
     ])
     expect(v.rows[0]?.link).toBe('claude://claude.ai/epitaxy/local_b')
     expect(v.rows[1]?.context).toBe('254k')
@@ -155,10 +155,10 @@ describe('view', () => {
   test('a registered workstream with an old or missing report shows as stale', () => {
     const files = [file({ session: 'a', workstream: 'billing', updatedAt: iso(STALE_MS + 60_000) })]
     const v = buildView({ inProject: true, role: 'maestro', self: 'o', files, registry: rows, now: NOW, liveview: '' })
-    expect(v.rows.map(r => [r.name, r.reason, r.detail])).toEqual([
-      ['billing', 'stale', 'stale · 31m'],
-      ['reports', 'stale', 'no report yet'],
-      ['auth', 'stale', 'no report yet'],
+    expect(v.rows.map(r => [r.name, r.status, r.detail])).toEqual([
+      ['billing', 'stale', 'no report for 31 min; open it to check'],
+      ['reports', 'stale', 'no report yet; check its session'],
+      ['auth', 'stale', 'no report yet; check its session'],
     ])
     expect([v.running, v.waiting]).toEqual([0, 0])
     // A session waiting on the owner is idle and stops writing: it is never stale.
@@ -169,13 +169,37 @@ describe('view', () => {
     ]
     const w = buildView({ inProject: true, role: 'maestro', self: 'o', files: files2, registry: rows, now: NOW, liveview: '' })
     expect([w.running, w.waiting]).toEqual([0, 1])
-    expect(w.rows.slice(0, 2).map(r => [r.name, r.shape, r.reason])).toEqual([['billing', 'half', 'stale'], ['reports', 'triangle', 'waiting on you']])
+    // Waiting sorts first, ahead of the registry's order.
+    expect(w.rows.slice(0, 2).map(r => [r.name, r.shape, r.status])).toEqual([['reports', 'triangle', 'waiting'], ['billing', 'hollow', 'stale']])
   })
 
   test('a workstream session always shows its own row', () => {
     const me = file({ session: 'me', workstream: 'billing', stage: 'plan, task 4 of 9', warm: { pings: 2, last: iso(1000) } })
     const v = buildView({ inProject: true, role: 'workstream', self: 'me', files: [me], registry: rows, now: NOW, liveview: '' })
-    expect(v.rows).toEqual([{ key: 'me', name: 'billing', link: '', shape: 'circle', reason: 'plan, task 4 of 9', context: '50k', detail: '' }])
+    expect(v.rows).toEqual([{ key: 'me', name: 'billing', link: '', shape: 'circle', status: 'running', context: '50k', detail: 'plan, task 4 of 9' }])
+    const own = (over: Partial<SessionFile>) => buildView({ inProject: true, role: 'workstream', self: 'me', files: [{ ...me, ...over }], registry: rows, now: NOW, liveview: '' }).rows[0]
+    expect(own({ state: 'idle' })).toMatchObject({ shape: 'half', status: 'idle' })
+    expect(own({ state: 'waiting', detail: 'asks: which port?' })).toMatchObject({ shape: 'triangle', status: 'waiting', detail: 'answer: which port?' })
+    expect(own({ state: 'waiting', detail: '' })?.detail).toBe('answer the open question')
+    expect(own({ context: { tokens: 260_000, window: 1_000_000 } })).toMatchObject({ shape: 'square', status: 'over 250k' })
+  })
+
+  test('rows sort waiting, then over 250k, then stale, then unregistered', () => {
+    const files = [
+      file({ session: 'x', role: 'unregistered', workstream: null, branch: 'stray' }),
+      file({ session: 'a', workstream: 'billing', state: 'running', updatedAt: iso(STALE_MS + 60_000) }),
+      file({ session: 'b', workstream: 'reports', context: { tokens: 300_000, window: 1_000_000 } }),
+      file({ session: 'c', workstream: 'auth', state: 'waiting' }),
+    ]
+    const v = buildView({ inProject: true, role: 'maestro', self: 'o', files, registry: rows, now: NOW, liveview: '' })
+    expect(v.rows.map(r => r.status)).toEqual(['waiting', 'over 250k', 'stale', 'unregistered'])
+  })
+
+  test('the week carries its reset, and a run-out only when it lands before the reset', () => {
+    const resetsAt = new Date(NOW + 3.5 * 86_400_000).toISOString()
+    const v = buildView({ inProject: false, role: 'maestro', self: 'o', files: [], registry: [], now: NOW, liveview: '', ownLimits: [{ kind: 'seven_day', percentUsed: 50, resetsAt }] })
+    expect(v.week).toEqual({ pct: 50, resetsAt: Date.parse(resetsAt), runOut: null })
+    expect(v.fiveHour).toBeNull()
   })
 
   test('the session own ping count reaches the view in every role and outside a project', () => {
@@ -189,7 +213,7 @@ describe('view', () => {
   test('a limit whose reset time has passed is dropped', () => {
     const past = [{ kind: 'five_hour', percentUsed: 97, resetsAt: iso(60_000) }, { kind: 'seven_day', percentUsed: 80, resetsAt: new Date(NOW + 86_400_000).toISOString() }]
     const v = buildView({ inProject: false, role: 'maestro', self: 'o', files: [], registry: [], now: NOW, liveview: '', ownLimits: past })
-    expect([v.fiveHour, v.week]).toEqual([null, 80])
+    expect([v.fiveHour, v.week?.pct]).toEqual([null, 80])
   })
 
   test('an unregistered session draws only its own row, like a workstream', () => {
@@ -211,7 +235,7 @@ describe('view', () => {
     // 09:00 at -03:00 is 12:00Z, newer than 11:00Z although it sorts lower as text.
     const a = file({ session: 'a', limits: [{ kind: 'five_hour', percentUsed: 10 }], updatedAt: '2026-10-30T11:00:00Z' })
     const b = file({ session: 'b', workstream: 'reports', limits: [{ kind: 'five_hour', percentUsed: 30 }], updatedAt: '2026-10-30T09:00:00-03:00' })
-    expect(buildView({ inProject: true, role: 'maestro', self: 'o', files: [a, b], registry: [], now: NOW, liveview: '' }).fiveHour).toBe(30)
+    expect(buildView({ inProject: true, role: 'maestro', self: 'o', files: [a, b], registry: [], now: NOW, liveview: '' }).fiveHour?.pct).toBe(30)
     const regs = parseRegistry(REGISTRY)
     const c = file({ session: 'c', workstream: 'billing', state: 'waiting', title: 'old', updatedAt: '2026-10-30T11:50:00Z' })
     const d = file({ session: 'd', workstream: 'billing', state: 'waiting', title: 'new', updatedAt: '2026-10-30T08:55:00-03:00' })
@@ -222,14 +246,14 @@ describe('view', () => {
   test('outside a project: limits only, no rows', () => {
     const v = buildView({ inProject: false, role: 'maestro', self: 'o', files: [], registry: [], now: NOW, liveview: '', ownLimits: limits })
     expect(v.rows).toEqual([])
-    expect(v.fiveHour).toBe(42)
+    expect(v.fiveHour?.pct).toBe(42)
   })
 
   test('the freshest limit reading wins', () => {
     const old = file({ session: 'a', limits: [{ kind: 'five_hour', percentUsed: 10 }], updatedAt: iso(600_000) })
     const fresh = file({ session: 'b', workstream: 'reports', limits: [{ kind: 'five_hour', percentUsed: 30 }], updatedAt: iso(1000) })
     const v = buildView({ inProject: true, role: 'maestro', self: 'o', files: [old, fresh], registry: rows, now: NOW, liveview: '' })
-    expect(v.fiveHour).toBe(30)
+    expect(v.fiveHour?.pct).toBe(30)
   })
 
   test('the liveview URL passes only when it is local', () => {
@@ -259,7 +283,7 @@ describe('keep-warm schedule', () => {
 describe('small helpers', () => {
   test('formatting', () => {
     expect([fmtK(254_000), fmtK(96_400), fmtK(null), fmtK(800)]).toEqual(['254k', '96k', '?', '1k'])
-    expect([age(31 * 60_000), age(2 * 3_600_000 + 5)]).toEqual(['31m', '2h'])
+    expect([age(31 * 60_000), age(2 * 3_600_000 + 5)]).toEqual(['31 min', '2 h'])
     expect(CONTEXT_LIMIT).toBe(250_000)
   })
 

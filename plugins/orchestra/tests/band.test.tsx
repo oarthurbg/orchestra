@@ -1,6 +1,8 @@
 import type { On } from 'claude-code'
 import { expect, mock, test } from 'claude-code/testing'
 
+import { REFRESH_MS } from '../hooks/band/logic'
+
 const ROOT = '/home/u/repo'
 const BAND = {
   plugin: 'orchestra',
@@ -72,10 +74,21 @@ test('the maestro band shows the summary and only the workstreams that need atte
 
   for (const surface of ['terminal', 'desktop'] as const) {
     const ui = await $.ui.mount({ ...BAND, surface })
-    expect((await ui.find({ type: 'Text', text: /5h 42%/ }))).toBeDefined()
-    expect(await ui.find({ key: 'open-s2' })).toBeDefined()
+    expect((await ui.find({ type: 'Text', text: /42% used/ }))).toBeDefined()
+    expect(await ui.find({ key: 's2-name' })).toBeDefined()
+    expect(await ui.find({ key: 's2-detail' })).toBeDefined()
     expect((await ui.find({ type: 'Text', text: /over 250k/ }))).toBeDefined()
+    // auth is running, only over 250k.
+    expect((await ui.find({ type: 'Text', text: /1 of 2 running/ }))).toBeDefined()
+    // Two rows fit the compact band: no arrow, no headings.
+    expect(await ui.find({ key: 'orchestra-toggle' })).toBeUndefined()
+    expect(await ui.find({ type: 'Text', text: /^Workstream$/ })).toBeUndefined()
     expect(await ui.find({ key: 'liveview' })).toBeUndefined()
+    // The desktop draws nothing for an Svg with an empty alt.
+    const svgs = await ui.findAll({ type: 'Svg' })
+    // The mark, the 5-hour bar (the week has no reading), two shapes and one divider.
+    expect(svgs.length).toBe(surface === 'desktop' ? 5 : 0)
+    for (const s of svgs) expect(String(s.props.alt)).not.toBe('')
     await ui.unmount()
   }
   // Its own report landed in the main checkout.
@@ -88,8 +101,9 @@ test('a project without .orchestra/ shows the limits line only and writes nothin
   session(on, '/home/u/other', 'x')
   await $.session.start({ cwd: '/home/u/other', surface: 'desktop', isInteractive: true })
   const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
-  expect(await ui.find({ type: 'Text', text: /5h 42%/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /42% used/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /orchestra/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /running/ })).toBeUndefined()
   expect(Object.keys(files)).toEqual([])
   await ui.unmount()
 })
@@ -173,7 +187,7 @@ test('a failed write of its own report still draws the band', async ($, on) => {
   session(on, ROOT, 'o')
   await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
   const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
-  expect(await ui.find({ type: 'Text', text: /5h 42%/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /42% used/ })).toBeDefined()
   await ui.unmount()
 })
 
@@ -234,7 +248,7 @@ test('keep-warm pings once while a subagent runs and the cache is about to end',
 const AGENT = (id: string) => ({ id, description: id, type: 'implementer', status: 'running' })
 const REPLY = { isAnswered: true, text: 'ok', usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 30_000, cache_creation_input_tokens: 0 } }
 const MIN = 60_000
-const REFRESH = 20_000
+const REFRESH = REFRESH_MS
 
 // Counts forks; the reply is `reply()`, or a denial when it returns null.
 function forker(on: On, reply: () => unknown = () => REPLY) {
@@ -246,7 +260,7 @@ const pings = (files: Record<string, string>) => JSON.parse(files[`${ROOT}/.orch
 const start = ($: { session: { start: (e: { cwd: string; surface: 'desktop'; isInteractive: boolean }) => Promise<unknown> } }) =>
   $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
 
-test('keep-warm goes on for a young subagent after an old one passed warmMaxHours, and stops when only the old one is left', { options: { cacheMinutes: 5, warmMaxHours: 1 } }, async ($, on) => {
+test('keep-warm goes on for a young subagent after an old one passed warmMaxHours, and stops when only the old one is left', { options: { cacheMinutes: 5, warmMaxHours: 1 }, timeoutMs: 30_000 }, async ($, on) => {
   const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
   disk(on, files)
   let agents = [AGENT('old')]
@@ -267,7 +281,7 @@ test('keep-warm goes on for a young subagent after an old one passed warmMaxHour
   expect(forks.count).toBe(after)
 })
 
-test('a subagent that finished is forgotten: the same id later starts a fresh age', { options: { cacheMinutes: 5, warmMaxHours: 1 } }, async ($, on) => {
+test('a subagent that finished is forgotten: the same id later starts a fresh age', { options: { cacheMinutes: 5, warmMaxHours: 1 }, timeoutMs: 30_000 }, async ($, on) => {
   const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
   disk(on, files)
   let agents = [AGENT('a1')]
@@ -443,7 +457,7 @@ test('a report whose re-read fails keeps its row, and an unchanged report is not
   await clock.advance(REFRESH)
   expect(fs.reads[S2]).toBe(2)
   const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
-  expect(await ui.find({ type: 'Text', text: /waiting on you/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^waiting$/ })).toBeDefined()
   await ui.unmount()
 })
 
@@ -459,7 +473,7 @@ test('a report that disappeared is forgotten', async ($, on) => {
   delete files[S2]
   await clock.advance(REFRESH)
   const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
-  expect(await ui.find({ type: 'Text', text: /waiting on you/ })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /^waiting$/ })).toBeUndefined()
   await ui.unmount()
 })
 
@@ -533,4 +547,167 @@ test('a get_session call that rejects later keeps the title and link already rea
   await $.turn.complete({ reason: 'answer', answer: '', durationMs: 1, isAborted: false, turnId: 't2' })
   const mine = JSON.parse(files[`${ROOT}/.orchestra/sessions/o.json`]!)
   expect(mine).toMatchObject({ title: 'Maestro', link: 'claude://claude.ai/epitaxy/local_o' })
+})
+
+const REGISTRY3 = `${REGISTRY}| billing | s1 | \`billing\` at \`/home/u/repo/.worktrees/billing\` | none | none | no | plan |
+`
+
+test('more than two rows: the compact band shows two and a count, the arrow opens all of them with headings and is remembered', async ($, on) => {
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY3,
+    [`${ROOT}/.orchestra/sessions/s2.json`]: report('s2', { workstream: 'reports', state: 'waiting', link: 'claude://claude.ai/epitaxy/local_s2' }),
+    [`${ROOT}/.orchestra/sessions/s3.json`]: report('s3', { workstream: 'auth', context: { tokens: 254_000, window: 1_000_000 } }),
+  }
+  disk(on, files)
+  session(on, ROOT, 'o')
+  mock.store(on)
+  await start($)
+  let ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /\+1 more: stale/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /no report yet/ })).toBeUndefined()
+  await ui.press({ key: 'orchestra-toggle' })
+  await ui.unmount()
+  ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /no report yet/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^Workstream$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /more:/ })).toBeUndefined()
+  await ui.unmount()
+  // A new session reads the choice back from the store.
+  await start($)
+  ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /^Workstream$/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('the empty states: no workstreams yet, and nothing needs you', async ($, on) => {
+  const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY.split(String.fromCharCode(10)).slice(0, 2).join(String.fromCharCode(10)) }
+  disk(on, files)
+  session(on, ROOT, 'o')
+  on('classic.FileChanged', () => ({}))
+  await start($)
+  let ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /No workstreams yet/ })).toBeDefined()
+  await ui.unmount()
+  files[`${ROOT}/.orchestra/workstreams.md`] = REGISTRY
+  files[`${ROOT}/.orchestra/sessions/s2.json`] = report('s2', { workstream: 'reports' })
+  files[`${ROOT}/.orchestra/sessions/s3.json`] = report('s3', { workstream: 'auth' })
+  await $.classic.FileChanged({ file_path: `${ROOT}/.orchestra/workstreams.md`, event: 'change' })
+  ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /Nothing needs you/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /2 of 2 running/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('SessionStart asks to watch the reports, and a changed report redraws before the timer', async ($, on) => {
+  const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+  disk(on, files)
+  session(on, ROOT, 'o')
+  on('classic.SessionStart', () => ({}))
+  on('classic.FileChanged', () => ({}))
+  await start($)
+  const r = await $.classic.SessionStart({ source: 'startup' })
+  expect(r.watchPaths).toContain(`${ROOT}/.orchestra/sessions`)
+  files[`${ROOT}/.orchestra/sessions/s2.json`] = report('s2', { workstream: 'reports', state: 'waiting', link: 'claude://claude.ai/epitaxy/local_s2' })
+  await $.classic.FileChanged({ file_path: `${ROOT}/.orchestra/sessions/s2.json`, event: 'add' })
+  const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /^waiting$/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('the ponytail switch shows only while ponytail hides its own band, and runs its command', async ($, on) => {
+  const CFG = '/home/u/.claude'
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY,
+    [`${CFG}/plugins/installed_plugins.json`]: '{"plugins": {"ponytail@ponytail": []}}',
+    [`${CFG}/.ponytail-active`]: 'full\n',
+    [`${CFG}/.ponytail-band`]: 'off',
+  }
+  disk(on, files)
+  session(on, ROOT, 'o')
+  mock.env(on, { CLAUDE_CONFIG_DIR: CFG })
+  const runs: string[][] = []
+  on('command.run', ($, e) => { runs.push([e.command, e.args]); return { text: '' } })
+  on('classic.FileChanged', () => ({}))
+  await start($)
+  let ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ key: 'orchestra-ponytail-full' })).toBeDefined()
+  await ui.press({ key: 'orchestra-ponytail-lite' })
+  expect(runs).toEqual([['ponytail:ponytail', 'lite']])
+  await ui.unmount()
+  // ponytail's own band is back: ours drops its switch.
+  files[`${CFG}/.ponytail-band`] = 'on'
+  await $.classic.FileChanged({ file_path: `${CFG}/.ponytail-band`, event: 'change' })
+  ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ key: 'orchestra-ponytail-full' })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('a workstream session shows its own row and no arrow or running count', async ($, on) => {
+  const WT = `${ROOT}/.worktrees/reports`
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY,
+    [`${WT}/.git`]: `gitdir: ${ROOT}/.git/worktrees/reports`,
+  }
+  disk(on, files)
+  session(on, WT, 'w')
+  await $.session.start({ cwd: WT, surface: 'desktop', isInteractive: true })
+  const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ key: 'w-name' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /of 2 running/ })).toBeUndefined()
+  expect(await ui.find({ key: 'orchestra-toggle' })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('an empty registry still shows an unregistered worktree session', async ($, on) => {
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY.split(String.fromCharCode(10)).slice(0, 2).join(String.fromCharCode(10)),
+    [`${ROOT}/.orchestra/sessions/x.json`]: report('x', { role: 'unregistered', branch: 'stray-branch' }),
+  }
+  disk(on, files)
+  session(on, ROOT, 'o')
+  await start($)
+  const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /stray-branch/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /No workstreams yet/ })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('any cell of a row opens its session, and the week shows its reset or its run-out', async ($, on) => {
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY,
+    [`${ROOT}/.orchestra/sessions/s2.json`]: report('s2', { workstream: 'reports', state: 'waiting', link: 'claude://claude.ai/epitaxy/local_s2' }),
+  }
+  disk(on, files)
+  session(on, ROOT, 'o')
+  mock.env(on, { OS: 'Windows_NT' })
+  const argv: string[][] = []
+  on('process.run', ($, e) => { argv.push([...(e as unknown as { argv: string[] }).argv]); return { value: { exitCode: 0, stdout: '', stderr: '' } } as never })
+  const week = (percentUsed: number, days: number) => [{ kind: 'seven_day', percentUsed, resetsAt: new Date(Date.now() + days * 86_400_000).toISOString() }]
+  on('session.measure', ($, e) => ({ changed: e.changed }))
+  await start($)
+  await $.session.measure({ context: { tokens: 30_000, window: 1_000_000 }, rateLimits: week(10, 3), changed: [] } as never)
+  let ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  for (const part of ['status', 'context', 'detail']) await ui.press({ key: `s2-${part}` })
+  expect(argv.map(a => a.at(-1))).toEqual(Array(3).fill('claude://claude.ai/epitaxy/local_s2'))
+  expect(await ui.find({ type: 'Text', text: /^resets / })).toBeDefined()
+  await ui.unmount()
+  // 95% with three days left runs out first.
+  await $.session.measure({ context: { tokens: 30_000, window: 1_000_000 }, rateLimits: week(95, 3), changed: [] } as never)
+  ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /^runs out / })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^5h$/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('a FileChanged path in another case and with backslashes still refreshes', async ($, on) => {
+  const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+  disk(on, files)
+  session(on, ROOT, 'o')
+  on('classic.FileChanged', () => ({}))
+  await start($)
+  files[`${ROOT}/.orchestra/sessions/s2.json`] = report('s2', { workstream: 'reports', state: 'waiting' })
+  await $.classic.FileChanged({ file_path: '\\HOME\\U\\Repo\\.orchestra\\sessions\\s2.json', event: 'add' })
+  const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /^waiting$/ })).toBeDefined()
+  await ui.unmount()
 })

@@ -69,15 +69,22 @@ The band uses the freshest limit reading among all session files, since limits a
 
 A `ui.render` hook on `AbovePrompt`.
 
-- **In an orchestra project, layout A:** one summary line (the brand mark, `5h` %, `week` % with the run-out time, counts of running and waiting workstreams, and the session's own keep-warm pings as `warm 2x` when there are any), then one row per workstream that needs attention: shape, name, reason, context, detail.
-- **A row appears when a workstream:** is waiting (yellow triangle); is at 250k context or more (red square); is stale, meaning open in the registry but its file is more than 30 minutes old (half circle, `stale · <age>`); or is an `unregistered` worktree session (half circle, `unregistered <branch>`), so a forgotten worktree gets noticed.
-- **Opening a session:** a workstream's name is a button when its file has a `link`; pressing it opens the link with the system opener (`cmd /c start "" <link>` on Windows, `open` on macOS, `xdg-open` on Linux), and the app shows that session. The name shown is the sidebar `title` when there is one, else the workstream name. Without a link the name is plain text.
-- **Liveview button:** in any session of the project, when `.orchestra/liveview.json` exists with a `url` on `localhost` or `127.0.0.1`, the summary line shows a `Liveview` button that opens that URL the same way. The dashboard (Phase 2, item 2) writes this file while it runs and deletes it when it stops; until then the button never shows.
-- **In a workstream session:** the summary line plus its own row (stage, context), always shown.
-- **Outside an orchestra project:** the limits line only, with the ping count when there is one.
-- **Sharing the slot:** other mods draw above the prompt too (ponytail's band does). The hook draws `next(e)` beneath its own band, as ponytail's does, so every band shows and none replaces another. It shows no ponytail controls; ponytail's band has the level switch.
-- **Refresh:** a 20-second timer lists `.orchestra/sessions/`, re-reads only the files whose timestamp changed, forgets the files that disappeared, and rebuilds the view on every tick, since staleness depends on the clock. The session's own figures redraw on `session.measure`.
-- **No limit readings yet** (API key, or before the first response): the limits part is hidden and the context part still shows. A reading whose `resetsAt` has passed is dropped.
+- **Layout F, a status strip in three parts:**
+  - **Header:** the brand mark and `orchestra` on the left; the limits centred, `5h [bar] 13% used resets 16:40` and `Weekly [bar] 55% used resets Sun 02:18`; on the right, in the maestro, `1 of 4 running` and an arrow button (▴ while compact, since the band opens upward; ▾ while open). When the week runs out before its reset at the current pace, the weekly bar and text turn vermilion and read `runs out Sat 14:00`. A limit with no reading shows `5h -`.
+  - **Rows:** one per workstream that needs attention, in four columns: Workstream (the name, underlined when it opens a session, bold when waiting), Status (a shape and a word), Context (right-aligned) and Detail (what to do). Every other row has a very faint stripe. The whole row opens the session and lights up on hover.
+  - **Footer**, only when it has something to show: ponytail's level switch on the left (`ponytail off lite full ultra`, the current level outlined), and on the right `kept warm 2x` when there are pings and the `Liveview` button.
+- **A row appears when a workstream:** is waiting (yellow triangle, `waiting`, detail `answer: <question>`); is at 250k context or more (red square, `over 250k`, `clear context at the next wave end`); is stale, meaning open in the registry but its file is more than 30 minutes old or missing (muted half circle, `stale`, `no report for 42 min; open it to check`, or `no report yet; check its session`); or is an `unregistered` worktree session (muted half circle, `unregistered`, `not in workstreams.md; register or close it`), so a forgotten worktree gets noticed. Rows sort in that order; rows of one kind keep the registry's order.
+- **Compact and open:** compact shows the first two rows and `+2 more: stale, unregistered`; open shows the headings `Workstream Status Context Detail` and every row. The arrow shows only when there are more than two rows; the choice is kept across sessions (`$.store`).
+- **Empty states in the maestro:** `No workstreams yet. Start one with /orchestra:start-workstream.` when the registry is empty, and `Nothing needs you.` when no row is due.
+- **Shapes:** drawn as Svg on the desktop, with outlines that keep 3:1 contrast (a dark amber stroke on the triangle, a pale-blue ring on the circle); in the terminal a glyph in a theme colour.
+- **Opening a session:** a row opens its file's `link` with the system opener (`cmd /c start "" <link>` on Windows, `open` on macOS, `xdg-open` on Linux), and the app shows that session. The name shown is the sidebar `title` when there is one, else the workstream name. Without a link the row is plain text.
+- **Liveview button:** in any session of the project, when `.orchestra/liveview.json` exists with a `url` on `localhost` or `127.0.0.1`, the footer shows a `Liveview` button that opens that URL the same way. The dashboard writes this file while it runs and deletes it when it stops.
+- **In a workstream session:** the header without the running count or arrow, plus its own row (`running`, `idle`, `waiting` or `over 250k`, with its stage as the detail), always shown.
+- **Outside an orchestra project:** the header's limits only, with the ping count when there is one.
+- **Sharing the slot:** other mods draw above the prompt too (ponytail's band does). The hook draws `next(e)` beneath its own band, as ponytail's does, so every band shows and none replaces another.
+- **ponytail's switch:** shown only when ponytail is installed (`plugins/installed_plugins.json` names `ponytail@`) and its own band is hidden (`/ponytail band` writes `off` to `~/.claude/.ponytail-band`), so the switch never shows twice. A press runs `/ponytail:ponytail <level>`, the command a person types, so ponytail's own skill stays the only logic. The current level is read from `~/.claude/.ponytail-active`.
+- **Refresh:** live. The `SessionStart` hook asks to watch `.orchestra/sessions/`, `workstreams.md`, `liveview.json` and ponytail's two flags, and a `FileChanged` event refreshes at once. A 5-second timer covers what the watch misses: it lists `.orchestra/sessions/`, re-reads only the files whose timestamp changed, forgets the files that disappeared, re-reads ponytail's flags, and rebuilds the view, since staleness depends on the clock; a view that did not change is not redrawn. The session's own figures redraw on `session.measure`.
+- **No limit readings yet** (API key, or before the first response): an orchestra project shows `5h -` and `Weekly -`; outside one the limits are hidden. A reading whose `resetsAt` has passed is dropped.
 - **A file that fails to read or parse** (read mid-write) keeps the last good reading for that session; it is tried again on the next tick. A file must have a `limits` list of objects with a string `kind` and a number `percentUsed`, and a `context.tokens` that is a number or null.
 - Session files for workstreams no longer in the registry are ignored.
 
@@ -94,10 +101,10 @@ Guards:
 - No subagent running means no pings. An idle maestro is never pinged.
 - No turn guard: the second live check showed that a fork during an open main-thread tool call reads the cache, so a long foreground subagent or tool call is kept warm too. While the main thread is making requests, each `turn.step` pushes the schedule back, so no ping is due.
 - **Cache miss:** after an answered fork, when the session's context tokens are known and `usage.cache_read_input_tokens` is below half of them, the fork missed the cache. It is counted as `warm.misses`, not as a ping; pings stop until the next main-thread `turn.step`; and the mod toasts once per session: `orchestra band: keep-warm missed the cache; set cacheMinutes lower (5 for API keys and overage)`.
-- Every ping is counted in the session file and shown on the summary line (`warm 2x`) in every role and outside orchestra projects.
+- Every ping is counted in the session file and shown in the footer (`kept warm 2x`) in every role and outside orchestra projects.
 - **Trade-off, stated in the README:** a ping reads the whole context from the cache, about 0.1x the input price. Rewriting an expired cache costs 1.25x (5 minutes) or 2x (1 hour). How cache reads count against plan limits is not published.
 
-The same timer as the band's drives it.
+The band's 5-second timer drives it.
 
 ## Changes elsewhere in orchestra
 
@@ -116,7 +123,7 @@ The same timer as the band's drives it.
   - the run-out time, including no run-out time before the reset;
   - the attention and stale rules;
   - the ping schedule and the `warmMaxHours` stop.
-- **Render test:** seeded session files (one waiting, one at 254k, one stale, one healthy) produce the summary line and exactly three rows; a project with no `.orchestra/` produces the limits line only; a band another mod returns from `next(e)` is drawn beneath ours; a row whose file has a `link` draws its name as a button; the `Liveview` button shows only with a valid `.orchestra/liveview.json` and never for a non-local URL.
+- **Render test:** seeded session files produce the header, the running count and the rows due; more than two rows show two and a `+N more` count until the arrow opens them with headings; the two empty states; a `FileChanged` redraws before the timer and `SessionStart` returns the watch paths; ponytail's switch shows only while ponytail's band is hidden and runs its command; a project with no `.orchestra/` produces the limits line only; a band another mod returns from `next(e)` is drawn beneath ours; a row whose file has a `link` opens it from every cell; the `Liveview` button shows only with a valid `.orchestra/liveview.json` and never for a non-local URL.
 - **Static checks:** `claude plugin validate` and `tsc -p` pass.
 - **Live check in the desktop app, first build step, before the rest:**
   - the timer fires while the session is idle;
@@ -124,7 +131,9 @@ The same timer as the band's drives it.
   - its `usage.cache_read_input_tokens` shows it read the main cache;
   - an older Claude Code or `claude -p` loads orchestra without the module failing it;
   - `$.mcp.call` reaches the app's session server and `get_session` returns `link` and `title`;
-  - opening a `claude://` link from the mod moves the app to that session.
+  - opening a `claude://` link from the mod moves the app to that session;
+  - a mod's `classic.FileChanged` fires for a watched folder's files and for ponytail's flags;
+  - the row hover, the plain cell buttons, the hairlines and the centred limits look right in the desktop app.
 
   If the session server is out of reach or the link does not move the app, names stay plain text. If the timer does not fire while idle, the band refreshes on the next prompt instead and the README says so. If the fork does not read the main cache, keep-warm is dropped from this spec.
 - **Screenshots** of the band in a maestro session and a workstream session, for the README.

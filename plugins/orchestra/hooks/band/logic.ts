@@ -1,8 +1,9 @@
-import type { BandRow, BandView, Limit, RegistryRow, Role, SessionFile, State, StatusLine } from './types'
+import type { BandRow, BandView, Limit, LimitView, RegistryRow, Role, SessionFile, Shape, State, StatusLine } from './types'
 
 export const CONTEXT_LIMIT = 250_000
 export const STALE_MS = 30 * 60_000
-export const REFRESH_MS = 20_000
+// The fallback redraw: file watching redraws at once, this catches what it misses and ages stale rows.
+export const REFRESH_MS = 5_000
 
 // Forward slashes, no trailing slash, lowercase drive letter: paths from git, the registry and the engine compare equal.
 export function norm(path: string): string {
@@ -85,7 +86,7 @@ export function runOut(limit: Limit | undefined, now: number): number | null {
 }
 
 export const fmtK = (tokens: number | null) => (tokens === null ? '?' : `${Math.max(1, Math.round(tokens / 1000))}k`)
-export const age = (ms: number) => (ms >= 3_600_000 ? `${Math.floor(ms / 3_600_000)}h` : `${Math.floor(ms / 60_000)}m`)
+export const age = (ms: number) => (ms >= 3_600_000 ? `${Math.floor(ms / 3_600_000)} h` : `${Math.floor(ms / 60_000)} min`)
 
 export function isLocalUrl(url: string): boolean {
   try {
@@ -120,19 +121,30 @@ export type ViewInput = {
 }
 
 const newest = (files: SessionFile[]) => files.reduce<SessionFile | undefined>((a, b) => (!a || Date.parse(b.updatedAt) > Date.parse(a.updatedAt) ? b : a), undefined)
-const pct = (limits: Limit[], kind: string) => limits.find(l => l.kind === kind)?.percentUsed ?? null
+const limitView = (limits: Limit[], kind: string): LimitView | null => {
+  const l = limits.find(x => x.kind === kind)
+  return l ? { pct: l.percentUsed, resetsAt: l.resetsAt ? Date.parse(l.resetsAt) : null } : null
+}
+
+// The liveview's order: what needs the owner first.
+const PRIORITY: Record<Shape, number> = { triangle: 0, square: 1, hollow: 2, circle: 3, half: 3 }
+
+// A question the session asks is stored as "asks: <question>"; the band says what to do with it.
+const answer = (detail: string) => (detail ? `answer: ${detail.replace(/^asks:\s*/, '')}` : 'answer the open question')
 
 export function buildView(i: ViewInput): BandView {
   const fresh = newest(i.files.filter(f => f.limits.length > 0))
   const limits = (fresh?.limits ?? i.ownLimits ?? []).filter(l => !l.resetsAt || Date.parse(l.resetsAt) > i.now)
+  const week = limitView(limits, 'seven_day')
   const view: BandView = {
     inProject: i.inProject,
+    role: i.role,
     pings: i.pings ?? 0,
-    fiveHour: pct(limits, 'five_hour'),
-    week: pct(limits, 'seven_day'),
-    runOut: runOut(limits.find(l => l.kind === 'seven_day'), i.now),
+    fiveHour: limitView(limits, 'five_hour'),
+    week: week && { ...week, runOut: runOut(limits.find(l => l.kind === 'seven_day'), i.now) },
     running: 0,
     waiting: 0,
+    total: i.registry.length,
     rows: [],
     liveview: isLocalUrl(i.liveview) && isSafeTarget(i.liveview) ? i.liveview : '',
   }
@@ -142,35 +154,38 @@ export function buildView(i: ViewInput): BandView {
   view.running = open.filter(o => o.f?.state === 'running' && i.now - Date.parse(o.f.updatedAt) <= STALE_MS).length
   // A session waiting on the owner is idle and stops writing, so it never goes stale.
   view.waiting = open.filter(o => o.f?.state === 'waiting').length
-  const row = (f: SessionFile, name: string, shape: BandRow['shape'], reason: string, detail: string): BandRow =>
-    ({ key: f.session, name, link: isSafeTarget(f.link) && f.link.startsWith('claude://') ? f.link : '', shape, reason, context: fmtK(f.context.tokens), detail })
+  const row = (f: SessionFile, name: string, shape: Shape, status: string, detail: string): BandRow =>
+    ({ key: f.session, name, link: isSafeTarget(f.link) && f.link.startsWith('claude://') ? f.link : '', shape, status, context: fmtK(f.context.tokens), detail })
 
   if (i.role !== 'maestro') {
     const me = i.files.find(f => f.session === i.self)
     if (me) {
       const big = (me.context.tokens ?? 0) >= CONTEXT_LIMIT
-      const shape = me.state === 'waiting' ? 'triangle' : big ? 'square' : 'circle'
-      view.rows = [row(me, me.title || me.workstream || me.branch, shape, me.stage || me.state, '')]
+      const shape = me.state === 'waiting' ? 'triangle' : big ? 'square' : me.state === 'running' ? 'circle' : 'half'
+      const status = me.state === 'waiting' ? 'waiting' : big ? 'over 250k' : me.state
+      view.rows = [row(me, me.title || me.workstream || me.branch, shape, status, me.state === 'waiting' ? answer(me.detail) : me.stage)]
     }
     return view
   }
 
   for (const { ws, f } of open) {
     if (f === undefined) {
-      view.rows.push({ key: `none-${ws}`, name: ws, link: '', shape: 'half', reason: 'stale', context: '?', detail: 'no report yet' })
+      view.rows.push({ key: `none-${ws}`, name: ws, link: '', shape: 'hollow', status: 'stale', context: '?', detail: 'no report yet; check its session' })
       continue
     }
     const name = f.title || ws
     const old = i.now - Date.parse(f.updatedAt)
-    if (f.state === 'waiting') view.rows.push(row(f, name, 'triangle', 'waiting on you', f.detail))
-    else if ((f.context.tokens ?? 0) >= CONTEXT_LIMIT) view.rows.push(row(f, name, 'square', 'over 250k', 'clear at wave end'))
-    else if (old > STALE_MS) view.rows.push(row(f, name, 'half', 'stale', `stale · ${age(old)}`))
+    if (f.state === 'waiting') view.rows.push(row(f, name, 'triangle', 'waiting', answer(f.detail)))
+    else if ((f.context.tokens ?? 0) >= CONTEXT_LIMIT) view.rows.push(row(f, name, 'square', 'over 250k', 'clear context at the next wave end'))
+    else if (old > STALE_MS) view.rows.push(row(f, name, 'hollow', 'stale', `no report for ${age(old)}; open it to check`))
   }
   for (const f of i.files) {
     if (f.role === 'unregistered' && i.now - Date.parse(f.updatedAt) <= STALE_MS) {
-      view.rows.push(row(f, `unregistered ${f.branch}`, 'half', 'unregistered', 'not in .orchestra/workstreams.md'))
+      view.rows.push(row(f, f.branch || f.title || 'worktree', 'hollow', 'unregistered', 'not in workstreams.md; register or close it'))
     }
   }
+  // Stable: rows of one kind keep the registry's order.
+  view.rows.sort((a, b) => PRIORITY[a.shape] - PRIORITY[b.shape])
   return view
 }
 

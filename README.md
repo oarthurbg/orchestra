@@ -96,11 +96,17 @@ Then, in your project:
 
 ## The band
 
-orchestra draws a band above the prompt in every session. In an orchestra project the maestro's band shows the 5-hour and weekly plan limits, when the week runs out at the current pace, how many workstreams are running, and one row for each workstream that needs you: waiting on an answer, over 250k tokens of context, gone quiet (its report is more than 30 minutes old), or an `unregistered` row for a worktree session that is not in `.orchestra/workstreams.md`, so a forgotten worktree gets noticed. In the desktop app a row's name opens that session. In any session of the project, in the desktop app or the terminal, a `Liveview` button opens the local dashboard while it runs. A workstream session shows the same summary and its own row. In other projects the band shows the limits line only.
+orchestra draws a band above the prompt in every session. In an orchestra project the maestro's band has three parts:
 
-Each session writes its own report to `.orchestra/sessions/` (not versioned) after each turn; the band re-reads the folder every 20 seconds. Staying live costs no tokens.
+- **Header:** the 5-hour and weekly plan limits with their reset times, and how many workstreams are running. When the week runs out before it resets at the current pace, the weekly limit turns red and says when.
+- **Rows:** one for each workstream that needs you, most urgent first, each saying what to do: `waiting` on an answer, `over 250k` tokens of context, `stale` (its report is more than 30 minutes old), or `unregistered`, a worktree session that is not in `.orchestra/workstreams.md`, so a forgotten worktree gets noticed. In the desktop app a whole row opens that session. With more than two rows the band shows two and a count; the arrow in the header opens all of them, and the band remembers your choice. With nothing due it says `Nothing needs you.`
+- **Footer:** the keep-warm count and, while the local dashboard runs, a `Liveview` button that opens it.
 
-**Keep-warm.** While one of a session's own subagents runs, the band sends a one-line request just before the prompt cache would expire, so the session does not pay to write its whole context to the cache again when the subagent returns. It runs in every project, not only orchestra ones, and covers background and foreground subagents and long tool calls. It never pings while the main thread is itself making requests, since those keep the cache warm. The summary line counts the pings (`warm 2x`). A cache read costs about 0.1x the input price; rewriting an expired cache costs 1.25x (5-minute cache) or 2x (1-hour cache). How cache reads count against plan limits is not published. Two settings, in the plugin's config menu:
+A workstream session shows the limits and its own row. In other projects the band shows the limits only.
+
+Each session writes its own report to `.orchestra/sessions/` (not versioned) after each turn. The band watches that folder, with a 5-second check as a fallback, so it redraws within seconds of a report changing. Staying live costs no tokens.
+
+**Keep-warm.** While one of a session's own subagents runs, the band sends a one-line request just before the prompt cache would expire, so the session does not pay to write its whole context to the cache again when the subagent returns. It runs in every project, not only orchestra ones, and covers background and foreground subagents and long tool calls. It never pings while the main thread is itself making requests, since those keep the cache warm. The footer counts the pings (`kept warm 2x`). A cache read costs about 0.1x the input price; rewriting an expired cache costs 1.25x (5-minute cache) or 2x (1-hour cache). How cache reads count against plan limits is not published. Two settings, in the plugin's config menu:
 
 - `cacheMinutes` (default 60): your cache lifetime. Use 5 for API keys and overage.
 - `warmMaxHours` (default 2): stop keeping the cache warm for a subagent that has run this long. Pings stop once every running subagent is older than this.
@@ -109,7 +115,7 @@ A subagent's age counts from when the band first saw it running, so one that was
 
 If a ping finds the cache already gone, it is not counted as a ping, pings stop until the main thread makes its next request, and the band shows this once per session: `orchestra band: keep-warm missed the cache; set cacheMinutes lower (5 for API keys and overage)`.
 
-The band shares its slot with other mods. ponytail's band stays as it is, with its own level switch. ponytail's level is one flag for every session (`~/.claude/.ponytail-active`): switching it in one session switches all of them, while each orchestra agent's per-stage mode stays in its own prompt.
+The band shares its slot with other mods and draws theirs beneath it. If you use ponytail and prefer one band, run `/ponytail band` to hide ponytail's own: orchestra's footer then shows ponytail's level switch (`off lite full ultra`), which runs the same `/ponytail` command you would type. ponytail's level is one flag for every session (`~/.claude/.ponytail-active`): switching it in one session switches all of them, while each orchestra agent's per-stage mode stays in its own prompt.
 
 ## Recommended settings
 

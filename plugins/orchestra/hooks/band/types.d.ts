@@ -26,30 +26,44 @@ export type RegistryRow = { workstream: string; worktree: string }
 
 export type StatusLine = { state: State | null; stage: string; pr: string; waitingOn: string }
 
+// half: idle (filled); hollow: stale, unregistered or no report (outlined).
+export type Shape = 'circle' | 'triangle' | 'square' | 'half' | 'hollow'
+
 export type BandRow = {
   key: string
   name: string
   link: string
-  shape: 'circle' | 'triangle' | 'square' | 'half'
-  reason: string
+  shape: Shape
+  status: string
   context: string
   detail: string
 }
 
+export type LimitView = { pct: number; resetsAt: number | null }
+
 export type BandView = {
   inProject: boolean
+  role: Role
   pings: number
-  fiveHour: number | null
-  week: number | null
-  runOut: number | null
+  fiveHour: LimitView | null
+  // runOut: when the week runs out at its average pace, only if that comes before the reset.
+  week: (LimitView & { runOut: number | null }) | null
   running: number
   waiting: number
+  // Workstreams open in the registry.
+  total: number
   rows: BandRow[]
   liveview: string
 }
 
 declare module 'claude-code' {
   interface PluginState {
-    orchestra: { view: BandView }
+    orchestra: {
+      view: BandView
+      // The band shows every row (true) or the two most urgent (false); kept in $.store across sessions.
+      detailed: boolean
+      // ponytail's level switch, drawn when ponytail is installed and its own band is hidden.
+      ponytail: { shown: boolean; level: string }
+    }
   }
 }
