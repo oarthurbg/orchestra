@@ -12,7 +12,7 @@ Approved prototype: [`liveview/inbox-prototype.html`](liveview/inbox-prototype.h
 
 - A second view of the liveview page, at `/inbox`. `server.mjs` serves `page.html` for both `/` and `/inbox`; the page picks the view from `location.pathname`. One file keeps one set of tokens.
 - The top bar gets two links, `Overview` (`/`) and `Inbox`, the current one on a `--raised` ground. `Inbox` carries a saffron count of waiting questions, hidden at zero, read by screen readers as ", 3 waiting".
-- The overview is unchanged.
+- The top bar is shared: the overview loses its `liveview` label to the two links and gets the same phone theme button. The rest of the overview is unchanged.
 
 ## Data
 
@@ -34,19 +34,19 @@ The band's session file (format `v: 1`, `docs/superpowers/specs/2026-10-30-band-
 
 - `git diff --name-status <integration>...HEAD` in the workstream's worktree, with the integration ref resolved as `findPlan` does (origin first). Committed files only.
 - Kept: added (`A`) or modified (`M`) files that are images (`png`, `jpg`, `jpeg`, `gif`, `webp`, `svg`), `pdf`, `html`, or `md` under `docs/superpowers/specs/` or `docs/superpowers/plans/`.
-- Each gets a `kind`: `Mockup` when the path contains `mockup`, `Screenshot` when it contains `screenshot`, otherwise `Image`, `PDF`, `Page` (html), `Spec` or `Plan`; and a `change`: `added` or `changed`.
+- Each gets a `kind`: for a picture, page or PDF, `Mockup` when the path contains `mockup` and `Screenshot` when it contains `screenshot`, otherwise `Image`, `PDF` or `Page` (html); a spec or plan is always `Spec` or `Plan`; and a `change`: `added` or `changed`.
 - Order: pictures first, then pages, PDFs, specs and plans, each by path.
 - Cached per worktree while `HEAD` does not move, like the plan lookup.
 
 ### In the snapshot
 
-`/api/snapshot` gains `inbox`: one entry per session file in `waiting` state, oldest `waitingSince` first (a missing one sorts last).
+`/api/snapshot` gains `inbox`: one entry per session file in `waiting` state updated in the last day, oldest `waitingSince` first (a missing one sorts last). An older waiting report belongs to a session nobody will come back to, and leaves the inbox.
 
 ```json
 { "session": "<id>", "workstream": "billing", "stage": "build",
   "question": "Approve the invoice mockup, or change how the totals sit?",
   "options": ["Approve as it is", "Move totals above the line items"],
-  "since": 1793450000000, "link": "claude://...", "stale": false,
+  "since": 1793450000000, "reportedAt": 1793457000000, "link": "claude://...", "stale": false,
   "files": [{ "n": 0, "path": "docs/mockups/invoice-light.png", "kind": "Mockup", "change": "added", "picture": true }],
   "pr": { "label": "#14", "href": "https://github.com/<owner>/<repo>/pull/14" } }
 ```
@@ -54,7 +54,7 @@ The band's session file (format `v: 1`, `docs/superpowers/specs/2026-10-30-band-
 - `question` is `detail` without its `asks: ` prefix.
 - `files` comes from `branchFiles` for a registered workstream; an unregistered session or a missing worktree gets `[]`.
 - `pr` comes from the report's `pr`. It links when it is an `https://` URL, or `#N` with an `origin` remote on `github.com`; otherwise it is text. `none` or empty gives no PR row.
-- `stale` is true when the report is older than 30 minutes (the band's stale rule).
+- `reportedAt` is the report's `updatedAt`; `stale` is true when it is older than 30 minutes (the band's stale rule).
 
 ## The file route
 
@@ -63,7 +63,7 @@ The band's session file (format `v: 1`, `docs/superpowers/specs/2026-10-30-band-
 - The server looks the pair up in the latest snapshot; an unknown session or index is 404. No path ever comes from the request.
 - It reads the committed content with `git show HEAD:<path>` in the worktree, as bytes, capped at 20 MB (413 above).
 - The type comes from the extension; `md` is served as `text/plain; charset=utf-8`.
-- `html` and `svg` get `Content-Security-Policy: sandbox`, so their scripts run in an opaque origin and cannot reach the liveview's API. Every file gets `X-Content-Type-Options: nosniff` and `cache-control: no-store`.
+- `html` and `svg` get `Content-Security-Policy: sandbox allow-scripts`, so a mockup drawn by script still renders, in an opaque origin that cannot read the liveview's API. Every file gets `X-Content-Type-Options: nosniff` and `cache-control: no-store`.
 - The existing `Host` check (403) applies to this route too.
 
 ## The page
