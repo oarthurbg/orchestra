@@ -16,7 +16,7 @@ Close a wave of tasks. First decide which role this session has: a principal (sk
 ## In the maestro ($ARGUMENTS names the workstream)
 
 1. Check the workstream's usage (`get_usage`) and its last events (`list_events`): it must be at a natural stop (PR merged, wave done or checkpoint) with no agent or command running.
-2. Below 250k tokens, do nothing: clearing does not pay off.
+2. Below 250k tokens, do not clear (clearing does not pay off): skip steps 3 and 4.
 3. Above 250k: confirm the handoff note is committed and current, then clear at its level in "Owner authorizations" (`CLAUDE.md`) with `clear_session`.
 4. Send the briefing back: "Load the `orchestra:principal` skill. Read `docs/workstreams/<name>.md` and follow its clean-session checklist. Continue from task <N> of `<plan path>`."
 5. If the workstream's PR is merged and no work is coming, archive the session instead, at its level in "Owner authorizations" (`archive_session`, after checking no agent is running).

@@ -14,7 +14,7 @@ Run them in order and stop at the first item that fails. Before each merge, chec
 8. Merge it (`gh pr merge <number>`) with the method the project uses for workstream PRs; the workstream branch may be deleted after merge, the permanent branches never.
 9. After merging:
    - dispatch `verifier` on the integration branch (the full suite, including the tests reviewers skipped without test data);
-   - when "Code graph" is `graphify`, pull the main checkout (`git pull --ff-only` on the integration branch) and run `graphify update .` there. If graphify says it kept the old graph because the new one has fewer nodes, run `graphify update . --force`. Report a failure in the next status round; it never blocks the merge;
+   - when "Code graph" is `graphify`, pull the main checkout (`git pull --ff-only` on the integration branch) and run `graphify update .` there. If graphify says it kept the old graph because the new one has fewer nodes, run `graphify update . --force`. A failure never blocks the merge: report it in the next status round and carry on with the next item;
    - drop the workstream's test data ("Test data" in "Project settings");
    - remove its row from `.orchestra/workstreams.md` and record it in "Where we are" (HANDOFF) through the next docs PR;
    - delete its report in `.orchestra/sessions/` (the file whose `workstream` is this one), so the band stops showing it;
