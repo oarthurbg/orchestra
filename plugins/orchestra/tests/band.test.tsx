@@ -221,3 +221,122 @@ test('keep-warm pings once while a subagent runs and the cache is about to end',
   await clock.advance(10 * 60_000)
   expect(forks).toBe(2)
 })
+
+const AGENT = (id: string) => ({ id, description: id, type: 'implementer', status: 'running' })
+const REPLY = { isAnswered: true, text: 'ok', usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 30_000, cache_creation_input_tokens: 0 } }
+const MIN = 60_000
+
+// Counts forks; the reply is `reply()`, or a denial when it returns null.
+function forker(on: On, reply: () => unknown = () => REPLY) {
+  const n = { count: 0 }
+  on('model.fork', () => { n.count += 1; const r = reply(); return (r === null ? { deny: 'boom' } : { value: r }) as never })
+  return n
+}
+const pings = (files: Record<string, string>) => JSON.parse(files[`${ROOT}/.orchestra/sessions/o.json`]!).warm.pings as number
+const start = ($: { session: { start: (e: { cwd: string; surface: 'desktop'; isInteractive: boolean }) => Promise<unknown> } }) =>
+  $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
+
+test('keep-warm goes on for a young subagent after an old one passed warmMaxHours, and stops when only the old one is left', { options: { cacheMinutes: 5, warmMaxHours: 1 } }, async ($, on) => {
+  const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+  disk(on, files)
+  let agents = [AGENT('old')]
+  const clock = session(on, ROOT, 'o', () => agents)
+  const forks = forker(on)
+  await start($)
+  await clock.advance(59 * MIN)
+  expect(forks.count).toBeGreaterThan(0)
+  agents = [AGENT('old'), AGENT('young')]
+  await clock.advance(MIN)
+  const before = forks.count
+  await clock.advance(10 * MIN)
+  expect(forks.count).toBeGreaterThan(before)
+  agents = [AGENT('old')]
+  await clock.advance(MIN)
+  const after = forks.count
+  await clock.advance(20 * MIN)
+  expect(forks.count).toBe(after)
+})
+
+test('a subagent that finished is forgotten: the same id later starts a fresh age', { options: { cacheMinutes: 5, warmMaxHours: 1 } }, async ($, on) => {
+  const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+  disk(on, files)
+  let agents = [AGENT('a1')]
+  const clock = session(on, ROOT, 'o', () => agents)
+  const forks = forker(on)
+  await start($)
+  await clock.advance(50 * MIN)
+  agents = []
+  await clock.advance(MIN)
+  agents = [AGENT('a1')]
+  await clock.advance(11 * MIN)
+  const before = forks.count
+  await clock.advance(5 * MIN)
+  expect(forks.count).toBeGreaterThan(before)
+})
+
+test('a fork that rejects is swallowed and not counted as a ping', { options: { cacheMinutes: 5, warmMaxHours: 2 } }, async ($, on) => {
+  const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+  disk(on, files)
+  let fail = true
+  const clock = session(on, ROOT, 'o', () => [AGENT('a1')])
+  const forks = forker(on, () => (fail ? null : REPLY))
+  await start($)
+  await clock.advance(5 * MIN)
+  expect(forks.count).toBe(1)
+  expect(pings(files)).toBe(0)
+  fail = false
+  await clock.advance(5 * MIN)
+  expect(forks.count).toBe(2)
+  expect(pings(files)).toBe(1)
+})
+
+test('a cacheMinutes of zero falls back to 60 instead of pinging on every tick', { options: { cacheMinutes: 0 } }, async ($, on) => {
+  const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+  disk(on, files)
+  const clock = session(on, ROOT, 'o', () => [AGENT('a1')])
+  const forks = forker(on)
+  await start($)
+  await clock.advance(10 * MIN)
+  expect(forks.count).toBe(0)
+  await clock.advance(50 * MIN)
+  expect(forks.count).toBe(1)
+})
+
+test('a negative warmMaxHours falls back to 2 hours', { options: { cacheMinutes: 5, warmMaxHours: -1 } }, async ($, on) => {
+  const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+  disk(on, files)
+  const clock = session(on, ROOT, 'o', () => [AGENT('a1')])
+  const forks = forker(on)
+  await start($)
+  await clock.advance(5 * MIN)
+  expect(forks.count).toBe(1)
+})
+
+test('no ping while a turn is running: its own requests keep the cache warm', { options: { cacheMinutes: 5, warmMaxHours: 2 } }, async ($, on) => {
+  const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+  disk(on, files)
+  const clock = session(on, ROOT, 'o', () => [AGENT('a1')])
+  const forks = forker(on)
+  on('turn.start', ($, e) => ({ turnId: e.turnId }))
+  on('turn.complete', ($, e) => ({ text: e.answer }))
+  await start($)
+  await $.turn.start({ text: 'go', turnId: 't1' })
+  await clock.advance(6 * MIN)
+  expect(forks.count).toBe(0)
+  await $.turn.complete({ reason: 'answer', answer: '', durationMs: 1, isAborted: false, turnId: 't1' })
+  await clock.advance(MIN)
+  expect(forks.count).toBe(1)
+})
+
+test('a refresh that rejects does not stop the keep-warm check', { options: { cacheMinutes: 5, warmMaxHours: 2 } }, async ($, on) => {
+  const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+  disk(on, files)
+  let broken = false
+  on('state.set', () => ({ value: { isSet: !broken, version: 1 } }) as never)
+  const clock = session(on, ROOT, 'o', () => [AGENT('a1')])
+  const forks = forker(on)
+  await start($)
+  broken = true
+  await clock.advance(5 * MIN)
+  expect(forks.count).toBe(1)
+})

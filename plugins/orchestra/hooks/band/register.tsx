@@ -210,8 +210,12 @@ export const register: Register = (on, options) => {
 }
 
 // Every REFRESH_MS: redraw, and keep the cache warm while one of this session's subagents runs.
+// A missing, non-numeric, zero or negative setting means its default.
+const positive = (value: unknown, fallback: number) => (Number.isFinite(Number(value)) && Number(value) > 0 ? Number(value) : fallback)
+
 async function tick($: EngineInterface, options: Readonly<Record<string, unknown>>) {
-  await refresh($)
+  // A failed redraw must not stop the keep-warm check below.
+  await refresh($).catch(() => {})
   const now = await $.clock.now()
   const running = (await $.agent.list().catch(() => [])).filter(a => a.status === 'running' || a.status === 'pending')
   for (const a of running) if (!ctx.seen.has(a.id)) ctx.seen.set(a.id, now)
@@ -219,11 +223,12 @@ async function tick($: EngineInterface, options: Readonly<Record<string, unknown
   const due = pingDue({
     now,
     lastRequestAt: ctx.lastRequestAt,
-    cacheMinutes: Number(options.cacheMinutes ?? 60),
-    warmMaxHours: Number(options.warmMaxHours ?? 2),
+    cacheMinutes: positive(options.cacheMinutes, 60),
+    warmMaxHours: positive(options.warmMaxHours, 2),
     youngestRunningSince: ctx.seen.size === 0 ? null : Math.max(...ctx.seen.values()),
   })
-  if (!due) return
+  // The turn's own requests keep the cache warm.
+  if (!due || ctx.turn) return
   // Set before the call: a slow fork must not let the next tick ping again; the ping is a request for the next schedule.
   ctx.lastRequestAt = now
   const r = await $.model.fork({ prompt: 'Reply with: ok' }).catch(() => undefined)
