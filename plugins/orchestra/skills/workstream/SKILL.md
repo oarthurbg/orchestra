@@ -31,7 +31,7 @@ Read first: your handoff note if one exists (`docs/workstreams/<name>.md`, skill
 Send one line (in the desktop app, `SendMessage` to the orchestrator session) when:
 - a decision affects another workstream;
 - you open or change a schema migration;
-- you close a wave of tasks, with your context size (`get_usage` on yourself);
+- you close a wave of tasks or get close to 250k tokens, with your context size (`get_usage` on yourself);
 - the PR is ready to check and merge.
 
 You never merge your own PR, and you never touch another workstream's spec, plan or code.

@@ -55,7 +55,7 @@ Then install the plugins the workflow uses. This marketplace lists them, fetched
 
 Skip any you already have from another marketplace (for example `superpowers@claude-plugins-official`): two copies of one plugin load duplicate skills. From a shell, the same steps are `claude plugin marketplace add oarthurbg/orchestra` and `claude plugin install <name>@orchestra`.
 
-The workflow also uses `dataviz` and `security-audit` when your Claude Code has them, and skips them otherwise.
+The workflow also uses `dataviz` and `security-audit` when your Claude Code has them, and skips them otherwise. `claude-security` is an optional deep scan of finished code before a release.
 
 Then, in your project:
 
