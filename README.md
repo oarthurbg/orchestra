@@ -26,11 +26,14 @@ It was built while developing an internal media-planning app, and packages the w
 plugins/orchestra/
   agents/      explorer, planner, implementer, implementer-advanced, mechanic,
                spec-reviewer, quality-reviewer, screenshotter, verifier
-  skills/      orchestrator (with stages.md: modes, skills and reviews per stage)
+  skills/      orchestrator (with stages.md: modes, skills and reviews per stage,
+               and checklists.md: merge, release and hotfix)
                workstream, handoff-note, test-databases (test data recipes per data store,
                plus an optional, tested Postgres-in-Docker example)
-  commands/    /orchestra:init, /orchestra:start-workstream, /orchestra:close-wave
-  templates/   CLAUDE.md, HANDOFF.md, handoff-note.md
+  commands/    /orchestra:init, /orchestra:start-workstream, /orchestra:status,
+               /orchestra:close-wave
+  templates/   CLAUDE.md (project settings, owner authorizations), HANDOFF.md,
+               handoff-note.md, githooks/pre-push (branch guard)
 docs/index.html  the stack at a glance
 docs/BRAND.md    mark, colors and type
 assets/brand/    logo, plugin icon, README hero, social preview
@@ -79,7 +82,8 @@ Skip any you already have from another marketplace (for example `superpowers@cla
 Then, in your project:
 
 1. Run `/orchestra:init`. It looks at the project, proposes the "Project settings" (including test data commands that match your data store, or `none`), and scaffolds `CLAUDE.md` settings, `docs/HANDOFF.md` and `docs/workstreams/`.
-2. In your main session, load the `orchestra:orchestrator` skill and open workstreams with `/orchestra:start-workstream <name> <goal>`.
+2. In your main session, load the `orchestra:orchestrator` skill. Its "First session" steps confirm the settings and owner authorizations with you, write the first backlog and open the first workstreams with `/orchestra:start-workstream <name> <goal>`.
+3. Ask "how is it going?" any time: the orchestrator answers with `/orchestra:status`, one table of every workstream plus what needs you.
 
 ## Requirements
 
@@ -88,6 +92,12 @@ Then, in your project:
 - **git** with worktrees, and the **GitHub CLI** (`gh`) for PRs.
 
 ## Recommended settings
+
+- **Bypass permissions, per project.** With 4 to 6 sessions and their subagents, approval prompts would stall the work all day, so orchestra is meant to run with the permission mode set to bypass, in the project only: the desktop app's permission-mode picker per session, or `"permissions": { "defaultMode": "bypassPermissions" }` in the project's `.claude/settings.local.json` (not in your global settings). Claude Code then never stops to ask, so these take over as the gates:
+  - **Owner authorizations** in the project's `CLAUDE.md`: for merges, releases, hotfixes, clears, archiving and new sessions, `ask`, `tell` or `auto`. They start at `ask`. Anything that needs admin rights, deletes data or branches, or touches credentials, money or production data is always `ask`, for every session and subagent.
+  - **The branch guard**, which `/orchestra:init` offers to install: a `pre-push` hook that refuses direct pushes to your integration and production branches. It is a local net (per clone, and skipped by `--no-verify`), so also turn on branch protection on GitHub for both branches.
+
+  Use bypass permissions only in repositories you trust, keep real credentials out of the repository, and don't run it on a machine where an agent could reach production data you can't afford to lose.
 
 - **Auto-compact safety net at 600k tokens.** In `~/.claude/settings.json`:
 
