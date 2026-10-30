@@ -38,3 +38,13 @@ The only data not on disk (plan-limit % and the official session list) comes fro
 - An "open session" deep link per item.
 
 To investigate: whether the mod can answer inside the app. App sessions are never resumed from the CLI.
+
+### 4. The orchestrator decides when to build a code graph
+
+[graphify](https://github.com/Graphify-Labs/graphify) (Apache-2.0, installed with `pip install graphifyy`, not a Claude Code plugin) turns the codebase into a knowledge graph that agents query instead of sweeping files. Idea, to be brainstormed and specced after the band:
+- At `/orchestra:init` and at every wave end, the orchestrator measures the integration branch (files, lines of code, and later the tokens explorers and planners spend per task, from the band's session reports).
+- Past a threshold it proposes building the graph on the integration branch in the main checkout. The build costs LLM tokens, so it gets its own level in "Owner authorizations" (default `ask`).
+- The merge checklist runs `graphify --update` after each workstream merge, so the graph follows the integration branch.
+- When `graphify-out/` exists, the explorer and planner query it first, and treat it as a map of the integration branch, not of their own branch.
+- Building late is cheaper than building early for the paid semantic pass: a young project rewrites files often, and each version is paid again. The free structural pass could run from the start, if graphify can run it alone (to check).
+- The thresholds (a first guess: 500 files or 50k lines) are calibrated in the real-project trial: the same task with and without the graph, tokens compared.
