@@ -10,7 +10,7 @@ To be brainstormed with the owner before any spec. Nothing here is decided yet.
 
 ### 1. A Claude Code mod for the session band
 
-Designed: [`docs/superpowers/specs/2026-10-30-band-mod-design.md`](superpowers/specs/2026-10-30-band-mod-design.md). It ships inside orchestra and also keeps a session's prompt cache warm while its subagents run.
+Built in 0.2.0: see "The band" in the README and the spec at [`docs/superpowers/specs/2026-10-30-band-mod-design.md`](superpowers/specs/2026-10-30-band-mod-design.md). The dashboard (item 2) writes `.orchestra/liveview.json` with its local URL while it runs, which shows the band's `Liveview` button.
 
 Complements ponytail's own band and does not duplicate it. Shows:
 - 5-hour and weekly plan-limit %;

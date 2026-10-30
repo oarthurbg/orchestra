@@ -16,6 +16,7 @@ Run them in order and stop at the first item that fails. Before each merge, chec
    - dispatch `verifier` on the integration branch (the full suite, including the tests reviewers skipped without test data);
    - drop the workstream's test data ("Test data" in "Project settings");
    - remove its row from `.orchestra/workstreams.md` and record it in "Where we are" (HANDOFF) through the next docs PR;
+   - delete its report in `.orchestra/sessions/` (the file whose `workstream` is this one), so the band stops showing it;
    - tell the next workstream in the schema queue it can rebase;
    - mark the session as an archive candidate.
 

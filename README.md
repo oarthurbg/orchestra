@@ -91,6 +91,20 @@ Then, in your project:
 - **Docker** only if you pick the optional Postgres-in-Docker test data example.
 - **git** with worktrees, and the **GitHub CLI** (`gh`) for PRs.
 
+## The band
+
+orchestra draws a band above the prompt in every session. In an orchestra project the orchestrator's band shows the 5-hour and weekly plan limits, when the week runs out at the current pace, how many workstreams are running, and one row for each workstream that needs you: waiting on an answer, over 250k tokens of context, or gone quiet. In the desktop app a row's name opens that session, and a `Liveview` button opens the local dashboard while it runs. A workstream session shows the same summary and its own row. In other projects the band shows the limits line only.
+
+Each session writes its own report to `.orchestra/sessions/` (not versioned) after each turn; the band re-reads the folder every 20 seconds. Staying live costs no tokens.
+
+**Keep-warm.** While one of a session's own subagents runs, the band sends a one-line request just before the prompt cache would expire, so the session does not pay to write its whole context to the cache again when the subagent returns. A cache read costs about 0.1x the input price; rewriting an expired cache costs 1.25x (5-minute cache) or 2x (1-hour cache). How cache reads count against plan limits is not published. Two settings, in the plugin's config menu:
+
+- `cacheMinutes` (default 60): your cache lifetime. Use 5 for API keys and overage.
+- `warmMaxHours` (default 2): stop keeping the cache warm for a subagent that has run this long.
+- A subagent's age counts from when the band first saw it running, so one that was already running when the session started gets the full limit.
+
+The band shares its slot with other mods. ponytail's band stays as it is, with its own level switch. ponytail's level is one flag for every session (`~/.claude/.ponytail-active`): switching it in one session switches all of them, while each orchestra agent's per-stage mode stays in its own prompt.
+
 ## Recommended settings
 
 - **Bypass permissions, per project.** With 4 to 6 sessions and their subagents, approval prompts would stall the work all day, so orchestra is meant to run with the permission mode set to bypass, in the project only: the desktop app's permission-mode picker per session, or `"permissions": { "defaultMode": "bypassPermissions" }` in the project's `.claude/settings.local.json` (not in your global settings). Claude Code then never stops to ask, so these take over as the gates:
