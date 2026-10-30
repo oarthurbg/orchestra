@@ -39,8 +39,9 @@ Zero-dependency Node (18 or newer), ES modules, in `plugins/orchestra/liveview/`
 
 ### Lifecycle
 
-- **Start by the band:** on `session.start` in an orchestrator session, the band runs `node <plugin root>/liveview/server.mjs --root <main checkout>` detached through `$.process.run`. It skips this when `node` is not on PATH, or when `.orchestra/liveview.json` points to a server whose `/api/ping` answers with the same root.
-- **Start and stop by hand:** `/orchestra:liveview` starts it in the background the same way; `/orchestra:liveview stop` reads `pid` from `liveview.json` and ends it.
+- **One instance per project:** `node server.mjs --root <main checkout> --detach` starts the server in the background and prints its URL. When `.orchestra/liveview.json` already points to a server whose `/api/ping` answers with the same root, it prints that URL and starts nothing. `--stop` ends the process in `pid` and deletes `liveview.json` (on Windows a signal cannot run the server's own cleanup).
+- **Start by the band:** on `session.start` in an orchestrator session, the band runs that `--detach` command through `$.process.run` without waiting for it. When `node` is missing the call fails and nothing happens.
+- **Start and stop by hand:** `/orchestra:liveview` runs the same command; `/orchestra:liveview stop` runs `--stop`.
 - **Stop:** on SIGINT or SIGTERM it deletes `liveview.json` and exits. It also exits on its own when it has run for 30 minutes and no session file was updated in the last 30 minutes. A `liveview.json` left behind by a crash is overwritten at the next start.
 - **Band change:** the start call is a small addition to the band's `hooks/band/register.tsx`, built after the band lands. The band's spec and plan files are not changed.
 - **Live check first:** whether `$.process.run` can start a detached process that outlives the call. If it cannot, the band does not start the dashboard; the command and a README line cover it.
@@ -93,31 +94,50 @@ The simple version: per-task medians by agent and risk, calibrated from git. Fil
 
 ## Page
 
-Layout B, approved from the mockups: everything about one workstream on one line.
+The approved prototype was built with taste-skill (app style `achromatic-ledger`, seed 1286254319, with the brand's palette and type kept), checked with its inspector at 1440, 768 and 390 (0 FAIL), with Playwright, and with impeccable's critique, whose five findings are fixed. Screenshots: `docs/superpowers/specs/liveview/`. Mode: Operate. The screen's question: which workstream needs me, and when does the open work land?
 
-- **Header:** the brand mark, the wordmark, `liveview`, the project folder name and the time since the last rebuild. Then `5h` %, `week` %, and a pill with the run-out time when there is one.
-- **Projection chart:** cumulative weekly % across the 7-day window. Actual is a solid cobalt line, projection a dashed one. The reading is a dot with its label, the 100% line is vermilion, there is a now line, and the reset is marked.
-- **Workstream rows**, columns: shape, name, context, stage and PR, `done/total · ETA`, and the timeline track.
+- **Style:**
+  - The chrome is ink on paper.
+  - Cobalt is the one data hue: done work, the actual limit line.
+  - The band's four shapes are the only other colour.
+  - Vermilion is kept for a figure that breaks: 250k context, a run-out before the reset, 90% or more at the reset.
+  - The tokens are `docs/index.html`'s, including its dark palette and `data-theme` override.
+  - Archivo for the wordmark and headings, IBM Plex Sans with tabular figures for everything else. No monospace.
+  - 4px radius, 1px borders, no shadows.
+- **Shell:** a 48px top bar with the brand mark, the wordmark, `liveview` and the freshness stamp ("Updated 3 s ago", or "Stale since" in vermilion). No sidebar: one destination for now. The decision inbox (item 3) later adds a second.
+- **Title row:**
+  - The project folder name as the `h1`.
+  - One sentence with the finding: "billing is waiting on you: approve the invoice mockup. Open work lands by Fri 06:19."
+  - On the right, the one primary action, "Open <the first waiting session>" (its `claude://` link), shown only when a waiting session has a link.
+- **Limits strip:** one card split into three cells:
+  - weekly limit %, with the run-out time or the projected % at the reset;
+  - 5-hour limit %, with the run-out time or the reset time;
+  - "All merged by", the latest projected merge, with "ETA from N finished tasks" or "Uncalibrated".
+- **Middle row:** "Needs you" (1fr) beside "Weekly limit" (2fr).
+  - "Needs you" lists every session that is waiting, at 250k or more, stale, unregistered, or registered with no session. Each has its shape, name, an "Open" link when it has one, and a plain reason ("254k context: clear it at the next stop"). When nothing needs the owner, it keeps its frame and says so.
+  - The chart shows cumulative weekly % across the 7-day window:
+    - a y-scale at 0, 25, 50, 75 and 100% with faint gridlines;
+    - the actual line solid cobalt, the projection dashed to the run-out (100%) or to the reset, with its end labelled;
+    - a "Now N%" line and the reading as a dot.
+- **Workstreams card:** one row per session or registered workstream (orchestrator first, unregistered last). Columns: shape, name, context, stage and PR, a "done of total · ETA" button, and the timeline track.
   - **Shapes, as in the band:**
-    - yellow triangle: waiting;
-    - red square: 250k context or more;
-    - cobalt circle: running;
-    - half circle: idle, stale or unregistered.
-  - **Who gets a row:** the orchestrator and unregistered sessions get rows without a plan.
-  - **Track:** done in cobalt, estimated in pale blue, and a vermilion now line.
-- **Opening a row:** clicking a row opens its task list:
-  - the `waiting:` detail;
-  - each task with its tick, title, agent and risk;
-  - the measured time, or `est` with the estimate, and `?` when uncalibrated.
+    - triangle saffron: waiting;
+    - square vermilion: 250k or more;
+    - circle cobalt: running;
+    - half circle pale blue: idle;
+    - outlined half circle: stale, unregistered or no session.
 
-  Open rows are remembered in `localStorage`, wrapped in try and catch.
-- **Names:** a name is a link to the session's `claude://` link when its file has one; otherwise plain text.
-- **Last rows:** the queued workstreams (dashed), then the rollout row (diamonds).
-- **Footer legend:** the diamonds, the bar fills, and how many past tasks the ETA uses.
-- **Calendar window:** from the start of the oldest open workstream, at most 3 days back, to the latest projected end, at least 3 days ahead.
-- **Type and colour:** Archivo for the wordmark, IBM Plex Sans and Mono for text, loaded from Google Fonts with system fallbacks. Colours are `docs/BRAND.md` tokens on `:root`, with the brand's dark palette under `prefers-color-scheme: dark`: ink background, paper text, deep-blue half circle.
-- **Colour is never the only signal:** every shape has text beside it (state, `254k`, `waiting:`).
-- **Narrow windows:** the track column scrolls sideways inside the table, and the page itself does not.
+    Every shape has an accessible name, and every row also says its reason in words when it is not running or idle.
+  - **Track:** done tasks solid cobalt at their real times. Estimated tasks pale blue with a 1px cobalt outline, back to back from now. A 1px ink now-line, labelled `now`.
+  - **Opening a row:** the ETA cell is a real disclosure button (`aria-expanded`); a click anywhere else on the row does the same for the mouse. It opens the task list: a dot for each task (filled when done, outlined when current), its title, agent and risk, and the measured time or `est` with the estimate (`?` when uncalibrated). Open rows are remembered in `localStorage`, wrapped in try and catch.
+  - **Names:** a name links to the session's `claude://` link when its file has one; otherwise it is plain text. Only `claude://` links pass.
+  - **Last rows:** the queued workstreams (dashed bars), then the rollout row (filled diamonds for merges and releases, hollow for projected merges).
+  - **Legend:** a shape key, the bar fills and the diamonds.
+- **Calendar window:**
+  - It runs from the start of the oldest open workstream, at most 3 days back, to the latest projected end, and is at least one day wide.
+  - Under 2 days the axis shows hours every 3 hours, with midnight named ("30 Fri"); otherwise it shows day names.
+  - Labels stay inside the track.
+- **Phone (below 640px):** the top bar drops `liveview`, the action moves under the finding, and the limits strip becomes two cells and one full-width cell. "Needs you" and the chart stack. Each workstream becomes a two-line row (name and ETA, then context and stage) with its track below; every other hour label hides. The page never scrolls sideways.
 
 ## Errors
 
@@ -158,7 +178,13 @@ The page always draws and labels what is missing; nothing takes the server down.
   - a busy port moves to the next;
   - `liveview.json` is written and removed on SIGTERM;
   - the idle exit fires, with an injected clock.
-- **Band addition:** an engine test where an orchestrator session calls `$.process.run` once, and never when a live server answers `/api/ping` with the same root.
+- **Band addition:** engine tests: an orchestrator session calls `$.process.run` once with `--detach`; a workstream session never does.
+- **Page:** taste-skill's `lint.mjs --app` and `inspect.mjs --app` (0 FAIL), impeccable's detector (no findings), and a Playwright pass:
+  - the disclosure opens and closes by click and keyboard;
+  - no row is a `role="button"` around a link;
+  - light and dark both read;
+  - no sideways scroll at 390;
+  - no console errors.
 - **Live check (owner step):** the detached start from the band in the desktop app; screenshots of the page, light and dark, with fixture data only, for the README.
 
 ## Out of scope
