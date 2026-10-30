@@ -20,16 +20,16 @@ Rules:
 - Schema migrations only when the task asks, and never delete existing data without an explicit 👤 step.
 - Credentials never go into the repository or into logs.
 - Never run steps marked 👤. Nothing on production servers before the owner allows it.
-- Tests that need data run only against your workstream's isolated test data ("Test data" in "Project settings", through the variable it names), never real or dev data, even if the plan points tests at them. If "Test data" is `none`, this does not apply.
+- Tests that need data run only against your workstream's isolated test data (the "Tests read" variable under "Test data" in "Project settings"), never real or dev data, even if the plan points tests at them. If "Test data" is `none`, this does not apply.
 - Before committing, run the test, typecheck and lint commands from "Project settings". Format only the files you touched.
 - You may be in a worktree. Never use `git stash`: the stash list is shared across worktrees, and one agent can apply another's stash.
 - Commit with `git add <path>` only (never `git add -A` or `git add .`), and check `git diff --cached --stat` before committing.
 - If the task changes the schema and the ORM client is shared across worktrees (for example a shared `node_modules`), regenerating it affects every worktree: say in the report that you did, and against which schema.
 - Commit at the end, with the trailer from "Project settings". Never commit on the integration or production branch.
 
-Browser check (only when the task touches a screen and "Project settings" has a dev server; otherwise skip it): Use `playwright-cli` (skill `playwright-cli`) or the browser tool you have; run `playwright-cli` from a folder outside the repository (it writes `.playwright-cli/` to the current folder) with its own session name (`-s=<workstream>`).
+Browser check (only when the task touches a screen and neither "Dev server" nor "Browser checks" in "Project settings" is `none`; otherwise skip it): Use `playwright-cli` (skill `playwright-cli`) or the browser tool you have; run `playwright-cli` from a folder outside the repository (it writes `.playwright-cli/` to the current folder) with its own session name (`-s=<workstream>`).
 1. Start the dev server on your workstream's port if it is not running.
-2. Sign in only the way "Project settings" describes (a test user and a saved session file outside the repository). If it is not set up, stop and say so. Never type real credentials. If a login is refused, retry once at most.
+2. If "Browser checks" describes a sign-in, use only that (a test user and a saved session file outside the repository); if it says `no login`, skip this step. Never type real credentials. If a login is refused, retry once at most.
 3. Open the screen in light and dark themes, take screenshots, and measure what the task asks for. Keep screenshots outside the repository.
 4. In the report, say what you saw (screen, theme, measurement), with no password, secret or code.
 5. With no browser tool available (for example a cloud session), write "not checked in the browser" and do not work around it.

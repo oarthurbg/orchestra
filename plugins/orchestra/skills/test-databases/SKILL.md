@@ -18,7 +18,7 @@ If the project keeps no data (a CLI, a library, a static site), "Test data" is `
 
 A reviewer without the test data skips the tests that need it and says so. The orchestrator runs the full suite after merging.
 
-Workstream names use `[a-z0-9_]`. Build every test name from a fixed suffix plus the workstream name (`<name>_test_<workstream>`), so no command can ever resolve to the dev data.
+Workstream names use `[a-z0-9_]`. Every name a test command builds carries a fixed `test` or `capture` marker plus the workstream name (`app_test_<ws>`, `test_<ws>.sqlite`, `test:<ws>:`), so no command can ever resolve to the dev data.
 
 ## Recipes
 
@@ -33,7 +33,7 @@ Pick the one that matches the project's data store and write its commands into "
 - Tests read: `TEST_DATABASE_URL=mysql://.../app_test_<ws>`.
 
 **SQLite:** one file per workstream.
-- Create: run the migration with `DB_PATH=.data/test_<ws>.sqlite`.
+- Create: `mkdir -p .data`, then run the migration with `DB_PATH=.data/test_<ws>.sqlite`.
 - Drop: delete that file.
 - Capture: copy the dev file to `.data/capture_<ws>.sqlite` (`sqlite3 dev.sqlite ".backup .data/capture_<ws>.sqlite"` is safe while the app runs).
 - Tests read: `DB_PATH=.data/test_<ws>.sqlite`. Keep `.data/` in `.gitignore`.
@@ -46,12 +46,12 @@ Pick the one that matches the project's data store and write its commands into "
 
 **Redis:** one key prefix per workstream (or one db index each, if there are few workstreams).
 - Create: nothing to do.
-- Drop: `redis-cli --scan --pattern "test:<ws>:*" | xargs -r redis-cli del`.
+- Drop: `redis-cli --scan --pattern "test:<ws>:*" | xargs -r redis-cli del` (Unix shell; GNU `xargs`), or `redis-cli -n <n> flushdb` for the db-index variant.
 - Capture: usually not needed; seed instead.
 - Tests read: `REDIS_PREFIX=test:<ws>:` (or `REDIS_URL=redis://localhost:6379/<n>`).
 
 **Managed database without rights to create databases:** one schema per workstream.
-- Create: `CREATE SCHEMA test_<ws>`, then the migration with the schema set (for PostgreSQL, `?schema=test_<ws>` or `search_path`).
+- Create: `CREATE SCHEMA test_<ws>`, then the migration with the schema set (Prisma: `?schema=test_<ws>`; plain PostgreSQL URLs: `?options=-c%20search_path%3Dtest_<ws>`).
 - Drop: `DROP SCHEMA test_<ws> CASCADE`.
 - Tests read: the connection URL with that schema. Ask the owner before pointing anything at a shared server.
 

@@ -21,13 +21,13 @@ Look for, in order of importance:
 4. Tests that do not test what they claim.
 5. Maintenance: oversized files, mixed responsibilities, misleading names, divergence from the rest of the code.
 
-Browser check (only when the task touches a screen and "Project settings" has a dev server; you still do not edit the repository, you only open the app and look): Use `playwright-cli` (skill `playwright-cli`) or the browser tool you have; run `playwright-cli` from a folder outside the repository (it writes `.playwright-cli/` to the current folder) with its own session name (`-s=<workstream>`).
+Browser check (only when the task touches a screen and neither "Dev server" nor "Browser checks" in "Project settings" is `none`; you still do not edit the repository, you only open the app and look): Use `playwright-cli` (skill `playwright-cli`) or the browser tool you have; run `playwright-cli` from a folder outside the repository (it writes `.playwright-cli/` to the current folder) with its own session name (`-s=<workstream>`).
 1. Start the dev server on the workstream's port if it is not running.
-2. Sign in only the way "Project settings" describes. If it is not set up, stop and say so. Never type real credentials. If a login is refused, retry once at most.
+2. If "Browser checks" describes a sign-in, use only that; if it says `no login`, skip this step. Never type real credentials. If a login is refused, retry once at most.
 3. Open the screen in light and dark themes, take screenshots outside the repository, and measure what the task asks for.
 4. In the report, say what you saw (screen, theme, measurement), with no password, secret or code.
 5. With no browser tool available, write "not checked in the browser" and do not work around it.
 
-If you run tests, tests that need data only against the workstream's isolated test data ("Test data" in "Project settings"), never real or dev data, even if the plan points tests at them.
+If you run tests, tests that need data only against the workstream's isolated test data (the "Tests read" variable under "Test data" in "Project settings"), never real or dev data, even if the plan points tests at them.
 
 Only flag what you can justify with a concrete failure scenario. Answer: `APPROVED` or `CHANGES NEEDED`, with the list (severity high, medium or low, `file:line`, the scenario that breaks, suggested fix). Low-severity items do not block.

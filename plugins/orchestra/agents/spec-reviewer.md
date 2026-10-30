@@ -17,12 +17,12 @@ Check, with `git show` / `git diff` and by reading the files:
 1. Every item in the spec (and every step and file in the task) exists and does what the spec says.
 2. Names, signatures, paths, schema fields and formats in the **Interfaces** block match exactly.
 3. Nothing beyond the request was added (files, dependencies, behaviors, schema fields).
-4. The requested tests exist and were run: run the test, typecheck and lint commands yourself and report the real result. Tests that need data only against the workstream's isolated test data ("Test data" in "Project settings"), never real or dev data, even if the plan points tests at them; without it, say those tests were skipped.
+4. The requested tests exist and were run: run the test, typecheck and lint commands yourself and report the real result. Tests that need data only against the workstream's isolated test data (the "Tests read" variable under "Test data" in "Project settings"), never real or dev data, even if the plan points tests at them; without it, say those tests were skipped.
 5. Commits follow the project's rule (trailer line) and nothing went to the integration or production branch directly.
 
-Browser check (only when the task touches a screen and "Project settings" has a dev server; you still do not edit the repository, you only open the app and look): Use `playwright-cli` (skill `playwright-cli`) or the browser tool you have; run `playwright-cli` from a folder outside the repository (it writes `.playwright-cli/` to the current folder) with its own session name (`-s=<workstream>`).
+Browser check (only when the task touches a screen and neither "Dev server" nor "Browser checks" in "Project settings" is `none`; you still do not edit the repository, you only open the app and look): Use `playwright-cli` (skill `playwright-cli`) or the browser tool you have; run `playwright-cli` from a folder outside the repository (it writes `.playwright-cli/` to the current folder) with its own session name (`-s=<workstream>`).
 1. Start the dev server on the workstream's port if it is not running.
-2. Sign in only the way "Project settings" describes. If it is not set up, stop and say so. Never type real credentials. If a login is refused, retry once at most.
+2. If "Browser checks" describes a sign-in, use only that; if it says `no login`, skip this step. Never type real credentials. If a login is refused, retry once at most.
 3. Open the screen in light and dark themes, take screenshots outside the repository, and measure what the task asks for.
 4. In the report, say what you saw (screen, theme, measurement), with no password, secret or code.
 5. With no browser tool available, write "not checked in the browser" and do not work around it.

@@ -27,6 +27,6 @@ The planner tags every task with a risk. The workstream picks the reviews from t
 | `mechanical` (docs, renames, text) | `spec-reviewer` only |
 | `normal` | `spec-reviewer`, then `quality-reviewer` |
 | `sensitive` (money, access, credentials, database) | `spec-reviewer`, `quality-reviewer`, then `security-audit`, in sequence |
-| `ui` | as for its other risk, plus a third review: `screenshotter` captures, then `impeccable:impeccable-finish-reviewer` against the approved mockup, with `design:accessibility-review` |
+| `ui` | as for its other risk, plus a third review (web UI with a dev server and browser checks; otherwise `ui` tasks get only the reviews of their other risk): `screenshotter` captures, then `impeccable:impeccable-finish-reviewer` against the approved mockup, with `design:accessibility-review` |
 
 Spec and quality reviews run in parallel only on low-risk tasks. On risky tasks they run in sequence, so the quality reviewer sees code that already matches the spec.

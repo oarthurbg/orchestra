@@ -35,7 +35,7 @@ The single entry point for every session. Read "Where we are", then your role be
 - The workstream session owns one workstream from start to PR: spec, plan, subagents (one at a time, visible), reviews (spec compliance, quality and, for UI, the third one from screenshots) and the PR into the integration branch.
 - It reports to the orchestrator in one line when a decision affects another workstream, when it opens or changes a schema migration, when it closes a wave (with its context size), and when the PR is ready to check and merge. It never merges its own PR and never touches another workstream's spec, plan or code.
 - Skills: `brainstorming` before the spec; `writing-plans` through the planner; `subagent-driven-development` to execute; `dispatching-parallel-agents` for parallel plan tasks (no shared files, self-contained briefings) and for 2 or more independent failures; `systematic-debugging` for flaky failures; `requesting-code-review` before the PR; `receiving-code-review` for review findings; `finishing-a-development-branch` at close-out. Where a skill disagrees with this HANDOFF, this HANDOFF wins.
-- Support agents: `screenshotter` (light and dark, wide and narrow, empty, loading and error states) before `impeccable-finish-reviewer`; `verifier` (full verification, report only) before the PR.
+- Support agents: `screenshotter` (web UIs with a dev server; light and dark, wide and narrow, empty, loading and error states) before `impeccable-finish-reviewer`; `verifier` (full verification, report only) before the PR.
 - Handoff note: `docs/workstreams/<name>.md` on the workstream branch, fixed template (skill `orchestra:handoff-note`), deleted in the last commit before merge.
 
 ## Next workstreams

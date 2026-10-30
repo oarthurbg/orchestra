@@ -25,13 +25,13 @@ The orchestra agents read this section for every project-specific value. Keep it
 - Format (touched files only): `none` | `<command> <files>`
 - Migrations: `none` | `<command>`
 - Dev server: `none` | `<command with <port>>`. With a dev server, the orchestrator gives each workstream its own port, starting at `<3001>`.
-- Test data: `none` | the four lines below (skill `orchestra:test-databases` has recipes per data store)
+- Test data: `none` | the lines below (skill `orchestra:test-databases` has recipes per data store)
   - Create: `<command> <workstream>`
   - Drop: `<command> <workstream>`
   - Capture copy for screenshots: `none` | `<command> <workstream>`
   - Tests read: `<ENV_VAR>=<value containing <workstream>>`
   - Real data tests must never touch: `<dev database, data folder, bucket...>`
-- Browser checks: `none` | <how agents sign in: a test user plus a saved session file outside the repository>. Only for apps with a web UI and a dev server.
+- Browser checks: `none` | `no login` | <how agents sign in: a test user plus a saved session file outside the repository>. Only for apps with a web UI and a dev server.
 - Confidential paths agents must never read or copy: `none` | <paths>
 - Commit trailer: `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`
 - Language for code, commits and docs: English

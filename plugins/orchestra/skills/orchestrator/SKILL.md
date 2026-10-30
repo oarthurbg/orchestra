@@ -38,7 +38,7 @@ Use `/orchestra:start-workstream`. In short:
 
 ## Reviews and merging
 
-- The workstream runs the reviews (two stages, risk-proportional, plus the third UI review with screenshots; see `stages.md`) and the close-out review: `superpowers:requesting-code-review` dispatches a whole-branch reviewer using `ponytail:ponytail-review`, and `ponytail:ponytail-debt` lists the `shortcut:` comments in the PR description.
+- The workstream runs the reviews (two stages, risk-proportional, plus the third UI review with screenshots for web UIs; see `stages.md`) and the close-out review: `superpowers:requesting-code-review` dispatches a whole-branch reviewer using `ponytail:ponytail-review`, and `ponytail:ponytail-debt` lists the `shortcut:` comments in the PR description.
 - A workstream never merges its own PR. You check it (reviews done, CI green, nothing red), merge it into the integration branch, and run the full test suite after merging, since reviewers without test data skip the tests that need it.
 - Releases (integration branch to production branch): run the full verification (`verifier`) in a worktree on the integration branch, open the release PR, merge it the way the project's HANDOFF says.
 - The integration and production branches are permanent: nobody commits or pushes to them directly, and release and hotfix-return PRs are merged with a merge commit (`gh pr merge --merge`), never squash or rebase, and never with `--delete-branch`, which would delete one of them.

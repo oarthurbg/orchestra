@@ -15,7 +15,7 @@ Take the commands from the project's CLAUDE.md, section "Project settings". Run,
 2. typecheck
 3. lint
 4. unit tests
-5. integration tests, if the project has them, against the workstream's isolated test data ("Test data" in "Project settings"), never real or dev data
+5. integration tests, if the project has them, against the workstream's isolated test data (the "Tests read" variable under "Test data" in "Project settings"), never real or dev data
 6. tests in other languages the workstream touched, if the project lists them
 7. build
 
