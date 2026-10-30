@@ -27,12 +27,11 @@ type Ctx = {
   pings: number
   lastPing: string | null
   seen: Map<string, number>
-  stamp: string
 }
 
 const fresh = (): Ctx => ({
   main: null, root: '', id: '', role: 'orchestrator', workstream: null, branch: '', title: '', link: '', turn: false, question: '',
-  context: { tokens: null, window: 0 }, limits: [], lastRequestAt: 0, pings: 0, lastPing: null, seen: new Map(), stamp: '',
+  context: { tokens: null, window: 0 }, limits: [], lastRequestAt: 0, pings: 0, lastPing: null, seen: new Map(),
 })
 const ctx: Ctx = fresh()
 
@@ -65,6 +64,14 @@ async function locate($: EngineInterface) {
 
 export async function writeReport($: EngineInterface) {
   if (ctx.main === null) return
+  try {
+    await write($)
+  } catch {
+    // A failed write must not stop the caller: the band still redraws from the other reports.
+  }
+}
+
+async function write($: EngineInterface) {
   const status = ctx.workstream ? parseStatus((await read$($, `${ctx.root}/docs/workstreams/${ctx.workstream}.md`)) ?? '') : null
   const state = ctx.question ? 'waiting' : ctx.turn ? 'running' : status?.state === 'waiting' ? 'waiting' : 'idle'
   const file: SessionFile = {
@@ -76,13 +83,10 @@ export async function writeReport($: EngineInterface) {
   await $.fs.write(`${ctx.main}/.orchestra/sessions/${ctx.id}.json`, JSON.stringify(file))
 }
 
-// Re-reads the reports when a file changed since the last pass, then stores the view.
-async function refresh($: EngineInterface, force = false) {
+// Re-reads the reports, the registry and liveview.json, then stores the view: it depends on the clock too, so it never skips.
+async function refresh($: EngineInterface) {
   const dir = `${ctx.main}/.orchestra/sessions`
   const entries = ctx.main === null ? [] : await $.fs.list(dir).catch(() => [])
-  const stamp = entries.map(f => `${f.name}:${f.mtimeMs}`).join(',')
-  if (!force && stamp === ctx.stamp) return
-  ctx.stamp = stamp
   const files = (await Promise.all(entries.filter(f => f.name.endsWith('.json')).map(f => read$($, `${dir}/${f.name}`))))
     .flatMap(t => (t === null ? [] : [parseSessionFile(t)].filter((f): f is SessionFile => f !== null)))
   const registry = ctx.main === null ? [] : parseRegistry((await read$($, `${ctx.main}/.orchestra/workstreams.md`)) ?? '')
@@ -113,21 +117,25 @@ async function osName($: EngineInterface): Promise<'windows' | 'mac' | 'linux'> 
 const open = async ($: EngineInterface, target: string) => {
   try {
     if (!isSafeTarget(target)) throw new Error('unsafe target')
-    await $.process.run(openerArgv(await osName($), target))
+    if ((await $.process.run(openerArgv(await osName($), target))).exitCode !== 0) throw new Error('opener failed')
   } catch {
-    await $.ui.toast('orchestra band: could not open it')
+    try {
+      $.ui.toast('orchestra band: could not open it')
+    } catch {
+      // Nothing more to do: a button press never rejects.
+    }
   }
 }
 
 export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
     const result = await next(e)
+    $.clock.every(REFRESH_MS, () => void tick($, options).catch(() => {}))
     Object.assign(ctx, fresh())
     await locate($)
     await measure($)
     await writeReport($)
-    await refresh($, true)
-    $.clock.every(REFRESH_MS, () => void tick($, options))
+    await refresh($)
     return result
   }).catch(($, e, next) => next(e))
 
@@ -136,7 +144,7 @@ export const register: Register = (on, options) => {
     ctx.limits = e.rateLimits.map(l => ({ kind: l.kind, percentUsed: l.percentUsed, ...(l.resetsAt ? { resetsAt: l.resetsAt } : {}) }))
     ctx.lastRequestAt = await $.clock.now()
     await writeReport($)
-    await refresh($, true)
+    await refresh($)
     return next(e)
   }).catch(($, e, next) => next(e))
 
@@ -155,9 +163,9 @@ export const register: Register = (on, options) => {
   // Waiting on the owner, live, for as long as the question is open.
   on('tool.call', { tool: 'AskUserQuestion' }, async ($, e, next) => {
     const questions = (e as unknown as { questions?: { question?: string }[] }).questions
-    ctx.question = `asks: ${questions?.[0]?.question ?? 'a question'}`
-    await writeReport($)
     try {
+      ctx.question = `asks: ${questions?.[0]?.question ?? 'a question'}`
+      await writeReport($)
       return await next(e)
     } finally {
       ctx.question = ''
@@ -172,7 +180,7 @@ export const register: Register = (on, options) => {
     const below = await next(e).catch(() => undefined)
     const { Box, Text, Button } = $.ui.resolve(e)
     const shape = { circle: ['●', 'suggestion'], triangle: ['▲', 'warning'], square: ['■', 'error'], half: ['◓', 'inactive'] } as const
-    const day = v.runOut === null ? '' : new Date(v.runOut).toLocaleString(undefined, { weekday: 'short', hour: '2-digit', minute: '2-digit' })
+    const day = v.runOut === null ? '' : new Date(v.runOut).toLocaleString('en-US', { weekday: 'short', hour: '2-digit', minute: '2-digit' })
 
     const mine = (
       <Box flexDirection="column" width={e.props.bodyColumns}>

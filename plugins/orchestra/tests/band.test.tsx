@@ -23,10 +23,10 @@ const report = (session: string, over: Record<string, unknown>) => JSON.stringif
 // The engine resolves a path against the host (D:\home\u\repo on Windows): the fake sees it the POSIX way.
 const posix = (path: string) => path.replace(/^[A-Za-z]:/, '').replace(/\\/g, '/')
 
-function disk(on: On, files: Record<string, string>) {
+function disk(on: On, files: Record<string, string>, failWrites = false) {
   const under = (dir: string) => Object.keys(files).filter(k => k.startsWith(`${dir}/`))
   on('fs.read', ($, e) => (posix(e.path) in files ? { value: files[posix(e.path)]! } : ({ deny: 'missing' }) as never))
-  on('fs.write', ($, e) => { files[posix(e.path)] = e.text; return { value: undefined } })
+  on('fs.write', ($, e) => { if (failWrites) return { deny: 'disk full' } as never; files[posix(e.path)] = e.text; return { value: undefined } })
   on('fs.exists', ($, e) => ({ value: posix(e.path) in files || under(posix(e.path)).length > 0 }))
   // exists() and stat() agree: a folder is there when a file lies under it.
   on('fs.stat', ($, e) => (posix(e.path) in files
@@ -39,7 +39,7 @@ function disk(on: On, files: Record<string, string>) {
 }
 
 function session(on: On, root: string, id: string) {
-  mock.clock(on)
+  const clock = mock.clock(on, { now: Date.now() })
   on('session.root', () => ({ value: root }))
   on('session.cwd', () => ({ value: root }))
   on('session.id', () => ({ value: id }))
@@ -47,6 +47,7 @@ function session(on: On, root: string, id: string) {
   on('mcp.call', () => ({ value: { content: [{ type: 'text', text: JSON.stringify({ title: 'Orchestrator', link: 'claude://claude.ai/epitaxy/local_o' }) }] } }) as never)
   on('agent.list', () => ({ value: [] }))
   on('session.start', ($, e) => ({ cwd: e.cwd }))
+  return clock
 }
 
 test('the orchestrator band shows the summary and only the workstreams that need attention', async ($, on) => {
@@ -109,5 +110,82 @@ test('a band another mod draws stays beneath ours', async ($, on) => {
   const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
   expect(await ui.find({ type: 'Text', text: /other band/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /orchestra/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('a stale report shows up on a tick even when no file changed', async ($, on) => {
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY.split(String.fromCharCode(10)).filter(l => !l.includes('reports')).join(String.fromCharCode(10)),
+    [`${ROOT}/.orchestra/sessions/s3.json`]: report('s3', { workstream: 'auth' }),
+  }
+  disk(on, files)
+  const clock = session(on, ROOT, 'o')
+  await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
+  let ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /stale/ })).toBeUndefined()
+  await ui.unmount()
+  await clock.advance(31 * 60_000)
+  ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /stale/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('a worktree session reports into the main checkout and reads its branch from the worktree gitdir', async ($, on) => {
+  const WT = `${ROOT}/.worktrees/reports`
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY,
+    [`${WT}/.git`]: `gitdir: ${ROOT}/.git/worktrees/reports`,
+    [`${ROOT}/.git/worktrees/reports/HEAD`]: 'ref: refs/heads/reports-branch',
+  }
+  disk(on, files)
+  session(on, WT, 'w')
+  await $.session.start({ cwd: WT, surface: 'desktop', isInteractive: true })
+  const mine = JSON.parse(files[`${ROOT}/.orchestra/sessions/w.json`]!)
+  expect(mine).toMatchObject({ role: 'workstream', workstream: 'reports', branch: 'reports-branch' })
+  expect(Object.keys(files).filter(k => k.startsWith(`${WT}/.orchestra`))).toEqual([])
+})
+
+test('a liveview URL that is not local shows no button', async ($, on) => {
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY,
+    [`${ROOT}/.orchestra/liveview.json`]: JSON.stringify({ url: 'https://example.com/' }),
+  }
+  disk(on, files)
+  session(on, ROOT, 'o')
+  await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
+  const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ key: 'liveview' })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('a failed write of its own report still draws the band', async ($, on) => {
+  const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+  disk(on, files, true)
+  session(on, ROOT, 'o')
+  await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
+  const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /5h 42%/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('a Liveview press that exits non-zero toasts instead of failing quietly', async ($, on) => {
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY,
+    [`${ROOT}/.orchestra/liveview.json`]: JSON.stringify({ url: 'http://localhost:4123/' }),
+  }
+  disk(on, files)
+  session(on, ROOT, 'o')
+  mock.env(on, { OS: 'Windows_NT' })
+  let exitCode = 1
+  const toasts: string[] = []
+  on('process.run', () => ({ value: { exitCode, stdout: '', stderr: '' } }) as never)
+  on('ui.toast', ($, e) => { toasts.push(e.text); return { value: undefined } })
+  await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
+  const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  await ui.press({ key: 'liveview' })
+  expect(toasts).toEqual(['orchestra band: could not open it'])
+  exitCode = 0
+  await ui.press({ key: 'liveview' })
+  expect(toasts).toHaveLength(1)
   await ui.unmount()
 })
