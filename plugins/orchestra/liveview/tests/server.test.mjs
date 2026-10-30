@@ -1,0 +1,110 @@
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { spawn } from 'node:child_process'
+import fs from 'node:fs'
+import http from 'node:http'
+import os from 'node:os'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+import { TranscriptReader } from '../sources.mjs'
+import { liveUrl, startServer, stop } from '../server.mjs'
+
+const SERVER = fileURLToPath(new URL('../server.mjs', import.meta.url))
+const PORT = 47317
+
+function fixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'liveview-root-'))
+  fs.mkdirSync(path.join(root, '.orchestra', 'sessions'), { recursive: true })
+  fs.writeFileSync(path.join(root, '.orchestra', 'workstreams.md'), '| Workstream | Session | Branch and worktree | Test data | Port | Schema change | Stage |\n| --- | --- | --- | --- | --- | --- | --- |\n')
+  return root
+}
+
+const reader = () => new TranscriptReader(fs.mkdtempSync(path.join(os.tmpdir(), 'liveview-tx-')))
+
+function get(port, url, host) {
+  return new Promise((resolve, reject) => {
+    http.get({ host: '127.0.0.1', port, path: url, headers: host ? { host } : {} }, res => {
+      let body = ''
+      res.on('data', c => { body += c })
+      res.on('end', () => resolve({ status: res.statusCode, body }))
+    }).on('error', reject)
+  })
+}
+
+test('serves the page and the snapshot, refuses a foreign Host, and cleans up on close', async () => {
+  const root = fixture()
+  const s = await startServer({ root, port: PORT, reader: reader(), auto: false, onIdle: () => {} })
+  try {
+    assert.equal(s.url, `http://localhost:${s.port}/`)
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root, '.orchestra', 'liveview.json'), 'utf8')), { url: s.url, pid: process.pid })
+    const snap = await get(s.port, '/api/snapshot')
+    assert.equal(snap.status, 200)
+    assert.equal(JSON.parse(snap.body).v, 1)
+    assert.equal((await get(s.port, '/')).status, 200)
+    assert.equal((await get(s.port, '/?preview&bars=a')).status, 200, 'a query string still serves the page')
+    assert.equal((await get(s.port, '/api/snapshot', 'evil.example')).status, 403)
+    assert.equal((await get(s.port, '/api/snapshot', `localhost:${s.port}`)).status, 200)
+    assert.equal((await get(s.port, '/nope')).status, 404)
+    assert.equal(await liveUrl(root), s.url)
+  } finally {
+    await s.close()
+  }
+  assert.equal(fs.existsSync(path.join(root, '.orchestra', 'liveview.json')), false)
+})
+
+test('a busy port moves to the next one', async () => {
+  const busy = http.createServer().listen(PORT + 30, '127.0.0.1')
+  await new Promise(r => busy.once('listening', r))
+  const s = await startServer({ root: fixture(), port: PORT + 30, reader: reader(), auto: false, onIdle: () => {} })
+  try {
+    assert.equal(s.port, PORT + 31)
+  } finally {
+    await s.close()
+    busy.close()
+  }
+})
+
+test('exits on its own after 30 minutes with no fresh session file', async () => {
+  const root = fixture()
+  let t = Date.parse('2026-10-30T12:00:00Z')
+  let idled = 0
+  const s = await startServer({ root, port: PORT + 40, now: () => t, reader: reader(), auto: false, onIdle: () => { idled++ } })
+  fs.writeFileSync(path.join(root, '.orchestra', 'sessions', 'a.json'), JSON.stringify({ v: 1, session: 'a', updatedAt: new Date(t + 20 * 60_000).toISOString() }))
+  t += 31 * 60_000
+  s.tick()
+  await new Promise(r => setTimeout(r, 50))
+  assert.equal(idled, 0, 'a session file updated 11 minutes ago keeps it up')
+  t += 20 * 60_000
+  s.tick()
+  await new Promise(r => setTimeout(r, 50))
+  assert.equal(idled, 1)
+  assert.equal(fs.existsSync(path.join(root, '.orchestra', 'liveview.json')), false)
+})
+
+test('the command line detaches, reuses a live server and stops it', async () => {
+  const root = fixture()
+  const run = (...args) => new Promise(resolve => {
+    const p = spawn(process.execPath, [SERVER, '--root', root, ...args], { stdio: ['ignore', 'pipe', 'pipe'] })
+    let out = ''
+    p.stdout.on('data', c => { out += c })
+    p.on('close', () => resolve(out.trim()))
+  })
+  const url = await run('--detach')
+  assert.match(url, /^http:\/\/localhost:\d+\/$/)
+  assert.equal(await run('--detach'), url, 'a second start reuses the running server')
+  await run('--stop')
+  assert.equal(fs.existsSync(path.join(root, '.orchestra', 'liveview.json')), false)
+  await new Promise(r => setTimeout(r, 300))
+  assert.equal(await liveUrl(root), null)
+})
+
+test('SIGTERM removes liveview.json', { skip: process.platform === 'win32' && 'Windows cannot deliver SIGTERM to a handler; --stop covers it' }, async () => {
+  const root = fixture()
+  const p = spawn(process.execPath, [SERVER, '--root', root], { stdio: 'ignore' })
+  for (let i = 0; i < 50 && !(await liveUrl(root)); i++) await new Promise(r => setTimeout(r, 100))
+  p.kill('SIGTERM')
+  await new Promise(r => p.on('close', r))
+  assert.equal(fs.existsSync(path.join(root, '.orchestra', 'liveview.json')), false)
+  stop(root)
+})
