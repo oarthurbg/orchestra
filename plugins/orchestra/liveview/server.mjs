@@ -18,6 +18,8 @@ export const FIRST_PORT = 4317
 export const PORT_TRIES = 21
 export const TICK_MS = 5000
 export const IDLE_MS = 30 * MIN
+// Outlasts a first scan of the transcripts, during which a server cannot answer ping.
+const PING_MS = 30_000
 
 const infoFile = root => path.join(root, '.orchestra', 'liveview.json')
 
@@ -28,8 +30,17 @@ function readInfo(root) {
 const key = p => (process.platform === 'win32' ? path.resolve(p).toLowerCase() : path.resolve(p))
 const sameRoot = (a, b) => key(a) === key(b)
 const alive = pid => { try { process.kill(pid, 0); return true } catch (err) { return err.code === 'EPERM' } }
-// liveview.json files this process wrote and still serves, so a file naming our own pid can still be told from a stale one.
-const held = new Set()
+
+// True when the server recorded in liveview.json is alive and answers ping for this root with that same pid.
+async function answers(info, root) {
+  if (!info?.pid || !info.url || !alive(info.pid)) return false
+  try {
+    const body = await (await fetch(new URL('api/ping', info.url), { signal: AbortSignal.timeout(PING_MS) })).json()
+    return body.pid === info.pid && sameRoot(body.root, root)
+  } catch {
+    return false
+  }
+}
 
 // The URL of a live server for this root, or null.
 export async function liveUrl(root) {
@@ -109,25 +120,24 @@ export async function startServer({
   const url = `http://localhost:${bound}/`
   fs.mkdirSync(path.join(root, '.orchestra'), { recursive: true })
   const file = infoFile(root)
-  const info = JSON.stringify({ url, pid: process.pid })
+  const write = () => fs.writeFileSync(file, JSON.stringify({ url, pid: process.pid }), { flag: 'wx' })
+  const raw = () => { try { return fs.readFileSync(file, 'utf8') } catch { return null } }
+  const running = () => Object.assign(new Error(`liveview already running for ${root}`), { code: 'ERUNNING' })
+  const fail = async err => { await new Promise(resolve => server.close(resolve)); throw err }
   try {
-    fs.writeFileSync(file, info, { flag: 'wx' })
+    write()
   } catch (err) {
-    if (err.code !== 'EEXIST') { server.close(); throw err }
-    const pid = readInfo(root)?.pid
-    // shortcut: a stale file whose pid was recycled by another live process blocks every start until --stop removes it; upgrade by pinging the recorded url if that bites.
-    if (pid && (pid === process.pid ? held.has(file) : alive(pid))) {
-      await new Promise(resolve => server.close(resolve))
-      throw Object.assign(new Error(`liveview already running for ${root} (pid ${pid})`), { code: 'ERUNNING' })
-    }
-    fs.writeFileSync(file, info)
+    if (err.code !== 'EEXIST') return fail(err)
+    const stale = raw()
+    if (await answers(readInfo(root), root)) return fail(running())
+    // Remove the stale file only if no other start replaced it during the ping; then the 'wx' retry lets one start win.
+    if (raw() === stale) fs.rmSync(file, { force: true })
+    try { write() } catch (retry) { return fail(retry.code === 'EEXIST' ? running() : retry) }
   }
-  held.add(file)
   let timer = null
   const close = () => {
     if (timer) clearInterval(timer)
     if (readInfo(root)?.url === url) fs.rmSync(file, { force: true })
-    held.delete(file)
     server.closeAllConnections?.()
     return new Promise(resolve => server.close(() => resolve()))
   }
@@ -140,13 +150,7 @@ export async function startServer({
 // On Windows the signal cannot run our handler, so the file goes here.
 export async function stop(root) {
   const info = readInfo(root)
-  if (info?.pid && info.url) {
-    try {
-      // 15 s outlasts a first scan of the transcripts, during which the server cannot answer.
-      const body = await (await fetch(new URL('api/ping', info.url), { signal: AbortSignal.timeout(15_000) })).json()
-      if (body.pid === info.pid && sameRoot(body.root, root)) process.kill(info.pid)
-    } catch { /* not answering, not ours, or already gone */ }
-  }
+  if (await answers(info, root)) { try { process.kill(info.pid) } catch { /* already gone */ } }
   fs.rmSync(infoFile(root), { force: true })
 }
 
@@ -158,8 +162,8 @@ async function main(argv) {
   if (running) { console.log(running); return }
   if (argv.includes('--detach')) {
     spawn(process.execPath, [fileURLToPath(import.meta.url), '--root', root], { detached: true, stdio: 'ignore', windowsHide: true }).unref()
-    // About 30 s (plus one last ping of up to 1 s): the first scan of the transcripts can take several seconds, and the server cannot answer ping meanwhile.
-    const deadline = Date.now() + 30_000
+    // About 30 s, PING_MS (plus one last ping of up to 1 s): the first scan of the transcripts can take several seconds, and the server cannot answer ping meanwhile.
+    const deadline = Date.now() + PING_MS
     while (Date.now() < deadline) {
       await new Promise(r => setTimeout(r, 100))
       const url = await liveUrl(root)

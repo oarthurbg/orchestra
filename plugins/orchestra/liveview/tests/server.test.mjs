@@ -149,3 +149,71 @@ test('a request line that is not a valid URL gets 400', async () => {
     await s.close()
   }
 })
+
+const infoPath = root => path.join(root, '.orchestra', 'liveview.json')
+const DEAD_URL = `http://localhost:${PORT + 90}/`
+const decoy = () => spawn(process.execPath, ['-e', 'setTimeout(() => {}, 60000)'], { stdio: 'ignore' })
+
+test('a leftover liveview.json with a dead pid is overwritten', async () => {
+  const root = fixture()
+  const gone = spawn(process.execPath, ['-e', ''], { stdio: 'ignore' })
+  await new Promise(r => gone.on('close', r))
+  fs.writeFileSync(infoPath(root), JSON.stringify({ url: DEAD_URL, pid: gone.pid }))
+  const s = await startServer({ root, port: PORT + 70, reader: reader(), auto: false, onIdle: () => {} })
+  try {
+    assert.deepEqual(JSON.parse(fs.readFileSync(infoPath(root), 'utf8')), { url: s.url, pid: process.pid })
+  } finally {
+    await s.close()
+  }
+})
+
+test('a leftover liveview.json naming a live unrelated pid with a dead url is overwritten', async () => {
+  const root = fixture()
+  const d = decoy()
+  try {
+    fs.writeFileSync(infoPath(root), JSON.stringify({ url: DEAD_URL, pid: d.pid }))
+    const s = await startServer({ root, port: PORT + 72, reader: reader(), auto: false, onIdle: () => {} })
+    try {
+      assert.deepEqual(JSON.parse(fs.readFileSync(infoPath(root), 'utf8')), { url: s.url, pid: process.pid })
+    } finally {
+      await s.close()
+    }
+  } finally {
+    d.kill()
+  }
+})
+
+test('two overlapping starts over a stale liveview.json leave one server', async () => {
+  const root = fixture()
+  const d = decoy()
+  try {
+    fs.writeFileSync(infoPath(root), JSON.stringify({ url: DEAD_URL, pid: d.pid }))
+    const opts = { root, port: PORT + 74, reader: reader(), auto: false, onIdle: () => {} }
+    const [a, b] = await Promise.allSettled([startServer(opts), startServer({ ...opts, reader: reader() })])
+    const won = [a, b].filter(r => r.status === 'fulfilled').map(r => r.value)
+    try {
+      assert.equal(won.length, 1, 'exactly one start wins')
+      assert.equal([a, b].find(r => r.status === 'rejected').reason.code, 'ERUNNING')
+      assert.deepEqual(JSON.parse(fs.readFileSync(infoPath(root), 'utf8')), { url: won[0].url, pid: process.pid })
+    } finally {
+      for (const s of won) await s.close()
+    }
+  } finally {
+    d.kill()
+  }
+})
+
+test('stop does not kill a live pid whose url does not answer, and removes the file', async () => {
+  const root = fixture()
+  const d = decoy()
+  try {
+    fs.writeFileSync(infoPath(root), JSON.stringify({ url: DEAD_URL, pid: d.pid }))
+    await stop(root)
+    assert.equal(fs.existsSync(infoPath(root)), false)
+    await new Promise(r => setTimeout(r, 200))
+    assert.equal(d.exitCode, null, 'the decoy is still running')
+    assert.equal(d.signalCode, null)
+  } finally {
+    d.kill()
+  }
+})
