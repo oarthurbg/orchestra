@@ -14,7 +14,7 @@
 
 # orchestra
 
-A Claude Code plugin for running one project with several Claude sessions at once: one **maestro** session that only coordinates, and one **principal** session per feature, each taking its feature from spec to PR with its own worktree, isolated test data and subagents. It works for any kind of app: no database, server or Docker required.
+A Claude Code plugin for running one project with several Claude sessions at once: one **maestro** session that plans the app, sizes the work to the machine and the token limits, and coordinates without writing code, and one **principal** session per feature, each taking its feature from spec to PR with its own worktree, isolated test data and subagents. It works for any kind of app: no database, server or Docker required.
 
 The name follows the plugin's: maestro, the session that conducts the others; principal, the session that leads one workstream from spec to PR.
 

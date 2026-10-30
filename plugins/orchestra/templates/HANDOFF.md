@@ -15,10 +15,10 @@ The live registry of open workstreams (session, branch and worktree, test data, 
 ## How we work
 
 - **The spec rules everything.** Every workstream starts from a spec in `docs/superpowers/specs/` (brainstormed with the owner), never from code. The plan and the tasks come from the spec. If anyone finds the spec wrong or incomplete, work stops and the change goes into the spec first (recorded in `docs/decisions.md`), then into the code. Two workstreams never have overlapping specs: the maestro checks before opening a new one.
-- **Main session = maestro.** Chooses the work, opens principals (at their level in "Owner authorizations" in `CLAUDE.md`), watches context and machine load, checks and merges PRs, talks to the owner. Writes no code, not even through subagents; its subagents only read and research.
+- **Main session = maestro.** Plans the app with the owner (the backlog, what waits on what, the order), opens principals (at their level in "Owner authorizations" in `CLAUDE.md`), manages the machine and the token limits, watches context, checks and merges PRs, talks to the owner. Writes no code, not even through subagents; its subagents only read and research.
 - **One session per workstream**, each with its own worktree from the integration branch (`git worktree add -b <branch> <path> origin/<integration branch>`, with `<path>` next to the main checkout: `<main checkout>-<name>`), its own isolated test data and dev server port when the project has them, and its own PR into the integration branch. Workstreams run in parallel only when independent. A hotfix branches from the production branch and is merged back into the integration branch right after.
 - **Schema queue:** at most one workstream with a data schema change open at a time. The next one rebases and regenerates its migration before merging.
-- **Parallelism:** up to 2 tasks at once per workstream; with 4 to 6 workstreams the machine is at its limit.
+- **Parallelism:** no fixed number. The maestro sizes how many workstreams run and how many tasks each runs at once from the machine, the token limits and the ready work, and writes each workstream's task limit into its briefing (1 when it names none). A part other workstreams wait on lands first, as its own PR.
 - **Reviews:** two stages (spec compliance, then code quality), proportional to the risk the planner tags on each task. UI tasks get a third review, `impeccable-finish-reviewer`, from real screenshots (web UIs with a dev server). Before the PR, a close-out review of the whole branch (`requesting-code-review` with `ponytail-review`) and `ponytail-debt` in the PR description.
 - **Merging:** a principal never merges its own PR. The maestro merges after reviews and green CI, and runs the full suite after merging.
 - **Releases:** the maestro runs the full verification on the integration branch, opens the release PR into the production branch and merges it. Between releases: `ponytail-audit` and the impeccable audit, to open cleanup workstreams.
@@ -43,7 +43,7 @@ The live registry of open workstreams (session, branch and worktree, test data, 
 
 ## Next workstreams
 
-1. <name>: <one line>
+1. <name>: <one line>. Waits on: <workstream, the part of it, or nothing>
 
 ## Open questions for the owner
 

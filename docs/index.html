@@ -107,7 +107,7 @@ footer{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padd
   <section aria-labelledby="t-roles">
     <h2 id="t-roles">Who does what</h2>
     <div class="roles">
-      <div class="role"><h3>Main session (maestro)</h3><p>Opens workstreams, sets order and the schema queue, watches machine load and context size, merges PRs, talks to the owner. Writes no code, not even through subagents.</p></div>
+      <div class="role"><h3>Main session (maestro)</h3><p>Plans the app with the owner, opens workstreams as their dependencies clear, sizes how much runs at once to the machine and the token limits, keeps the schema queue, watches context size, merges PRs, talks to the owner. Writes no code, not even through subagents.</p></div>
       <div class="role"><h3>Principal</h3><p>Owns one feature end to end: spec, plan, subagents, reviews, PR. Answers the owner directly on checkpoints and mockups, and reports cross-workstream decisions to the maestro in one line.</p></div>
       <div class="role"><h3>Subagents</h3><p>Do one task each (implementer, reviewers, planner, explorer) and never spawn other agents. They get their mode and skills from the briefing.</p></div>
     </div>
@@ -150,10 +150,10 @@ footer{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padd
     <div class="rules">
       <div class="rule"><div class="big">250k</div><p>Tokens. When a wave of tasks closes above this, the principal writes its handoff note and the maestro clears its context, then sends a short briefing back.</p></div>
       <div class="rule"><div class="big">600k</div><p>Auto-compact safety net (<code>autoCompactWindow</code>), for when nobody checked in time.</p></div>
-      <div class="rule"><div class="big">2</div><p>Tasks at once per workstream, because every workstream shares one machine.</p></div>
+      <div class="rule"><div class="big">Sized</div><p>How many workstreams and tasks run at once. The maestro sizes it to the machine, the token limits and the ready work, and changes it as work moves.</p></div>
       <div class="rule"><div class="big">docs/workstreams/</div><p>Where each workstream keeps its handoff note, on its own branch, with a fixed template and a clean-session checklist.</p></div>
       <div class="rule"><div class="big">Off</div><p>Auto-archive on PR close. Archiving a session kills its background agents; keep it off while sessions open spec PRs and keep working.</p></div>
-      <div class="rule"><div class="big">0</div><p>Lines of code leaving the main session. It only orchestrates, merges and talks.</p></div>
+      <div class="rule"><div class="big">0</div><p>Lines of code leaving the main session. It plans the app, manages the machine and the limits, merges and talks.</p></div>
     </div>
   </section>
 
@@ -179,7 +179,7 @@ const GROUPS=[
   ["test-driven-development","Forces seeing the test fail before implementing.","Implementers"],
   ["verification-before-completion","Only allows claiming success with the command run and the output in hand.","Implementers and reviewers"],
   ["systematic-debugging","Methodical investigation of failures with no clear cause, including flaky ones.","When something breaks"],
-  ["dispatching-parallel-agents","The principal checks that tasks are independent (no shared files) and gives each agent a self-contained briefing. Up to 2 at once per workstream.","Parallel tasks and multiple unrelated failures"],
+  ["dispatching-parallel-agents","The principal checks that tasks are independent (no shared files) and gives each agent a self-contained briefing. As many at once as the maestro allows.","Parallel tasks and multiple unrelated failures"],
   ["requesting-code-review","Asks for a review of the whole branch before opening the PR.","Before the workstream PR"],
   ["receiving-code-review","Handles reviewer findings without blindly accepting or rejecting them.","When reviews come back"],
   ["finishing-a-development-branch","Wrap-up checklist: tests, PR, worktree and branch cleanup.","Closing the workstream"]]},
