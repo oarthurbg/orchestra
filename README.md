@@ -130,7 +130,7 @@ The band shares its slot with other mods and draws theirs beneath it. If you use
 A local page for the project: plan limits with a projection to the reset, what needs you, and every workstream's progress, ETA and timeline. It runs as a plain Node process (Node 18 or newer) and uses no LLM tokens. The band starts it when a maestro session opens and shows a `Liveview` button; `/orchestra:liveview` starts it by hand and `/orchestra:liveview stop` stops it. It stops on its own after 30 minutes with no session activity.
 
 - It listens on `127.0.0.1` only, from port 4317.
-- Progress comes from the plan checkboxes. ETAs come from how long past tasks with the same agent and risk took, measured from the commits that ticked them, and are marked `?` until there are 3 such tasks.
+- Progress comes from the plan checkboxes. ETAs come from how long past tasks took, measured from the commits that ticked them: tasks with the same agent and risk, else the same agent, else all past tasks, using the first group with 3 finished tasks. Until one has 3, the ETA shows `?`.
 - The limit projection reads token counts (never message content) from Claude Code's transcripts for every project on this machine, because plan limits are per account, and calibrates them on the band's latest limit reading.
 
 <img alt="The liveview, light" src="assets/brand/liveview-light.png" width="720">

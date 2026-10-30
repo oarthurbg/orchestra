@@ -62,7 +62,7 @@ Zero-dependency Node (18 or newer), ES modules, in `plugins/orchestra/liveview/`
 
 - **Which plan:** the handoff note's `Plan:` line; when it is missing, the one file under `docs/superpowers/plans/` that the workstream branch adds against the integration branch; otherwise `no plan`.
 - **Progress:** a task is done when every checkbox under it is ticked. The current task is the first one not done.
-- **Transcripts:** only `timestamp`, `message.model`, `message.id` and `message.usage` are read, and assistant lines are deduplicated by `message.id`. Each file is read incrementally from a stored byte offset; a file shorter than its offset was rewritten and is read again from 0. Only files modified in the last 7 days are opened. No message content is kept or shown.
+- **Transcripts:** only `timestamp`, `message.model`, `message.id` and `message.usage` are read, and assistant lines are deduplicated by `message.id`. Each file is read incrementally from a stored byte offset; a file shorter than its offset was rewritten and is read again from 0. Only files modified in the last 8 days are opened (the 7-day window plus a margin). No message content is kept or shown.
 
 ## ETA
 
@@ -91,7 +91,7 @@ The simple version: per-task medians by agent and risk, calibrated from git. Fil
 - **Now:** `k × weighted tokens from the window start to now`.
 - **Run-out:** at the burn rate of the last 24 hours (the last hour for the 5-hour limit). No run-out time when it falls after `resetsAt`. The rate, in percent per millisecond, is part of the projection, for the limit waits.
 - **5-hour:** the same method on the `five_hour` reading.
-- **No reading yet:** weighted tokens only, labelled `no reading yet`.
+- **No reading yet:** the meter shows only "No reading yet".
 
 ## Rollout
 
@@ -125,7 +125,7 @@ The approved prototype was built with taste-skill (app style `achromatic-ledger`
   - 5-hour limit %, with the run-out time or the reset time;
   - weekly limit %, with the run-out time or the projected % at the reset;
 - **Middle row:** "Needs you" (1fr) beside "Weekly limit" (2fr), both the same height.
-  - "Needs you" lists every session that is waiting, at 250k or more, stale, unregistered, or registered with no session. Each has its shape, name and a plain reason ("254k context: clear it at the next stop"). A row whose session has a link is one link: the whole row highlights on hover, shows "Open" on its right, and opens the session; its accessible name is "Open <name>: <reason>". A row without a link stays plain. When nothing needs the owner, it keeps its frame and says so.
+  - "Needs you" lists every session that is waiting, at 250k or more, stale, unregistered, or registered with no session. Each has its shape, name and a plain reason ("254k context: clear it at the next stop"). A row whose session has a link is one link: the whole row highlights on hover, shows "Open" on its right, and opens the session; its accessible name is "<name>, Open, <reason>". A row without a link stays plain. When nothing needs the owner, it keeps its frame and says so.
   - The chart shows cumulative weekly % across the 7-day window:
     - a y-scale at 0, 25, 50, 75 and 100% with faint gridlines;
     - the actual line solid cobalt, the projection dashed to the run-out (100%) or to the reset, with its end labelled;
