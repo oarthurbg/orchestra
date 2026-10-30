@@ -20,7 +20,8 @@ export function parseRegistry(md) {
     const c = cells(line)
     if (c.length < 7 || c[0] === 'Workstream') continue
     const [branch = '', worktree = ''] = ticks(c[2])
-    if (!worktree) continue // separator and header rows have none
+    // Separator and header rows have no worktree; an unnamed row is no workstream, and the inbox trusts a registered name is non-empty.
+    if (!c[0] || !worktree) continue
     rows.push({ name: c[0], session: c[1], branch, worktree: worktree.replace(/\\/g, '/'), stage: c[6] })
   }
   return rows

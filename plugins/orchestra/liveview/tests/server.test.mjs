@@ -380,3 +380,27 @@ test('the file route reads from the registry row its files came from, never an e
     await s.close()
   }
 })
+
+test('an unnamed registry row gives a session with no workstream no files, so its title never picks a worktree', async () => {
+  const { root } = inboxFixture()
+  const decoy = fs.mkdtempSync(path.join(os.tmpdir(), 'liveview-decoy-'))
+  const g = (...args) => execFileSync('git', args, { cwd: decoy, stdio: 'ignore' })
+  g('init', '-q')
+  fs.mkdirSync(path.join(decoy, 'docs', 'mockups'), { recursive: true })
+  fs.writeFileSync(path.join(decoy, 'docs', 'mockups', 'invoice.png'), 'decoy')
+  g('add', '.')
+  g('-c', 'user.email=test@example.com', '-c', 'user.name=test', 'commit', '-q', '-m', 'decoy')
+  const md = path.join(root, '.orchestra', 'workstreams.md')
+  const [head, sep] = fs.readFileSync(md, 'utf8').split('\n')
+  fs.writeFileSync(md, [head, sep, '|  | s1 | `billing` at `.worktrees/billing` | none | none | no | build |', `| X | s9 | \`x\` at \`${decoy}\` | none | none | no | build |`, ''].join('\n'))
+  const file = path.join(root, '.orchestra', 'sessions', 's1.json')
+  fs.writeFileSync(file, JSON.stringify({ ...JSON.parse(fs.readFileSync(file, 'utf8')), workstream: '', title: 'X' }))
+  const s = await startServer({ root, port: PORT + 88, reader: reader(), auto: false, onIdle: () => {} })
+  try {
+    const res = await get(s.port, '/api/file?s=s1&n=0')
+    assert.notEqual(res.body, 'decoy')
+    assert.equal(res.status, 404)
+  } finally {
+    await s.close()
+  }
+})
