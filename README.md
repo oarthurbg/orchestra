@@ -1,8 +1,8 @@
 # orchestra
 
-A Claude Code plugin for running one project with several Claude sessions at once: one **orchestrator** session that only coordinates, and one **workstream** session per feature, each taking its feature from spec to PR with its own worktree, test database, port and subagents.
+A Claude Code plugin for running one project with several Claude sessions at once: one **orchestrator** session that only coordinates, and one **workstream** session per feature, each taking its feature from spec to PR with its own worktree, isolated test data and subagents. It works for any kind of app: no database, server or Docker required.
 
-It was built while developing an internal media-planning app, and packages the workflow that came out of it: spec first, two-stage and risk-proportional reviews, a third UI review from real screenshots, handoff notes and context clearing, per-workstream test databases, and a ponytail mode and set of skills for every stage.
+It was built while developing an internal media-planning app, and packages the workflow that came out of it: spec first, two-stage and risk-proportional reviews, a third UI review from real screenshots, handoff notes and context clearing, isolated test data per workstream, and a ponytail mode and set of skills for every stage.
 
 **See the whole stack on one page:** [docs/index.html](docs/index.html) (published at <https://oarthurbg.github.io/orchestra/>).
 
@@ -13,7 +13,8 @@ plugins/orchestra/
   agents/      explorer, planner, implementer, implementer-advanced, mechanic,
                spec-reviewer, quality-reviewer, screenshotter, verifier
   skills/      orchestrator (with stages.md: modes, skills and reviews per stage)
-               workstream, handoff-note, test-databases (compose file and scripts)
+               workstream, handoff-note, test-databases (test data recipes per data store,
+               plus an optional, tested Postgres-in-Docker example)
   commands/    /orchestra:init, /orchestra:start-workstream, /orchestra:close-wave
   templates/   CLAUDE.md, HANDOFF.md, handoff-note.md
 docs/index.html  the stack at a glance
@@ -31,7 +32,7 @@ docs/index.html  the stack at a glance
 | screenshotter | Sonnet, low | full | Light and dark, wide and narrow, empty, loading and error states |
 | verifier | Sonnet, low | full | Full verification before the PR, report only |
 
-Every project-specific value (branches, commands, ports, test database URL, how agents sign in for browser checks) lives in one "Project settings" block in the project's `CLAUDE.md`, which `/orchestra:init` writes.
+Every project-specific value (branches, commands, dev server, test data commands, how agents sign in for browser checks) lives in one "Project settings" block in the project's `CLAUDE.md`, which `/orchestra:init` writes.
 
 ## Install
 
@@ -51,22 +52,22 @@ Then install the plugins the workflow uses. This marketplace lists them, fetched
 /plugin install taste-skill@orchestra
 /plugin install frontend-design@orchestra
 /plugin install design@orchestra
+/plugin install security-audit@orchestra
 ```
 
 Skip any you already have from another marketplace (for example `superpowers@claude-plugins-official`): two copies of one plugin load duplicate skills. From a shell, the same steps are `claude plugin marketplace add oarthurbg/orchestra` and `claude plugin install <name>@orchestra`.
 
-The workflow also uses `dataviz` and `security-audit` when your Claude Code has them, and skips them otherwise. `claude-security` is an optional deep scan of finished code before a release.
+`dataviz` (chart and dashboard design) is built into recent Claude Code versions, so there is nothing to install. If you already added `security-audit` by hand to `~/.claude/skills`, skip its plugin. `claude-security` is an optional deep scan of finished code before a release.
 
 Then, in your project:
 
-1. Run `/orchestra:init` to scaffold `CLAUDE.md` settings, `docs/HANDOFF.md`, `docs/workstreams/`, `docker-compose.test-db.yml` and `scripts/test-db/`.
-2. Start the test database: `docker compose -f docker-compose.test-db.yml up -d --wait`.
-3. In your main session, load the `orchestra:orchestrator` skill and open workstreams with `/orchestra:start-workstream <name> <goal>`.
+1. Run `/orchestra:init`. It looks at the project, proposes the "Project settings" (including test data commands that match your data store, or `none`), and scaffolds `CLAUDE.md` settings, `docs/HANDOFF.md` and `docs/workstreams/`.
+2. In your main session, load the `orchestra:orchestrator` skill and open workstreams with `/orchestra:start-workstream <name> <goal>`.
 
 ## Requirements
 
 - **Claude Code desktop app** (Code tab) for the session tools the workflow relies on: starting sessions, messaging between them, reading their context size, clearing and archiving them. In the plain CLI the roles and agents still work, but you start, brief, clear and archive sessions by hand.
-- **Docker** for the per-workstream Postgres test databases.
+- **Docker** only if you pick the optional Postgres-in-Docker test data example.
 - **git** with worktrees, and the **GitHub CLI** (`gh`) for PRs.
 
 ## Recommended settings
@@ -91,6 +92,7 @@ orchestra only decides where each of these enters the flow. All credit for the s
 - [taste-skill](https://github.com/Leonxlnx/taste-skill) by leonxlnx: art direction for mockups. MIT.
 - [frontend-design](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/frontend-design) by Anthropic: visual direction for mockups. Apache-2.0.
 - [design](https://github.com/anthropics/knowledge-work-plugins/tree/main/design) by Anthropic (knowledge-work plugins): design critique and accessibility review. Apache-2.0.
+- [security-audit](https://github.com/cloudflare/security-audit-skill) by Cloudflare: multi-phase security audits with verified findings. MIT.
 
 ## License
 

@@ -55,6 +55,14 @@
       "description": "Upstream: Anthropic (knowledge-work-plugins). Design critique and accessibility review.",
       "homepage": "https://github.com/anthropics/knowledge-work-plugins/tree/main/design",
       "category": "design"
+    },
+    {
+      "name": "security-audit",
+      "source": { "source": "github", "repo": "cloudflare/security-audit-skill" },
+      "description": "Upstream: Cloudflare (cloudflare/security-audit-skill). Multi-phase security audits with independently verified findings.",
+      "homepage": "https://github.com/cloudflare/security-audit-skill",
+      "license": "MIT",
+      "category": "security"
     }
   ]
 }
