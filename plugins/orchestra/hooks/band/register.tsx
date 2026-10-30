@@ -204,7 +204,8 @@ const HOVER = '#80808033'
 async function startLiveview($: EngineInterface) {
   const plugin = await $.env.get('CLAUDE_PLUGIN_ROOT')
   if (!plugin || ctx.main === null) return
-  await $.process.run(['node', `${norm(plugin)}/liveview/server.mjs`, '--root', ctx.main, '--detach']).catch(() => undefined)
+  // --detach waits up to about 31 s, longer than process.run's 30 s default, which would kill the child (and the server with it).
+  await $.process.run(['node', `${norm(plugin)}/liveview/server.mjs`, '--root', ctx.main, '--detach'], { timeoutMs: 60_000 })
 }
 
 export const register: Register = (on, options) => {

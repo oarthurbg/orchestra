@@ -722,10 +722,14 @@ test('a maestro session starts the liveview once, detached', async ($, on) => {
   await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
   // The start is not awaited by the hook: wait for it to land.
   for (let i = 0; i < 20 && !runs.some(r => r.includes('server.mjs')); i++) await new Promise(r => setTimeout(r, 10))
+  // A late duplicate would land in this wait.
+  await new Promise(r => setTimeout(r, 50))
   const starts = runs.filter(r => r.includes('liveview/server.mjs'))
   expect(starts.length).toBe(1)
   expect(starts[0]).toContain('--detach')
   expect(starts[0]).toContain(ROOT)
+  // --detach waits up to about 31 s: the default 30 s timeout would kill it first.
+  expect(starts[0]).toContain('"timeoutMs":60000')
 })
 
 test('a principal session never starts the liveview', async ($, on) => {
@@ -740,6 +744,35 @@ test('a principal session never starts the liveview', async ($, on) => {
   on('process.run', ($, e) => { runs.push(JSON.stringify(e)); return { value: { stdout: '', stderr: '', exitCode: 0 } } as never })
   on('env.get', () => ({ value: '/plug/orchestra' }) as never)
   await $.session.start({ cwd: WT, surface: 'desktop', isInteractive: true })
+  await new Promise(r => setTimeout(r, 50))
+  expect(runs.filter(r => r.includes('server.mjs')).length).toBe(0)
+})
+
+// A start that fails in either call must not stop the session: its report is written and the band draws.
+for (const failing of ['process.run', 'env.get'] as const) {
+  test(`a liveview start whose ${failing} rejects still starts the session`, async ($, on) => {
+    const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+    disk(on, files)
+    session(on, ROOT, 'o')
+    on('process.run', () => (failing === 'process.run' ? { deny: 'spawn failed' } : { value: { stdout: '', stderr: '', exitCode: 0 } }) as never)
+    on('env.get', ($, e) => (failing === 'env.get' && JSON.stringify(e).includes('CLAUDE_PLUGIN_ROOT') ? { deny: 'no env' } : { value: JSON.stringify(e).includes('CLAUDE_PLUGIN_ROOT') ? '/plug/orchestra' : undefined }) as never)
+    await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
+    // The start is not awaited: let a late rejection surface before the test ends.
+    await new Promise(r => setTimeout(r, 50))
+    expect(JSON.parse(files[`${ROOT}/.orchestra/sessions/o.json`]!).role).toBe('maestro')
+    const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+    expect(await ui.find({ type: 'Text', text: /42% used/ })).toBeDefined()
+    await ui.unmount()
+  })
+}
+
+test('a session outside an orchestra project never starts the liveview', async ($, on) => {
+  disk(on, {})
+  session(on, '/home/u/other', 'x')
+  const runs: string[] = []
+  on('process.run', ($, e) => { runs.push(JSON.stringify(e)); return { value: { stdout: '', stderr: '', exitCode: 0 } } as never })
+  on('env.get', () => ({ value: '/plug/orchestra' }) as never)
+  await $.session.start({ cwd: '/home/u/other', surface: 'desktop', isInteractive: true })
   await new Promise(r => setTimeout(r, 50))
   expect(runs.filter(r => r.includes('server.mjs')).length).toBe(0)
 })
