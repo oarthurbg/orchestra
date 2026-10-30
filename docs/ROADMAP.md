@@ -53,7 +53,7 @@ To investigate: whether the mod can answer inside the app. App sessions are neve
 
 ### 5. A language server for code navigation
 
-Two measured trials. A command that prints references with their source line and callers as function names (a thin wrapper around Pyright or the TypeScript language service) cut explorer work tokens about 30% on networkx, the Python standard library and a public TypeScript app, and 65% (75% fewer tool calls) on a 1,960-file public app. The real Claude Code `LSP` tool, whose output is bare positions, saved nothing on that app. See [`docs/superpowers/specs/2026-10-30-lsp-measurement.md`](superpowers/specs/2026-10-30-lsp-measurement.md).
+Two measured trials. A command that prints references with their source line and callers as function names (a thin wrapper around Pyright or the TypeScript language service) cut explorer work tokens about 30% on networkx, the Python standard library and a public TypeScript app, and 65% (75% fewer tool calls) on a 1,960-file public app. The real Claude Code `LSP` tool, whose output is bare positions, saved nothing on that app. With Opus (high effort) as the explorer the saving shrinks to about 16%, but grep alone missed 2 of 8 callers on the trace question in every run and the language server did not. See [`docs/superpowers/specs/2026-10-30-lsp-measurement.md`](superpowers/specs/2026-10-30-lsp-measurement.md).
 
 Idea, to be brainstormed and specced:
 - Explorer and planner use a language-server command (references with source lines, callers as function names) when one is available, and fall back to grep otherwise. Either orchestra ships the thin command or the plugin's tool output improves.

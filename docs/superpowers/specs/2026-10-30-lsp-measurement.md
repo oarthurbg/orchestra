@@ -4,13 +4,14 @@
 
 ## Recommendation
 
-**Adopt language-server navigation for explorers and planners, in the form of a command or tool whose output includes the source line of each reference and the function name of each caller.** The plugin's `LSP` tool as it ships is not enough on its own.
+**Adopt language-server navigation for explorers and planners, in the form of a command or tool whose output includes the source line of each reference and the function name of each caller.** The plugin's `LSP` tool as it ships is not enough on its own for a small model, and the saving is smaller on a large one.
 
 - With such a wrapper (references printed with their source line, `calls` printed as function names with file and line), Haiku explorers on a public 1,960-file TypeScript app used **65% fewer work tokens, 75% fewer tool calls and 77% lower cost than grep-only**, over 3 runs per question, with the same accuracy. On the earlier three-codebase trial (networkx, the Python standard library, excalidraw) the same kind of wrapper saved about 30% of tokens and 44% of calls, and Pyright found every caller on Python, where graphify found 1 of 9.
 - With the real Claude Code `LSP` tool (plugin) on the same app, LSP alone was **not cheaper than grep** (+15% work tokens, within noise, 16% more tool calls, 12% lower cost). It returns bare positions, so agents spend calls working out the enclosing function. LSP plus graphify was in between (7% fewer tokens, 31% lower cost than grep, again within noise).
 - graphify added little on top of what the language server gives; on the app it did not beat grep by itself.
+- All of the above is Haiku. Repeated on Opus with high effort (same app and questions, grep, plugin LSP and wrapper arms, 3 runs per cell), the token saving shrinks: the wrapper used **16% fewer work tokens, 45% fewer tool calls and 17% lower cost** than grep, and the plugin tool used 7% more tokens but 14% fewer calls and 9% lower cost. What did not shrink is accuracy on the trace question: Opus with grep alone missed 2 of the 8 callers (`init` and `send`, reached through class-method dispatch) in all three runs, while both language-server arms found all 8. So for a stronger model the case for the language server rests more on completeness than on tokens.
 
-What to build: a small `lsp` command (references with source lines, callers as names) that explorer and planner use before grep when a language server is available, or a change to the plugin's tool output. Not measured: Python through the plugin (`pyright-lsp`), an Opus planner task, and whether subagents get the `LSP` tool. The accuracy comparison favours the wrapper arm slightly by construction: the truth sets come from the same TypeScript engine it calls.
+What to build: a small `lsp` command (references with source lines, callers as names) that explorer and planner use before grep when a language server is available, or a change to the plugin's tool output. Not measured: Python through the plugin (`pyright-lsp`), an Opus planner task (Opus was tested as an explorer only), Sonnet, and whether subagents get the `LSP` tool. The accuracy comparison favours the wrapper arm slightly by construction: the truth sets come from the same TypeScript engine it calls.
 
 ## Method
 
@@ -109,6 +110,25 @@ What this says:
 - **The plugin's `LSP` tool alone gave no saving.** `findReferences` returns locations without the source line, so agents read files (17 reads in one O1 run) or issue another LSP call per location (19 calls on O2).
 - **LSP + graphify** helped on the trace question (23% fewer tokens than grep) and hurt on O2; neither gap is clearly outside the noise.
 - **Noise is large.** The same question on the same arm varied up to 2.7x (plugin LSP, O1: 232k to 624k), so single runs say little; the wrapper's gap to grep is the only one that clearly exceeds it.
+
+## The same trial on Opus (high effort)
+
+Same Outline checkout (`def01b0`), questions, truth, plugin directory and accounting as above, but explorers run as `claude-opus-5-5` with `--effort high`; the no-tool baseline for that model is 72,820 tokens. Three arms (grep, plugin LSP, wrapper), 3 runs per cell, 27 runs. LSP + graphify and graphify alone were not repeated. Cells show the mean work tokens in thousands, with the mean tool calls in brackets.
+
+| Question | Grep | LSP (plugin) | LSP (wrapper) |
+| --- | --- | --- | --- |
+| O1 who-calls | 503 [15] | **211 [5]** | 236 [3] |
+| O2 impact | 546 [20] | 536 [12] | **501 [12]** |
+| O3 trace | **550 [12]**, 6/8 found | 959 [24], 8/8 | 613 [11], 8/8 |
+| **Sum of cell means** | **1,599 [47]** | **1,707 [40]** | **1,351 [26]** |
+| Cost, sum of cell means | $2.18 | $1.98 | $1.82 |
+
+Haiku, for comparison (sum of cell means): grep 1,870, plugin LSP 2,146, wrapper 657. The per-run spread is again large (for example plugin LSP on O3: 737k to 1,323k).
+
+- **Opus with grep was not worse in tokens on the trace question** (550k against 613k for the wrapper), but it was **less complete**: in all three runs it missed `init` and `send`, callers that only show up through class-method dispatch. Both language-server arms found them every time.
+- **Who-calls and impact:** all arms found 18/18 and 22/22 in every run. The plugin tool did best on who-calls (211k against 503k) and the wrapper on impact, but gaps of this size are inside the noise except the first.
+- **Cost per run is high on Opus** ($0.43 to $0.98), mostly from the cached context re-read on each turn, so fewer turns matter more there than on Haiku.
+- **Why the gap narrowed:** Opus needs fewer exploratory calls with grep (47 against 62 for Haiku, over the same questions), so there is less for the language server to remove.
 
 ## Not measured
 
