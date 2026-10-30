@@ -8,7 +8,7 @@
 <p align="center">
   <a href="https://code.claude.com/docs/en/plugins"><img alt="Claude Code plugin" src="https://img.shields.io/badge/Claude_Code-plugin-2450E0?style=flat-square"></a>
   <img alt="9 agents" src="https://img.shields.io/badge/agents-9-F0442C?style=flat-square">
-  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-FFC21A?style=flat-square&labelColor=111114"></a>
+  <a href="LICENSE"><img alt="Apache-2.0 license" src="https://img.shields.io/badge/license-Apache--2.0-FFC21A?style=flat-square&labelColor=111114"></a>
   <a href="https://oarthurbg.github.io/orchestra/"><img alt="Docs" src="https://img.shields.io/badge/docs-the_stack_on_one_page-B9C8F2?style=flat-square&labelColor=111114"></a>
 </p>
 
@@ -118,4 +118,4 @@ The mark is a small Bauhaus composition. Kandinsky and Itten paired the basic sh
 
 ## License
 
-orchestra's own files are under the [MIT license](LICENSE). The third-party plugins above are not part of this repository; each keeps its own license and is fetched from its own repository when you install it.
+orchestra's own files are under the [Apache License 2.0](LICENSE); keep the [`NOTICE`](NOTICE) file when you redistribute them. The orchestra name and logo are not part of that license: you may use them unmodified to refer to this project, but not to brand your own fork or product (see [`docs/BRAND.md`](docs/BRAND.md)). The third-party plugins above are not part of this repository; each keeps its own license and is fetched from its own repository when you install it.

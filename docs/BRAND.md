@@ -48,6 +48,15 @@ The docs page marks each ponytail mode with one shape: **full** is the circle, *
 | `assets/brand/readme-hero-light.png`, `-dark.png` | 2560 by 800 | README, by GitHub theme |
 | `assets/brand/social-preview.png` | 1280 by 640 | Link cards; upload under repo Settings, Social preview |
 
+## Using the name and logo
+
+The orchestra name and logo are not covered by the Apache License that covers the code. You may:
+
+- use them unmodified to refer to orchestra, for example in an article, a talk, a list of tools or a link to this repository;
+- show the plugin icon wherever Claude Code or a marketplace lists the plugin.
+
+You may not use them, or anything confusingly similar, as the name or logo of a fork, a derivative product or a service, or in a way that suggests the project endorses you. A fork is welcome under the Apache License; give it its own name and mark.
+
 ## Do
 
 - Keep the four shapes, their arrangement and their colors together.

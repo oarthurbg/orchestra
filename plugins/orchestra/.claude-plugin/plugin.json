@@ -8,6 +8,6 @@
   },
   "homepage": "https://github.com/oarthurbg/orchestra",
   "repository": "https://github.com/oarthurbg/orchestra",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "keywords": ["orchestration", "multi-session", "workflow", "subagents", "spec-first"]
 }
