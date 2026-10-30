@@ -35,6 +35,7 @@ File format:
 ```json
 { "v": 1, "session": "<id>", "role": "orchestrator | workstream | unregistered",
   "workstream": "<name or null>", "branch": "<branch>",
+  "title": "<sidebar title or empty>", "link": "<claude:// link or empty>",
   "state": "running | idle | waiting", "detail": "<text or empty>",
   "stage": "<from the Status line or empty>", "pr": "<from the Status line or empty>",
   "context": { "tokens": 182000, "window": 1000000 },
@@ -49,6 +50,8 @@ States, from the most precise source available:
 - **waiting:** live while an `AskUserQuestion` from that session is open, with its question as `detail`; otherwise when the handoff note's `Status:` line says `waiting on owner`, with its `waiting on:` text as `detail`.
 - **running:** between a turn's start and its end.
 - **idle:** everything else.
+
+`title` and `link` come from the desktop app once per session start: the mod calls the app's `get_session` tool (`$.mcp.call` on the app's session server, `session_id: "self"`), which returns the sidebar title and a `claude://claude.ai/epitaxy/<session id>` link. Outside the desktop app, or if the call fails, both stay empty.
 
 `stage` and `pr` come from the handoff note's `Status:` line (`docs/workstreams/<name>.md` in the worktree), which workstreams already update each wave. The mod reads it again on each write; an unreadable or missing note leaves both empty.
 
@@ -68,6 +71,8 @@ A `ui.render` hook on `AbovePrompt`.
 
 - **In an orchestra project, layout A:** one summary line (the brand mark, `5h` %, `week` % with the run-out time, counts of running and waiting workstreams), then one row per workstream that needs attention: shape, name, reason, context, detail.
 - **A row appears when a workstream:** is waiting (yellow triangle); is at 250k context or more (red square); is stale, meaning open in the registry but its file is more than 30 minutes old (half circle, `stale · <age>`); or is an `unregistered` worktree session (half circle, `unregistered <branch>`), so a forgotten worktree gets noticed.
+- **Opening a session:** a workstream's name is a button when its file has a `link`; pressing it opens the link with the system opener (`cmd /c start "" <link>` on Windows, `open` on macOS, `xdg-open` on Linux), and the app shows that session. The name shown is the sidebar `title` when there is one, else the workstream name. Without a link the name is plain text.
+- **Liveview button:** when `.orchestra/liveview.json` exists with a `url` on `localhost` or `127.0.0.1`, the summary line shows a `Liveview` button that opens that URL the same way. The dashboard (Phase 2, item 2) writes this file while it runs and deletes it when it stops; until then the button never shows.
 - **In a workstream session:** the summary line plus its own row (stage, context, keep-warm pings), always shown.
 - **Outside an orchestra project:** the limits line only.
 - **Sharing the slot:** other mods draw above the prompt too (ponytail's band does). The hook draws `next(e)` beneath its own band, as ponytail's does, so every band shows and none replaces another. It shows no ponytail controls; ponytail's band has the level switch.
@@ -107,19 +112,20 @@ The same timer as the band's drives it.
   - the run-out time, including no run-out time before the reset;
   - the attention and stale rules;
   - the ping schedule and the `warmMaxHours` stop.
-- **Render test:** seeded session files (one waiting, one at 254k, one stale, one healthy) produce the summary line and exactly three rows; a project with no `.orchestra/` produces the limits line only; a band another mod returns from `next(e)` is drawn beneath ours.
+- **Render test:** seeded session files (one waiting, one at 254k, one stale, one healthy) produce the summary line and exactly three rows; a project with no `.orchestra/` produces the limits line only; a band another mod returns from `next(e)` is drawn beneath ours; a row whose file has a `link` draws its name as a button; the `Liveview` button shows only with a valid `.orchestra/liveview.json` and never for a non-local URL.
 - **Static checks:** `claude plugin validate` and `tsc -p` pass.
 - **Live check in the desktop app, first build step, before the rest:**
   - the timer fires while the session is idle;
   - `$.model.fork` runs outside a turn;
   - its `usage.cache_read_input_tokens` shows it read the main cache;
-  - an older Claude Code or `claude -p` loads orchestra without the module failing it.
+  - an older Claude Code or `claude -p` loads orchestra without the module failing it;
+  - `$.mcp.call` reaches the app's session server and `get_session` returns `link` and `title`;
+  - opening a `claude://` link from the mod moves the app to that session.
 
-  If the timer does not fire while idle, the band refreshes on the next prompt instead and the README says so. If the fork does not read the main cache, keep-warm is dropped from this spec.
+  If the session server is out of reach or the link does not move the app, names stay plain text. If the timer does not fire while idle, the band refreshes on the next prompt instead and the README says so. If the fork does not read the main cache, keep-warm is dropped from this spec.
 - **Screenshots** of the band in an orchestrator session and a workstream session, for the README.
 
 ## Out of scope
 
-- Clicking a row to open that session.
 - Answering questions from the band (the decision inbox, item 3).
 - Charts and history (the dashboard, item 2).
