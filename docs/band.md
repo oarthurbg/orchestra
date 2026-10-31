@@ -23,7 +23,7 @@ orchestra draws a band above the prompt in every Claude Code session. In the mae
 ## Header
 
 - **The orchestra mark and name.**
-- **5h** and **Weekly**: the plan limits, each with a bar, the percentage used and the reset time. When the week will run out before it resets at the current pace, the weekly limit turns red and says when (`runs out Sat 18:20`). In a narrow window, as in a split view, the line keeps the percentages and the run-out time and drops the reset times.
+- **5h** and **Weekly**: the plan limits, each with a bar, the percentage used and the reset time. When the week will run out before it resets, the weekly limit turns red and says when (`runs out Sat 18:20`). While the [liveview](liveview.md) runs, that time comes from the work still planned: each workstream's remaining tasks at their estimated length, burning at the last day's pace, so a plan that ends before the week is spent shows no run-out. Without the liveview, or with no plan, the band projects the week's average pace so far. In a narrow window, as in a split view, the line keeps the percentages and the run-out time and drops the reset times.
 - **`3 of 5 running`**: how many workstreams are running, out of how many are registered.
 - **The arrow** steps through every row, the two most urgent, then none (it points inward, `◂`, while collapsed), and the band remembers your choice. With two rows or fewer it only collapses the band and opens it again.
 - **Collapsed**, the band keeps its header and footer. The header names the most urgent workstream with its square and status, opens its session when clicked, and counts the others (`+3`).

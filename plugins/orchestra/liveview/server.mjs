@@ -11,7 +11,7 @@ import path from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 import { TranscriptReader, appendHistory, committedBytes, committedSize, gather, readHistory, readSessions, seedHistory } from './sources.mjs'
-import { MIN, buildSnapshot, timedTasks } from './snapshot.mjs'
+import { MIN, buildSnapshot, planPace, timedTasks } from './snapshot.mjs'
 
 const HERE = path.dirname(fileURLToPath(import.meta.url))
 export const FIRST_PORT = 4317
@@ -24,6 +24,8 @@ const TYPES = { png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'i
 const PING_MS = 30_000
 
 const infoFile = root => path.join(root, '.orchestra', 'liveview.json')
+// The band reads its weekly run-out from here while the liveview runs.
+const paceFile = root => path.join(root, '.orchestra', 'pace.json')
 
 function readInfo(root) {
   try { return JSON.parse(fs.readFileSync(infoFile(root), 'utf8')) } catch { return null }
@@ -88,6 +90,7 @@ export async function startServer({
   let registry = []
   let bound = 0
   let idle = false
+  let pace = ''
 
   const tick = () => {
     let input
@@ -98,6 +101,9 @@ export async function startServer({
       input.history = history
       snapshot = buildSnapshot(input)
       registry = input.registry
+      // Written only when it changes, so the band's file watch fires only then.
+      const next = JSON.stringify(planPace(snapshot))
+      if (next !== pace) { fs.writeFileSync(paceFile(root), next); pace = next }
     } catch (err) {
       if (snapshot) snapshot.staleSince ??= now()
       else snapshot = { v: 1, error: String(err?.message ?? err), staleSince: now(), rows: [] }
@@ -170,7 +176,10 @@ export async function startServer({
   let timer = null
   const close = () => {
     if (timer) clearInterval(timer)
-    if (readInfo(root)?.url === url) fs.rmSync(file, { force: true })
+    if (readInfo(root)?.url === url) {
+      fs.rmSync(file, { force: true })
+      fs.rmSync(paceFile(root), { force: true })
+    }
     server.closeAllConnections?.()
     return new Promise(resolve => server.close(() => resolve()))
   }

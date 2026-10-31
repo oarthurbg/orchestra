@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 
 import {
   DAY, HOUR, MIN, afterPauses, attention, buildSnapshot, calendarWindow, cappedMinutes, estimate, freshestReading, limitPauses, median, modelWeight,
-  parseBranches, parsePlan, parseQueued, parseRegistry, placeQueued, planPathFromNote, projection, timedTasks,
+  parseBranches, parsePlan, parseQueued, parseRegistry, placeQueued, planPace, planPathFromNote, projection, timedTasks,
   typicalWorkstream, usageEvent, weighted,
 } from '../snapshot.mjs'
 
@@ -310,4 +310,23 @@ test('a non-string detail in a waiting session file gives an empty question and 
   })
   assert.doesNotThrow(snap)
   assert.equal(snap().inbox[0].question, '')
+})
+
+test('planPace gives the weekly run-out of the planned work, rounded to the minute, only before the reset', () => {
+  const now = Date.parse('2026-10-30T12:00:00Z')
+  const week = { percent: 80, resetsAt: new Date(now + 3 * DAY).toISOString() }
+  const snap = over => ({ builtAt: now, limits: { week }, rows: [{ end: now + 2 * DAY }], queued: [], pauses: [], ...over })
+  // The plan ends before the week is spent.
+  assert.deepEqual(planPace(snap({})), { v: 1, planned: true, weekRunsOut: null })
+  // The week is spent while the plan runs; a 5-hour pause before it does not count.
+  const from = now + DAY + 20_000
+  const pauses = [{ kind: 'five_hour', from: now + HOUR, to: now + 2 * HOUR }, { kind: 'seven_day', from, to: now + 3 * DAY }]
+  assert.deepEqual(planPace(snap({ pauses })), { v: 1, planned: true, weekRunsOut: Math.round(from / MIN) * MIN })
+  // A pause in a later week is not this week's run-out.
+  assert.equal(planPace(snap({ pauses: [{ kind: 'seven_day', from: now + 4 * DAY, to: now + 5 * DAY }] })).weekRunsOut, null)
+  // Queued work alone is a plan too.
+  assert.equal(planPace(snap({ rows: [], queued: [{ start: now, end: now + DAY }] })).planned, true)
+  // No future work, or no weekly reading: nothing to project.
+  assert.equal(planPace(snap({ rows: [{ end: now - HOUR }, { end: null }] })).planned, false)
+  assert.equal(planPace(snap({ limits: { week: { percent: null, resetsAt: null } } })).planned, false)
 })

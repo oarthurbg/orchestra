@@ -50,10 +50,13 @@ test('serves the page and the snapshot, refuses a foreign Host, and cleans up on
     assert.equal((await get(s.port, '/api/snapshot', undefined, 'POST')).status, 405)
     assert.equal((await get(s.port, '/nope')).status, 404)
     assert.equal(await liveUrl(root), s.url)
+    // No plan to project from: the band keeps the week's average.
+    assert.deepEqual(JSON.parse(fs.readFileSync(path.join(root, '.orchestra', 'pace.json'), 'utf8')), { v: 1, planned: false, weekRunsOut: null })
   } finally {
     await s.close()
   }
   assert.equal(fs.existsSync(path.join(root, '.orchestra', 'liveview.json')), false)
+  assert.equal(fs.existsSync(path.join(root, '.orchestra', 'pace.json')), false)
 })
 
 test('liveUrl pings the bound IPv4 address, as on Node 18 where fetch does not fall back from ::1', async () => {

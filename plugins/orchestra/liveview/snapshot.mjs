@@ -218,6 +218,16 @@ export function limitPauses(jobs, limits, now) {
 export const afterPauses = (t, pauses) => pauses.reduce((out, p) => (p.from < out ? out + (p.to - p.from) : out), t)
 
 // The freshest reading of one kind across session files.
+// The weekly run-out the planned work leads to, for the band: planned is false when there is no plan or no weekly reading to
+// project from, and weekRunsOut is null when the plan ends before the week is spent. Rounded to the minute so the file stays put.
+export function planPace(snap) {
+  const week = snap.limits?.week
+  const reset = Date.parse(week?.resetsAt ?? '')
+  const planned = week?.percent != null && ((snap.rows ?? []).some(r => r.end !== null && r.end > snap.builtAt) || (snap.queued ?? []).length > 0)
+  const spent = (snap.pauses ?? []).find(p => p.kind === 'seven_day' && p.from < reset)
+  return { v: 1, planned, weekRunsOut: planned && spent ? Math.round(spent.from / MIN) * MIN : null }
+}
+
 export function freshestReading(sessions, kind) {
   let best = null
   for (const s of sessions) {

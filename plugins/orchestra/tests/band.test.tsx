@@ -1083,3 +1083,36 @@ for (const [why, root, version, ok] of [['a dev copy', '/home/u/.claude/dev-mods
     await ui.unmount()
   })
 }
+
+test('while the liveview runs, the weekly run-out comes from its planned work', async ($, on) => {
+  const resetsAt = new Date(Date.now() + 3 * 86_400_000).toISOString()
+  const ahead = Date.now() + 86_400_000
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY,
+    [`${ROOT}/.orchestra/liveview.json`]: JSON.stringify({ url: 'http://localhost:4123/', pid: 1 }),
+    [`${ROOT}/.orchestra/pace.json`]: JSON.stringify({ v: 1, planned: true, weekRunsOut: ahead }),
+  }
+  disk(on, files)
+  session(on, ROOT, 'o')
+  on('session.measure', ($, e) => ({ changed: e.changed }))
+  await start($)
+  // 10% used: the week's average never runs out, the plan does.
+  const measure = () => $.session.measure({ context: { tokens: 30_000, window: 1_000_000 }, rateLimits: [{ kind: 'seven_day', percentUsed: 10, resetsAt }], changed: [] } as never)
+  await measure()
+  const runsOut = async () => {
+    const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+    const found = await ui.find({ type: 'Text', text: /^runs out / })
+    await ui.unmount()
+    return found !== undefined
+  }
+  expect(await runsOut()).toBe(true)
+  // The plan ends before the week is spent: no run-out, whatever the average says.
+  files[`${ROOT}/.orchestra/pace.json`] = JSON.stringify({ v: 1, planned: true, weekRunsOut: null })
+  await measure()
+  expect(await runsOut()).toBe(false)
+  // Without the liveview a leftover pace.json is ignored and the average decides.
+  delete files[`${ROOT}/.orchestra/liveview.json`]
+  files[`${ROOT}/.orchestra/pace.json`] = JSON.stringify({ v: 1, planned: true, weekRunsOut: ahead })
+  await measure()
+  expect(await runsOut()).toBe(false)
+})

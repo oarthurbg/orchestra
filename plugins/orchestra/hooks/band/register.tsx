@@ -134,7 +134,15 @@ async function refresh($: EngineInterface) {
   } catch {
     liveview = ''
   }
-  const next = buildView({ inProject: ctx.main !== null, role: ctx.role, self: ctx.id, files, registry, now: await $.clock.now(), liveview, ownLimits: ctx.limits, pings: ctx.pings })
+  let plan = null
+  try {
+    // Only while the liveview runs: a pace.json it left behind would be stale.
+    const p = liveview === '' ? null : JSON.parse((await read$($, `${ctx.main}/.orchestra/pace.json`)) ?? 'null')
+    if (p && typeof p.planned === 'boolean' && (p.weekRunsOut === null || typeof p.weekRunsOut === 'number')) plan = { planned: p.planned, weekRunsOut: p.weekRunsOut }
+  } catch {
+    plan = null
+  }
+  const next = buildView({ inProject: ctx.main !== null, role: ctx.role, self: ctx.id, files, registry, now: await $.clock.now(), liveview, ownLimits: ctx.limits, pings: ctx.pings, plan })
   // Unchanged views keep their value, so a quiet tick redraws nothing.
   await update($, view, prev => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next))
 }
@@ -197,11 +205,11 @@ async function follow($: EngineInterface, level: string | null) {
   if (level !== null) await update($, ponytail, p => (p.level === level ? p : { ...p, level }))
 }
 
-// What a file watch covers: the reports, the registry, liveview.json and ponytail's two flags.
+// What a file watch covers: the reports, the registry, liveview.json, pace.json and ponytail's two flags.
 async function watchPaths($: EngineInterface) {
   // A config folder that cannot be read costs ponytail's flags, never the project's paths.
   const own = await claudeDir($).then(dir => [`${dir}/.ponytail-active`, `${dir}/.ponytail-band`]).catch(() => [] as string[])
-  return ctx.main === null ? own : [`${ctx.main}/.orchestra/sessions`, `${ctx.main}/.orchestra/workstreams.md`, `${ctx.main}/.orchestra/liveview.json`, ...own]
+  return ctx.main === null ? own : [`${ctx.main}/.orchestra/sessions`, `${ctx.main}/.orchestra/workstreams.md`, `${ctx.main}/.orchestra/liveview.json`, `${ctx.main}/.orchestra/pace.json`, ...own]
 }
 
 const time = (ms: number) => new Date(ms).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
