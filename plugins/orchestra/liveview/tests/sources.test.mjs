@@ -289,3 +289,28 @@ test('branchFiles keeps the pictures, pages, PDFs, specs and plans a branch comm
   g('remote', 'add', 'origin', 'https://github.com/acme/shop.git')
   assert.equal(gather(repo, Date.now(), emptyReader(), []).origin, 'https://github.com/acme/shop.git')
 })
+
+test('gather reuses the plan a branch adds until its HEAD or the integration branch moves', () => {
+  const { repo: main, g } = initRepo()
+  fs.writeFileSync(path.join(main, 'CLAUDE.md'), 'Integration branch: `develop`\n')
+  g('add', 'CLAUDE.md')
+  g('commit', '-q', '-m', 'base')
+  g('worktree', 'add', '-q', '-b', 'billing', '.worktrees/billing')
+  const wt = path.join(main, '.worktrees', 'billing')
+  const w = repoAt(wt)
+  const plan = file => { fs.mkdirSync(path.join(wt, 'docs/superpowers/plans'), { recursive: true }); fs.writeFileSync(path.join(wt, file), '### Task 1: A\n\n- [ ] step\n'); w('add', file); w('commit', '-q', '-m', file) }
+  plan('docs/superpowers/plans/billing.md')
+  fs.mkdirSync(path.join(main, '.orchestra'))
+  fs.writeFileSync(path.join(main, '.orchestra', 'workstreams.md'), '| Workstream | Session | Branch and worktree | Test data | Port | Schema change | Stage |\n| --- | --- | --- | --- | --- | --- | --- |\n| billing | s1 | `billing` at `.worktrees/billing` | none | none | no | build |\n')
+  const planPath = () => gather(main, Date.now(), emptyReader(), []).workstreams.billing.planPath
+  assert.equal(planPath(), 'docs/superpowers/plans/billing.md')
+  assert.equal(planPath(), 'docs/superpowers/plans/billing.md')
+  // Merged into develop: HEAD is unchanged, but the branch no longer adds a plan.
+  g('merge', '-q', '--no-ff', '--no-edit', 'billing')
+  assert.equal(planPath(), undefined)
+  g('reset', '-q', '--hard', 'HEAD~1')
+  assert.equal(planPath(), 'docs/superpowers/plans/billing.md')
+  // A second plan moves HEAD, and two added plans name none.
+  plan('docs/superpowers/plans/other.md')
+  assert.equal(planPath(), undefined)
+})

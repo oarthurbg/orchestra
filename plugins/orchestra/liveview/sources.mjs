@@ -94,27 +94,38 @@ function safePlan(worktree, p) {
 // The integration branch as git knows it, origin first as in findPlan, or null.
 const integrationRef = (cwd, b) => (b ? [`origin/${b}`, b].find(r => git(cwd, ['rev-parse', '--verify', '--quiet', `${r}^{commit}`]) !== null) ?? null : null)
 
-// Which plan a workstream follows: its note's Plan line, else the one plan file its branch adds.
-export function findPlan(worktree, name, integration) {
-  const fromNote = safePlan(worktree, planPathFromNote(readText(path.join(worktree, 'docs', 'workstreams', `${name}.md`))))
-  if (fromNote) return fromNote
+// The one plan file a branch adds: null when it adds none or several, undefined when git cannot tell.
+function addedPlan(worktree, integration) {
   for (const base of integration ? [`origin/${integration}`, integration] : []) {
     const added = git(worktree, ['diff', '--name-only', '--diff-filter=A', `${base}...HEAD`, '--', PLANS])
     if (added === null) continue
     const files = added.trim().split('\n').filter(f => f.endsWith('.md'))
-    return files.length === 1 ? safePlan(worktree, files[0]) : null
+    return files.length === 1 ? files[0] : null
   }
-  return null
+  return undefined
 }
 
-// Per-worktree git results, reused while HEAD does not move.
+// Which plan a workstream follows: its note's Plan line, else the one plan file its branch adds.
+// at names HEAD and the integration tips; while it holds, the branch diff is reused.
+const addedCache = new Map()
+export function findPlan(worktree, name, integration, at = '') {
+  const fromNote = safePlan(worktree, planPathFromNote(readText(path.join(worktree, 'docs', 'workstreams', `${name}.md`))))
+  if (fromNote) return fromNote
+  const key = `${worktree}|${integration}`
+  const hit = at ? addedCache.get(key) : undefined
+  const file = hit?.at === at ? hit.file : addedPlan(worktree, integration)
+  if (at && file !== undefined) addedCache.set(key, { at, file })
+  return safePlan(worktree, file)
+}
+
+// Per-worktree git results, reused while HEAD does not move. gather passes HEAD and the integration tips it reads once per tick.
 const wsCache = new Map()
-export function readWorkstream(row, integration) {
+export function readWorkstream(row, integration, head, tips) {
   if (!row.worktree || !fs.existsSync(row.worktree)) return { worktreeMissing: true }
-  const planPath = findPlan(row.worktree, row.name, integration)
+  head ??= git(row.worktree, ['rev-parse', 'HEAD'])?.trim() ?? ''
+  const planPath = findPlan(row.worktree, row.name, integration, head && tips !== undefined ? `${head} ${tips}` : '')
   const planMd = planPath ? readText(path.join(row.worktree, planPath)) : null
   if (!planPath || planMd === null || parsePlan(planMd).length === 0) return {}
-  const head = git(row.worktree, ['rev-parse', 'HEAD'])?.trim() ?? ''
   const key = `${row.worktree}|${planPath}|${integration}`
   const cached = wsCache.get(key)
   if (cached && cached.head === head && head) return { planPath, planMd, versions: cached.versions, commits: cached.commits }
@@ -145,8 +156,7 @@ function fileKind(p) {
 
 // The files a workstream's branch committed that the owner may look at, reused while HEAD does not move.
 const filesCache = new Map()
-export function branchFiles(worktree, integration) {
-  const head = git(worktree, ['rev-parse', 'HEAD'])?.trim()
+export function branchFiles(worktree, integration, head = git(worktree, ['rev-parse', 'HEAD'])?.trim()) {
   if (!head) return []
   const key = `${worktree}|${integration}`
   if (filesCache.get(key)?.head === head) return filesCache.get(key).files
@@ -252,10 +262,16 @@ export class TranscriptReader {
 
 const realKey = p => { let r = path.resolve(p); try { r = fs.realpathSync.native(r) } catch { /* not on disk */ } return process.platform === 'win32' ? r.toLowerCase() : r }
 
-// The worktrees git itself lists for the main checkout; a registry row naming anything else is not trusted.
+// The worktrees git itself lists for the main checkout, each with its HEAD ('' when unborn); a registry row naming anything else is not trusted.
 function registeredWorktrees(main) {
   const out = git(main, ['worktree', 'list', '--porcelain']) ?? ''
-  return new Set(out.split('\n').filter(l => l.startsWith('worktree ')).map(l => realKey(l.slice(9).trim())))
+  const heads = new Map()
+  let key = null
+  for (const l of out.split('\n')) {
+    if (l.startsWith('worktree ')) heads.set(key = realKey(l.slice(9).trim()), '')
+    else if (l.startsWith('HEAD ') && key) heads.set(key, l.slice(5).trim().replace(/^0+$/, ''))
+  }
+  return heads
 }
 
 // Everything buildSnapshot needs, read fresh.
@@ -263,7 +279,12 @@ export function gather(main, now, reader, history) {
   const registry = parseRegistry(readText(path.join(main, '.orchestra', 'workstreams.md')) ?? '').map(r => ({ ...r, worktree: path.resolve(main, r.worktree) }))
   const { integration, production } = parseBranches(readText(path.join(main, 'CLAUDE.md')))
   const known = registeredWorktrees(main)
-  const workstreams = Object.fromEntries(registry.map(r => [r.name, known.has(realKey(r.worktree)) ? { ...readWorkstream(r, integration), files: branchFiles(r.worktree, integration) } : { worktreeMissing: true }]))
+  // Refs are shared by every worktree, so the integration tips are read once here, not per workstream.
+  const tips = integration ? [`origin/${integration}`, integration].map(r => git(main, ['rev-parse', '--verify', '--quiet', `${r}^{commit}`])?.trim() ?? '').join(' ') : ''
+  const workstreams = Object.fromEntries(registry.map(r => {
+    const head = known.get(realKey(r.worktree))
+    return [r.name, head !== undefined ? { ...readWorkstream(r, integration, head, tips), files: branchFiles(r.worktree, integration, head) } : { worktreeMissing: true }]
+  }))
   const since = now - 3 * DAY
   return {
     now,

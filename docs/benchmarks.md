@@ -2,7 +2,7 @@
 
 [README](../README.md) · [Setup](setup.md) · [Agents](agents.md) · [Stages, modes and skills](stages.md) · [The band](band.md) · [The liveview](liveview.md) · **Benchmarks**
 
-Measured on 2026-10-30; the code navigation numbers were rerun on 2026-10-31 (UTC) after the deep import chain fix. Every number below comes from a script in `bench/` run on the machine described here, or, for the token table, from the measurement note it cites. Raw results are in `bench/results/`.
+Measured on 2026-10-30; the code navigation numbers were rerun on 2026-10-31 (UTC) after the deep import chain fix, and the liveview numbers on the same day after the per-workstream git calls were removed. Every number below comes from a script in `bench/` run on the machine described here, or, for the token table, from the measurement note it cites. Raw results are in `bench/results/`.
 
 ## Machine
 
@@ -16,7 +16,7 @@ Measured on 2026-10-30; the code navigation numbers were rerun on 2026-10-31 (UT
 | grep | GNU grep 3.0, the one that ships with Git Bash |
 | TypeScript, Pyright | 5.9.3 and 1.1.414, installed by the script into temp folders |
 
-The machine was not idle: other programs ran during the runs. Each script samples how busy the whole CPU was for one second before and after it runs: 5% and 9% around the liveview run, 5% and 9% around the code navigation run.
+The machine was not idle: other programs ran during the runs. Each script samples how busy the whole CPU was for one second before and after it runs: 10% and 1% around the liveview run, 5% and 9% around the code navigation run.
 
 ## Liveview under load
 
@@ -45,19 +45,21 @@ Times in milliseconds, medians unless marked.
 
 | Workstreams | First snapshot | Later snapshot | Server tick | `/api/snapshot` between ticks | `/api/snapshot` while ticking, median / max | Requests over 1 s (of 20) | RSS after first tick | RSS after 20 ticks | Snapshot size |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 669 | 396 | 389 | 9 | 16 / 305 | 0 | 75 MB | 76 MB | 3 KB |
-| 5 | 2,998 | 1,012 | 971 | 15 | 17 / 994 | 0 | 76 MB | 81 MB | 11 KB |
-| 10 | 5,894 | 1,854 | 1,825 | 11 | 18 / 4,130 | 6 | 76 MB | 82 MB | 21 KB |
-| 25 | 14,583 | 3,905 | 3,909 | 5 | 17 / 3,672 | 4 | 80 MB | 92 MB | 50 KB |
-| 50 | 28,799 | 7,612 | 7,758 | 15 | 7,217 / 7,984 | 11 | 81 MB | 112 MB | 99 KB |
+| 1 | 719 | 317 | 316 | 9 | 17 / 257 | 0 | 75 MB | 76 MB | 3 KB |
+| 5 | 2,884 | 317 | 319 | 15 | 17 / 287 | 0 | 76 MB | 81 MB | 11 KB |
+| 10 | 5,453 | 335 | 350 | 10 | 17 / 294 | 0 | 76 MB | 82 MB | 21 KB |
+| 25 | 12,801 | 375 | 392 | 15 | 17 / 292 | 0 | 81 MB | 93 MB | 50 KB |
+| 50 | 24,926 | 474 | 491 | 15 | 17 / 284 | 0 | 81 MB | 95 MB | 99 KB |
+
+Before plugin 1.2.3, server tick: 389 ms at 1 workstream, 971 at 5, 1,825 at 10, 3,909 at 25 and 7,758 at 50, about 150 ms per workstream. Each tick then started 4 git processes per workstream (2 to read HEAD, 2 to find the plan the branch adds), at about 36 ms each on this machine. Now one `git worktree list` gives every HEAD, the integration branch is read once per tick, and the plan a branch adds is reused until its HEAD or the integration branch moves, so a later tick starts no git process per workstream.
 
 What it shows:
 
-- Snapshot time grows in a straight line with the number of workstreams: about 150 ms per workstream on later ticks and about 575 ms per workstream on the first.
-- At 25 workstreams a tick takes 3.9 s of its 5 s interval. At 50 it takes 7.8 s, longer than the interval, so the server is busy almost all the time and a page refresh waited 7.2 s at the median.
-- From 10 workstreams up, some requests that landed during a tick waited several seconds (6 of 20 at 10 workstreams).
+- A later tick costs about 315 ms of fixed git calls plus about 3.5 ms per workstream. At 50 workstreams it takes 0.5 s of its 5 s interval.
+- No request waited more than 0.3 s, at any size, while the server's own timer ran.
+- The first tick still reads each worktree's plan history from git, about 500 ms per workstream: 25 s at 50 workstreams, during which the server answers nothing.
 - Serving the snapshot itself is cheap. The between-tick times cluster near 1 to 2 ms and near 15 ms in the raw runs, which looks like the step of the Windows timer, so read them as "under 20 ms".
-- Memory stays near 75 to 80 MB after the first tick. It rose by 31 MB over 20 ticks at 50 workstreams; 20 ticks are too few to tell growth from garbage not yet collected.
+- Memory stays near 75 to 80 MB after the first tick. It rose by 14 MB over 20 ticks at 50 workstreams; 20 ticks are too few to tell growth from garbage not yet collected.
 
 ## Code navigation at scale
 
@@ -134,7 +136,7 @@ Recall on the trace question of the 1,960-file app: Haiku with grep found all 8 
 - **Real projects.** All projects are generated. Real repositories have bigger files, uneven import graphs, more branches and more history.
 - **Liveview transcripts.** The server was given an empty transcript folder, so the cost of reading session transcripts for the limit meters is not in these numbers. On a machine with a lot of recent transcripts the first tick will be slower.
 - **Liveview in steady use.** The 20 ticks ran back to back over seconds, not every 5 s over hours, so memory growth over a long session is not measured. Plans have 8 tasks and at most 8 commits each.
-- **Other machines.** One Windows machine only. The cost of starting a process differs between systems, and by its code the liveview starts several git processes per workstream on every tick, so its numbers may be quite different elsewhere.
+- **Other machines.** One Windows machine only. The cost of starting a process differs between systems, and the liveview starts a few git processes on every tick and several per workstream on its first, so its numbers may be quite different elsewhere.
 - **Warm language servers.** Every code navigation run started its language server from nothing. A server kept running would answer later questions faster.
 - **Grep's real hit rate.** The decoy rate is a choice of the generator; grep's hit counts show that it returns lines to sort through, not how many a real codebase gives.
 - **Python at 2,000 files and more,** and Python with a deep import chain: not run.
@@ -146,7 +148,7 @@ Recall on the trace question of the 1,960-file app: Haiku with grep found all 8 
 From the repository root, with Node (measured on v24.18.0), git, grep and npm on the PATH and network access for the npm installs:
 
 ```
-node bench/liveview.mjs           # about 20 minutes here
+node bench/liveview.mjs           # about 11 minutes here
 node bench/lsp.mjs                # about 3 minutes here, including the npm installs
 node bench/lsp.mjs --no-python    # TypeScript only
 node bench/codenav-tokens.mjs     # under 1 second, no runs
