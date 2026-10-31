@@ -7,7 +7,7 @@ orchestra draws a band above the prompt in every Claude Code session. In the mae
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="images/band-compact-dark.png">
-    <img alt="The band in the maestro's session, compact: plan limits, two rows that need the owner and a count of two more, then the ponytail switch, the keep-warm count and the Liveview button, above the prompt box" src="images/band-compact-light.png" width="820">
+    <img alt="The band in the maestro's session, compact: plan limits, two rows that need the owner and a count of two more, then ponytail's level buttons, the keep-warm count and the Liveview button, above the prompt box" src="images/band-compact-light.png" width="820">
   </picture>
   <br><sub>Illustration: the band rebuilt from its source with sample sessions. Compact, as it opens.</sub>
 </p>
@@ -25,7 +25,7 @@ orchestra draws a band above the prompt in every Claude Code session. In the mae
 - **The orchestra mark and name.**
 - **5h** and **Weekly**: the plan limits, each with a bar, the percentage used and the reset time. When the week will run out before it resets at the current pace, the weekly limit turns red and says when (`runs out Sat 18:20`). In a narrow window, as in a split view, the line keeps the percentages and the run-out time and drops the reset times.
 - **`3 of 5 running`**: how many workstreams are running, out of how many are registered.
-- **The arrow** steps through every row, the two most urgent, then none, and the band remembers your choice. With two rows or fewer it only collapses the band and opens it again.
+- **The arrow** steps through every row, the two most urgent, then none (it points inward, `◂`, while collapsed), and the band remembers your choice. With two rows or fewer it only collapses the band and opens it again.
 - **Collapsed**, the band keeps its header and footer. The header names the most urgent workstream with its square and status, opens its session when clicked, and counts the others (`+3`).
 
 <p align="center">
@@ -57,7 +57,7 @@ The `unregistered` row is there so a forgotten worktree gets noticed: a session 
 
 The footer shows only when it has something to show:
 
-- **ponytail's level switch** (`off lite full ultra`, the current one outlined), when ponytail is installed and you hid its own band with `/ponytail band`. A press runs the same `/ponytail` command you would type. ponytail's level is one flag for every session, so switching it in one session switches all of them.
+- **ponytail's level switch**: the buttons `off lite full ultra`, the current one outlined, with no label beside them. They show when ponytail is installed and you hid its own band with `/ponytail band`. A press runs the same `/ponytail` command you would type. ponytail's level is one flag for every session, so switching it in one session switches all of them.
 - **`kept warm 2x`**: how many keep-warm pings this session sent (see below).
 - **`Liveview`**: opens the local dashboard while it runs. The dashboard writes `.orchestra/liveview.json` with its local URL, and the button shows only for a `localhost` or `127.0.0.1` address.
 

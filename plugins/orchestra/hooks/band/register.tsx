@@ -425,7 +425,7 @@ export const register: Register = (on, options) => {
     const show5 = v.fiveHour !== null || v.inProject
     const showWeek = v.week !== null || v.inProject
     const counted = maestro && v.total > 0
-    const toggleButton = maestro && v.rows.length > 0 && <Button key="orchestra-toggle" label={shownNow === 'all' ? '▾' : shownNow === 'top' ? '▴' : '▸'} onPress={toggle} />
+    const toggleButton = maestro && v.rows.length > 0 && <Button key="orchestra-toggle" label={shownNow === 'all' ? '▾' : shownNow === 'top' ? '▴' : '◂'} onPress={toggle} />
     // Collapsed, the header names the most urgent row, opens its session, and counts the rest.
     const first = v.rows[0]
     const others = v.rows.length - 1
@@ -516,7 +516,6 @@ export const register: Register = (on, options) => {
 
     const footer = hasFooter ? (
       <Box flexDirection="row" alignItems="center" gap={1}>
-        {pt.shown && <Text dimColor>ponytail</Text>}
         {pt.shown && LEVELS.map(level => (
           <Button key={`orchestra-ponytail-${level}`} label={level} {...(level === pt.level ? { variant: 'secondary' as const } : { plain: true as const })} onPress={() => setLevel(level)} />
         ))}

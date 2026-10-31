@@ -628,7 +628,7 @@ test('collapsed, the band keeps its header and footer and names the most urgent 
   expect(await arrow()).toBe('▴')
   for (const surface of ['terminal', 'desktop'] as const) {
     const ui = await $.ui.mount({ ...BAND, surface })
-    expect((await ui.find({ key: 'orchestra-toggle' }))?.props.label).toBe('▸')
+    expect((await ui.find({ key: 'orchestra-toggle' }))?.props.label).toBe('◂')
     expect(await ui.find({ key: 's2-head' })).toBeDefined()
     expect(await ui.find({ type: 'Text', text: /^\+2$/ })).toBeDefined()
     expect(await ui.find({ key: 's2-name' })).toBeUndefined()
@@ -643,7 +643,7 @@ test('collapsed, the band keeps its header and footer and names the most urgent 
   expect(await ui.find({ key: 's2-head' })).toBeDefined()
   await ui.unmount()
   // The arrow goes back to every row.
-  expect(await arrow()).toBe('▸')
+  expect(await arrow()).toBe('◂')
   ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
   expect(await ui.find({ type: 'Text', text: /^Workstream$/ })).toBeDefined()
   await ui.unmount()
