@@ -16,7 +16,7 @@ A local page for the project: plan limits with a projection to the reset, what n
 It runs as a plain Node process (Node 18 or newer) and uses no LLM tokens. The band starts it when a maestro session opens and shows a `Liveview` button; `/orchestra:liveview` starts it by hand and `/orchestra:liveview stop` stops it. It stops on its own after 30 minutes with no session activity.
 
 - It listens on `127.0.0.1` only, from port 4317.
-- It rebuilds the page every 5 seconds. Each rebuild costs about 0.3 s plus a few milliseconds per open workstream, 0.5 s at 50 workstreams. The first rebuild after a start reads each worktree's plan history from git and takes about 0.5 s per workstream (see [Benchmarks](benchmarks.md)).
+- It rebuilds the page every 5 seconds. Each rebuild costs about 0.3 s plus a few milliseconds per open workstream, 0.5 s at 50 workstreams. The first rebuild after a start reads each worktree's plan history from git and takes about 0.4 s per workstream (see [Benchmarks](benchmarks.md)).
 
 ## What it shows
 

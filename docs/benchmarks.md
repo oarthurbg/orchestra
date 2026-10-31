@@ -45,19 +45,19 @@ Times in milliseconds, medians unless marked.
 
 | Workstreams | First snapshot | Later snapshot | Server tick | `/api/snapshot` between ticks | `/api/snapshot` while ticking, median / max | Requests over 1 s (of 20) | RSS after first tick | RSS after 20 ticks | Snapshot size |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 719 | 317 | 316 | 9 | 17 / 257 | 0 | 75 MB | 76 MB | 3 KB |
-| 5 | 2,884 | 317 | 319 | 15 | 17 / 287 | 0 | 76 MB | 81 MB | 11 KB |
-| 10 | 5,453 | 335 | 350 | 10 | 17 / 294 | 0 | 76 MB | 82 MB | 21 KB |
-| 25 | 12,801 | 375 | 392 | 15 | 17 / 292 | 0 | 81 MB | 93 MB | 50 KB |
-| 50 | 24,926 | 474 | 491 | 15 | 17 / 284 | 0 | 81 MB | 95 MB | 99 KB |
+| 1 | 648 | 284 | 285 | 15 | 17 / 291 | 0 | 75 MB | 76 MB | 3 KB |
+| 5 | 2,114 | 309 | 301 | 15 | 17 / 291 | 0 | 76 MB | 81 MB | 11 KB |
+| 10 | 3,996 | 324 | 324 | 15 | 17 / 270 | 0 | 76 MB | 82 MB | 21 KB |
+| 25 | 9,577 | 377 | 382 | 2 | 17 / 280 | 0 | 81 MB | 92 MB | 50 KB |
+| 50 | 18,898 | 472 | 478 | 10 | 18 / 324 | 0 | 82 MB | 96 MB | 99 KB |
 
 Before plugin 1.2.3, server tick: 389 ms at 1 workstream, 971 at 5, 1,825 at 10, 3,909 at 25 and 7,758 at 50, about 150 ms per workstream. Each tick then started 4 git processes per workstream (2 to read HEAD, 2 to find the plan the branch adds), at about 36 ms each on this machine. Now one `git worktree list` gives every HEAD, the integration branch is read once per tick, and the plan a branch adds is reused until its HEAD or the integration branch moves, so a later tick starts no git process per workstream.
 
 What it shows:
 
-- A later tick costs about 315 ms of fixed git calls plus about 3.5 ms per workstream. At 50 workstreams it takes 0.5 s of its 5 s interval.
+- A later tick costs about 280 ms of fixed git calls plus about 4 ms per workstream. At 50 workstreams it takes 0.5 s of its 5 s interval.
 - No request waited more than 0.3 s, at any size, while the server's own timer ran.
-- The first tick still reads each worktree's plan history from git, about 500 ms per workstream: 25 s at 50 workstreams, during which the server answers nothing.
+- The first tick still reads each worktree's plan history from git, about 380 ms per workstream: 19 s at 50 workstreams, during which the server answers nothing. Before plugin 1.2.5 it started one git process per plan version and took 25 s.
 - Serving the snapshot itself is cheap. The between-tick times cluster near 1 to 2 ms and near 15 ms in the raw runs, which looks like the step of the Windows timer, so read them as "under 20 ms".
 - Memory stays near 75 to 80 MB after the first tick. It rose by 14 MB over 20 ticks at 50 workstreams; 20 ticks are too few to tell growth from garbage not yet collected.
 
