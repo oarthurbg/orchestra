@@ -1,0 +1,24 @@
+# Publishes orchestra-install to npm whenever the installer changes on main, so npx orchestra-install runs main's script.
+# npm trusted publishing: no token; the package's npm settings name this repository and this file.
+name: Publish installer
+on:
+  push:
+    branches: [main]
+    paths: [install.mjs, package.json]
+  workflow_dispatch:
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - run: node --check install.mjs
+      # The run number makes each publish a new version without a commit back to main.
+      - run: npm version "1.1.${{ github.run_number }}" --no-git-tag-version
+      - run: npm publish
