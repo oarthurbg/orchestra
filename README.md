@@ -91,7 +91,7 @@ Measured, not estimated. Every number comes from a script in [`bench/`](bench) a
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/readme/bench-liveview-dark.png">
-    <img alt="Seconds to rebuild the liveview by workstreams open: 0.3 s for 1, 0.3 s for 5, 0.4 s for 10, 0.4 s for 25 and 0.5 s for 50, well under the 5-second refresh." src="assets/readme/bench-liveview-light.png" width="820">
+    <img alt="Seconds to rebuild the liveview by workstreams open, before and after the git cache: 0.4 against 0.3 s for 1, 1.0 against 0.3 s for 5, 1.8 against 0.4 s for 10, 3.9 against 0.4 s for 25, and 7.8 against 0.5 s for 50, now well under the 5-second refresh." src="assets/readme/bench-liveview-light.png" width="820">
   </picture>
 </p>
 
