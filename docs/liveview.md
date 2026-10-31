@@ -23,6 +23,7 @@ It runs as a plain Node process (Node 18 or newer) and uses no LLM tokens. The b
 - **Symbols.** Each session is drawn with the symbols in [`BRAND.md`](BRAND.md#symbols): the shape is the role, the way it is drawn is the state, and a context of 250k or more shows as a bold vermilion number.
 - **Progress** comes from the plan checkboxes. **ETAs** come from how long past tasks took, measured from the commits that ticked them: tasks with the same agent and risk, else the same agent, else all past tasks, using the first group with 3 finished tasks. Until one has 3, the ETA shows `?`.
 - **The limit projection** reads token counts (never message content) from Claude Code's transcripts for every project on this machine, because plan limits are per account, and calibrates them on the band's latest limit reading.
+- **The band's run-out:** after each rebuild the liveview writes `.orchestra/pace.json` with when the planned work spends the week, and the band shows that time while the liveview runs.
 
 ## The inbox
 

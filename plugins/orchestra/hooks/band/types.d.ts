@@ -58,7 +58,7 @@ export type BandView = {
   role: Role
   pings: number
   fiveHour: LimitView | null
-  // runOut: when the week runs out at its average pace, only if that comes before the reset.
+  // runOut: when the week runs out before its reset, from the liveview's planned work while it runs, else at the week's average pace.
   week: (LimitView & { runOut: number | null }) | null
   running: number
   waiting: number

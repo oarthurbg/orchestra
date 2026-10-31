@@ -2,6 +2,10 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.3.3
+
+- While the liveview runs, the band's weekly run-out comes from the work still planned instead of the week's average pace.
+
 ## 1.3.2
 
 - The band offers an update when a newer orchestra is out, with Changelog, Update and Later buttons, then tells you to run `/reload-plugins`.

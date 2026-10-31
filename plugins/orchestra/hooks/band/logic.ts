@@ -132,6 +132,8 @@ export type ViewInput = {
   ownLimits?: Limit[]
   // This session's own keep-warm pings, shown on the summary line in every role.
   pings?: number
+  // The liveview's .orchestra/pace.json: the weekly run-out of the planned work, used in place of the week's average.
+  plan?: { planned: boolean; weekRunsOut: number | null } | null
 }
 
 const newest = (files: SessionFile[]) => files.reduce<SessionFile | undefined>((a, b) => (!a || Date.parse(b.updatedAt) > Date.parse(a.updatedAt) ? b : a), undefined)
@@ -155,7 +157,7 @@ export function buildView(i: ViewInput): BandView {
     role: i.role,
     pings: i.pings ?? 0,
     fiveHour: limitView(limits, 'five_hour'),
-    week: week && { ...week, runOut: runOut(limits.find(l => l.kind === 'seven_day'), i.now) },
+    week: week && { ...week, runOut: i.plan?.planned ? i.plan.weekRunsOut : runOut(limits.find(l => l.kind === 'seven_day'), i.now) },
     running: 0,
     waiting: 0,
     total: i.registry.length,
