@@ -379,7 +379,7 @@ export const register: Register = (on, options) => {
       <Box flexShrink={0} flexDirection="row" alignItems="center" gap={1}>
         <Text size="footnote" dimColor>{label}</Text>
         {l === null ? <Text size="footnote" dimColor>-</Text> : pic(bar(l.pct, alarm), `${l.pct}% of the ${label} limit`, 44, 4)}
-        {l !== null && <Text size="footnote" color={alarm ? 'error' : undefined}>{l.pct}% used</Text>}
+        {l !== null && <Text size="footnote" color={alarm ? 'error' : undefined}>{l.pct}%</Text>}
         {l !== null && tail !== '' && <Text size="footnote" color={alarm ? 'error' : undefined} dimColor={!alarm}>{tail}</Text>}
       </Box>
     )
@@ -439,7 +439,7 @@ export const register: Register = (on, options) => {
     )
     const urgentCells = (withStatus: boolean) => (collapsed && first ? 4 + first.name.length + (withStatus ? first.status.length + 1 : 0) + (others > 0 ? `+${others}`.length + 1 : 0) : 0)
     // Roughly the cells the one-line header takes (a bar is about 6); below that, as in a split view, it goes compact.
-    const cells = (label: string, l: { pct: number } | null, tail: string) => label.length + (l === null ? 2 : 8 + `${l.pct}% used`.length + (tail ? tail.length + 1 : 0))
+    const cells = (label: string, l: { pct: number } | null, tail: string) => label.length + (l === null ? 2 : 8 + `${l.pct}%`.length + (tail ? tail.length + 1 : 0))
     const wide = 16 + (show5 ? cells('5h', v.fiveHour, fiveTail) : 0) + (showWeek ? 3 + cells('Weekly', v.week, weekTail) : 0)
       + (counted ? `${v.running} of ${v.total} running`.length + 1 : 0) + (toggleButton ? 4 : 0) + urgentCells(true)
     const narrow = e.props.bodyColumns < wide
@@ -451,7 +451,7 @@ export const register: Register = (on, options) => {
       <Box flexShrink={0} flexDirection="row" alignItems="center" gap={1}>
         <Text size="footnote" dimColor>{label}</Text>
         {l === null ? <Text size="footnote" dimColor>-</Text> : !tight && pic(bar(l.pct, alarm), `${l.pct}% of the ${label} limit`, 44, 4)}
-        {l !== null && <Text size="footnote" color={alarm ? 'error' : undefined}>{l.pct}% used</Text>}
+        {l !== null && <Text size="footnote" color={alarm ? 'error' : undefined}>{l.pct}%</Text>}
         {l !== null && tail !== '' && <Text size="footnote" color="error">{tail}</Text>}
       </Box>
     )

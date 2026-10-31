@@ -74,7 +74,7 @@ test('the maestro band shows the summary and only the workstreams that need atte
 
   for (const surface of ['terminal', 'desktop'] as const) {
     const ui = await $.ui.mount({ ...BAND, surface })
-    expect((await ui.find({ type: 'Text', text: /42% used/ }))).toBeDefined()
+    expect((await ui.find({ type: 'Text', text: /^42%$/ }))).toBeDefined()
     expect(await ui.find({ key: 's2-name' })).toBeDefined()
     expect(await ui.find({ key: 's2-detail' })).toBeDefined()
     expect((await ui.find({ type: 'Text', text: /over 250k/ }))).toBeDefined()
@@ -101,7 +101,7 @@ test('a project without .orchestra/ shows the limits line only and writes nothin
   session(on, '/home/u/other', 'x')
   await $.session.start({ cwd: '/home/u/other', surface: 'desktop', isInteractive: true })
   const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
-  expect(await ui.find({ type: 'Text', text: /42% used/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^42%$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /orchestra/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /running/ })).toBeUndefined()
   expect(Object.keys(files)).toEqual([])
@@ -187,7 +187,7 @@ test('a failed write of its own report still draws the band', async ($, on) => {
   session(on, ROOT, 'o')
   await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
   const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
-  expect(await ui.find({ type: 'Text', text: /42% used/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^42%$/ })).toBeDefined()
   await ui.unmount()
 })
 
@@ -633,7 +633,7 @@ test('collapsed, the band keeps its header and footer and names the most urgent 
     expect(await ui.find({ type: 'Text', text: /^\+2$/ })).toBeDefined()
     expect(await ui.find({ key: 's2-name' })).toBeUndefined()
     expect(await ui.find({ type: 'Text', text: /more:/ })).toBeUndefined()
-    expect(await ui.find({ type: 'Text', text: /42% used/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /^42%$/ })).toBeDefined()
     expect(await ui.find({ key: 'liveview' })).toBeDefined()
     await ui.unmount()
   }
@@ -847,14 +847,14 @@ test('a narrow band, as in a split view, keeps one line, with the run-out time i
   let ui = await mount(60)
   // The name stays while it fits, beside the mark.
   expect(await ui.find({ type: 'Text', text: /^orchestra$/ })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /^10% used$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^10%$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /^resets / })).toBeUndefined()
   expect(await ui.find({ type: 'Text', text: /^\d+\/\d+$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /runs out/i })).toBeUndefined()
   await ui.unmount()
   await $.session.measure({ context: { tokens: 30_000, window: 1_000_000 }, rateLimits: week(95), changed: [] } as never)
   ui = await mount(60)
-  expect(await ui.find({ type: 'Text', text: /^95% used$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^95%$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /^runs out \w{3} \d{2}:\d{2}$/ })).toBeDefined()
   await ui.unmount()
   // Narrower still: no bars and "Wk"; the run-out time stays.
@@ -928,7 +928,7 @@ for (const failing of ['process.run', 'env.get'] as const) {
     await new Promise(r => setTimeout(r, 50))
     expect(JSON.parse(files[`${ROOT}/.orchestra/sessions/o.json`]!).role).toBe('maestro')
     const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
-    expect(await ui.find({ type: 'Text', text: /42% used/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /^42%$/ })).toBeDefined()
     await ui.unmount()
   })
 }
