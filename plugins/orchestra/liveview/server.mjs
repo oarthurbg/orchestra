@@ -90,8 +90,9 @@ export async function startServer({
   let idle = false
 
   const tick = () => {
+    let input
     try {
-      const input = gather(root, now(), reader, history)
+      input = gather(root, now(), reader, history)
       const live = Object.values(input.workstreams).flatMap(w => (w.versions ? timedTasks(w.planPath, w.versions, w.commits) : []))
       history = appendHistory(root, history, live)
       input.history = history
@@ -101,7 +102,7 @@ export async function startServer({
       if (snapshot) snapshot.staleSince ??= now()
       else snapshot = { v: 1, error: String(err?.message ?? err), staleSince: now(), rows: [] }
     }
-    const fresh = readSessions(root).some(s => now() - Date.parse(s.updatedAt) < idleMs)
+    const fresh = (input?.sessions ?? readSessions(root)).some(s => now() - Date.parse(s.updatedAt) < idleMs)
     if (!idle && now() - startedAt >= idleMs && !fresh) {
       idle = true
       void close().then(onIdle)
