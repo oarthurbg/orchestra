@@ -76,19 +76,20 @@ How much it saves, and where it breaks, is in [Benchmarks](benchmarks.md).
 
 ## orchestra's settings
 
-orchestra has three settings. To see and change them, type this in a Claude Code terminal session:
+orchestra has three settings. `/orchestra:settings` shows them, in any Claude Code window, the desktop app and Remote Control included. To change one, name it and give the value:
 
 ```text
-/plugin configure orchestra@orchestra
+/orchestra:settings tailscale on
+/orchestra:settings cacheMinutes 5
 ```
 
-Or set one from any terminal: pipe a JSON object of the values to change, each value written as text.
+In a Claude Code terminal session, `/plugin configure orchestra@orchestra` opens the same settings as a menu. From any terminal, pipe a JSON object of the values to change, each value written as text:
 
 ```bash
 echo '{"liveviewTailnet":"true"}' | claude plugin configure orchestra@orchestra --values-stdin
 ```
 
-Run `claude plugin configure orchestra@orchestra` alone to see the current values. A change takes effect in sessions started after it, or after `/reload-plugins`.
+`claude plugin configure orchestra@orchestra` alone shows the current values. A change takes effect in sessions started after it, or after `/reload-plugins`.
 
 | Setting | Default | What it does |
 | --- | --- | --- |
@@ -135,7 +136,7 @@ plugins/orchestra/
                principal, handoff-note, test-databases (test data recipes per data store,
                plus an optional, tested Postgres-in-Docker example)
   commands/    /orchestra:init, /orchestra:start-workstream, /orchestra:status,
-               /orchestra:close-wave, /orchestra:liveview
+               /orchestra:close-wave, /orchestra:liveview, /orchestra:settings
   hooks/       the band above the prompt, and the pending-asks list after a compact
   liveview/    the local dashboard
   lsp/         the code navigation command

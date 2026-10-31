@@ -2,6 +2,11 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.3.5
+
+- `/orchestra:settings` shows and changes orchestra's settings from any Claude Code window, for example `/orchestra:settings tailscale on`.
+- `/orchestra:liveview` follows the Tailscale setting.
+
 ## 1.3.4
 
 - The liveview can open to your Tailscale network, so you can see it on your phone: the `liveviewTailnet` setting or `/orchestra:liveview phone`. Off by default.
