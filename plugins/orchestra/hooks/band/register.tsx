@@ -2,14 +2,15 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import { REFRESH_MS, buildView, isSafeTarget, mainCheckout, norm, openerArgv, parseRegistry, parseSessionFile, parseStatus, pingDue, roleOf } from './logic'
-import type { BandRow, BandView, Limit, Mark, Role, SessionFile } from './types'
+import type { BandRow, BandView, Limit, Mark, Role, RowsShown, SessionFile } from './types'
 
 // The desktop app's session server, as Task 1 of the plan found it.
 const APP_SESSION_SERVER = 'ccd_session_mgmt'
 
 const EMPTY: BandView = { inProject: false, role: 'maestro', pings: 0, fiveHour: null, week: null, running: 0, waiting: 0, total: 0, rows: [], liveview: '' }
 const view = atom({ plugin: 'orchestra', key: 'view' } as const, EMPTY)
-const detailed = atom({ plugin: 'orchestra', key: 'detailed' } as const, false)
+const rowsShown = atom({ plugin: 'orchestra', key: 'rows' } as const, 'top' as RowsShown)
+const ROWS_SHOWN: RowsShown[] = ['all', 'top', 'none']
 const ponytail = atom({ plugin: 'orchestra', key: 'ponytail' } as const, { shown: false, level: 'off' })
 const LEVELS = ['off', 'lite', 'full', 'ultra']
 
@@ -237,7 +238,10 @@ export const register: Register = (on, options) => {
     const result = await next(e)
     $.clock.every(REFRESH_MS, () => void tick($, options).catch(() => {}))
     Object.assign(ctx, fresh())
-    const stored = await $.store.get('detailed').catch(() => undefined)
+    const stored = await $.store.get('rows').catch(() => undefined)
+    // Before the collapsed band the choice was a boolean under 'detailed'.
+    const shownBefore: RowsShown = ROWS_SHOWN.includes(stored as RowsShown) ? (stored as RowsShown)
+      : (await $.store.get('detailed').catch(() => undefined)) === true ? 'all' : 'top'
     ctx.lastRequestAt = await $.clock.now()
     located = locate($)
     await located
@@ -246,7 +250,7 @@ export const register: Register = (on, options) => {
     await measure($)
     await writeReport($)
     await refresh($)
-    await update($, detailed, () => stored === true)
+    await update($, rowsShown, () => shownBefore)
     await readPonytail($, true).catch(() => {})
     return result
   }).catch(($, e, next) => next(e))
@@ -349,15 +353,19 @@ export const register: Register = (on, options) => {
     const desktop = Svg !== undefined
     // The desktop draws nothing for an Svg whose alt is empty, so every drawing says what it is.
     const pic = (source: string, alt: string, w?: number, ht?: number) => (Svg ? <Svg source={source} alt={alt} {...(w ? { width: w } : {})} {...(ht ? { height: ht } : {})} /> : null)
-    // Open only while there is more to show: with two rows or fewer there is no arrow to close it.
-    const isOpen = (await read($, detailed)) && v.rows.length > 2
     const maestro = v.inProject && v.role === 'maestro'
+    // With two rows or fewer, every row and the two most urgent are the same view.
+    const chosen = await read($, rowsShown)
+    const shownNow: RowsShown = !maestro ? 'all' : chosen === 'none' ? 'none' : v.rows.length > 2 ? chosen : 'top'
+    const isOpen = shownNow === 'all' && v.rows.length > 2
+    const collapsed = shownNow === 'none' && v.rows.length > 0
     const rule = pic(RULE, 'divider', undefined, 1)
 
+    // The arrow steps through every row, the two most urgent, then none.
     const toggle = async () => {
-      const value = !(await read($, detailed))
-      await update($, detailed, () => value)
-      await $.store.set('detailed', value).catch(() => {})
+      const value: RowsShown = shownNow === 'all' ? 'top' : shownNow === 'top' ? 'none' : v.rows.length > 2 ? 'all' : 'top'
+      await update($, rowsShown, () => value)
+      await $.store.set('rows', value).catch(() => {})
     }
     const setLevel = async (level: string) => {
       await update($, ponytail, p => ({ ...p, level }))
@@ -386,13 +394,14 @@ export const register: Register = (on, options) => {
       r.link !== ''
         ? <Button key={`${r.key}-${part}`} plain onPress={() => open($, r.link)}><Text {...style}>{label}</Text></Button>
         : <Box paddingX={inset}><Text {...style}>{label}</Text></Box>
+    const markOf = (r: BandRow) => (desktop ? pic(svg(MARK_SVG[r.mark], 12, 12), r.status, 12, 12) : <Text color={MARK_TEXT[r.mark][1]} underline={r.mark === 'waiting'}>{MARK_TEXT[r.mark][0]}</Text>)
     const row = (r: BandRow, n: number) => {
       const waiting = r.mark === 'waiting'
       return (
         <Box key={`row-${r.key}`} flexDirection="row" alignItems="center" paddingX={1} {...(desktop ? { paddingY: 'xs' as const } : {})} {...(n % 2 === 1 ? { backgroundColor: STRIPE } : {})} {...(r.link !== '' ? { hover: { backgroundColor: HOVER } } : {})}>
           <Box width="24%">{cell(r, 'name', r.name, { bold: waiting, underline: r.link !== '' })}</Box>
           <Box width="18%" flexDirection="row" alignItems="center" gap={1}>
-            {desktop ? pic(svg(MARK_SVG[r.mark], 12, 12), r.status, 12, 12) : <Text color={MARK_TEXT[r.mark][1]} underline={waiting}>{MARK_TEXT[r.mark][0]}</Text>}
+            {markOf(r)}
             {cell(r, 'status', r.status, { bold: waiting })}
           </Box>
           <Box width="9%" justifyContent="flex-end">{cell(r, 'context', r.context, r.big ? { bold: true, color: 'error' } : {})}</Box>
@@ -412,11 +421,23 @@ export const register: Register = (on, options) => {
     const show5 = v.fiveHour !== null || v.inProject
     const showWeek = v.week !== null || v.inProject
     const counted = maestro && v.total > 0
-    const toggleButton = maestro && v.rows.length > 2 && <Button key="orchestra-toggle" label={isOpen ? '▾' : '▴'} onPress={toggle} />
+    const toggleButton = maestro && v.rows.length > 0 && <Button key="orchestra-toggle" label={shownNow === 'all' ? '▾' : shownNow === 'top' ? '▴' : '▸'} onPress={toggle} />
+    // Collapsed, the header names the most urgent row, opens its session, and counts the rest.
+    const first = v.rows[0]
+    const others = v.rows.length - 1
+    const urgent = (withStatus: boolean) => collapsed && first && (
+      <Box flexShrink={1} flexDirection="row" alignItems="center" gap={1}>
+        {markOf(first)}
+        {cell(first, 'head', first.name, { bold: first.mark === 'waiting', underline: first.link !== '' })}
+        {withStatus && <Text size="footnote" dimColor>{first.status}</Text>}
+        {others > 0 && <Text size="footnote" dimColor>+{others}</Text>}
+      </Box>
+    )
+    const urgentCells = (withStatus: boolean) => (collapsed && first ? 4 + first.name.length + (withStatus ? first.status.length + 1 : 0) + (others > 0 ? `+${others}`.length + 1 : 0) : 0)
     // Roughly the cells the one-line header takes (a bar is about 6); below that, as in a split view, it goes compact.
     const cells = (label: string, l: { pct: number } | null, tail: string) => label.length + (l === null ? 2 : 8 + `${l.pct}% used`.length + (tail ? tail.length + 1 : 0))
     const wide = 16 + (show5 ? cells('5h', v.fiveHour, fiveTail) : 0) + (showWeek ? 3 + cells('Weekly', v.week, weekTail) : 0)
-      + (counted ? `${v.running} of ${v.total} running`.length + 1 : 0) + (toggleButton ? 4 : 0)
+      + (counted ? `${v.running} of ${v.total} running`.length + 1 : 0) + (toggleButton ? 4 : 0) + urgentCells(true)
     const narrow = e.props.bodyColumns < wide
     // Narrower still, the bars go and "Weekly" shortens.
     const tight = e.props.bodyColumns < 48
@@ -433,7 +454,7 @@ export const register: Register = (on, options) => {
 
     // The compact line keeps the name while it has the room (about 10 cells), then the mark alone.
     const compact = 6 + (show5 ? cells('5h', v.fiveHour, '') : 0) + (showWeek ? 2 + cells('Weekly', v.week, runOutTail) : 0)
-      + (counted ? `${v.running}/${v.total}`.length + 2 : 0) + (toggleButton ? 4 : 0)
+      + (counted ? `${v.running}/${v.total}`.length + 2 : 0) + (toggleButton ? 4 : 0) + urgentCells(false)
     const named = !desktop || e.props.bodyColumns >= compact + 10
 
     // The app scrolls a band taller than maxRows, which hides the footer: open, the list keeps to the rows left beside
@@ -441,13 +462,13 @@ export const register: Register = (on, options) => {
     const hasFooter = pt.shown || v.pings > 0 || v.liveview !== ''
     const fixedRows = 1 + (maestro && isOpen ? 1 : 0) + (hasFooter ? 1 : 0) + (desktop ? 1 : 0)
     const room = e.props.maxRows - fixedRows
-    const shown = maestro && !isOpen ? v.rows.slice(0, 2) : v.rows.length <= room ? v.rows : v.rows.slice(0, Math.max(2, room - 1))
+    const shown = collapsed ? [] : maestro && !isOpen ? v.rows.slice(0, 2) : v.rows.length <= room ? v.rows : v.rows.slice(0, Math.max(2, room - 1))
     const hidden = v.rows.slice(shown.length)
 
     let body = null
     if (maestro && v.total === 0 && v.rows.length === 0) body = <Text dimColor>No workstreams yet. Start one with /orchestra:start-workstream.</Text>
     else if (maestro && v.rows.length === 0) body = <Text dimColor>Nothing needs you.</Text>
-    else if (v.rows.length > 0) body = (
+    else if (v.rows.length > 0 && !collapsed) body = (
       <Box flexDirection="column">
         {maestro && isOpen && heads}
         {shown.map(row)}
@@ -464,6 +485,7 @@ export const register: Register = (on, options) => {
         {show5 && short('5h', v.fiveHour, '', false)}
         {showWeek && short(tight ? 'Wk' : 'Weekly', v.week, runOutTail, runOutAt !== null)}
         <Box width={0} flexGrow={1} />
+        {urgent(false)}
         {counted && <Text size="footnote" dimColor>{v.running}/{v.total}</Text>}
         {toggleButton}
       </Box>
@@ -481,6 +503,7 @@ export const register: Register = (on, options) => {
         </Box>
         <Box width={0} flexGrow={1} />
         <Box flexShrink={0} flexDirection="row" alignItems="center" gap={1}>
+          {urgent(true)}
           {counted && <Text size="footnote" dimColor>{v.running} of {v.total} running</Text>}
           {toggleButton}
         </Box>
