@@ -2,7 +2,7 @@
 
 orchestra ships nine subagents. Each one does a single job, has its model and effort fixed in its own file (`plugins/orchestra/agents/<name>.md`), and starts in the ponytail mode its stage calls for. A subagent never spawns other agents: the session that dispatched it gives it its task, mode and skills in the briefing.
 
-[README](../README.md) · [Setup](setup.md) · **Agents** · [Stages, modes and skills](stages.md) · [The band](band.md) · [The liveview](liveview.md) · [Benchmarks](benchmarks.md)
+[README](../README.md) · [Setup](setup.md) · [Commands](commands.md) · **Agents** · [Stages, modes and skills](stages.md) · [The band](band.md) · [The liveview](liveview.md) · [Benchmarks](benchmarks.md)
 
 ## At a glance
 

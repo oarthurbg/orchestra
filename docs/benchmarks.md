@@ -1,6 +1,6 @@
 # Benchmarks
 
-[README](../README.md) · [Setup](setup.md) · [Agents](agents.md) · [Stages, modes and skills](stages.md) · [The band](band.md) · [The liveview](liveview.md) · **Benchmarks**
+[README](../README.md) · [Setup](setup.md) · [Commands](commands.md) · [Agents](agents.md) · [Stages, modes and skills](stages.md) · [The band](band.md) · [The liveview](liveview.md) · **Benchmarks**
 
 Measured on 2026-10-30; the code navigation numbers were rerun on 2026-10-31 (UTC) after the deep import chain fix, and the liveview numbers on the same day after the per-workstream git calls were removed. Every number below comes from a script in `bench/` run on the machine described here, or, for the token table, from the measurement note it cites. Raw results are in `bench/results/`.
 

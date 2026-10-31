@@ -2,7 +2,7 @@
 
 A local page for the project: plan limits with a projection to the reset, what needs you, every workstream's progress, ETA and timeline, and an inbox of the questions waiting on you.
 
-[README](../README.md) · [Setup](setup.md) · [Agents](agents.md) · [Stages, modes and skills](stages.md) · [The band](band.md) · **The liveview** · [Benchmarks](benchmarks.md)
+[README](../README.md) · [Setup](setup.md) · [Commands](commands.md) · [Agents](agents.md) · [Stages, modes and skills](stages.md) · [The band](band.md) · **The liveview** · [Benchmarks](benchmarks.md)
 
 <p align="center">
   <picture>
