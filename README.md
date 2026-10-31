@@ -115,7 +115,7 @@ Measured, not estimated. Every number comes from a script in [`bench/`](bench) a
 One command installs orchestra and the plugins it works with, and skips any you already have. It needs Claude Code and Node 18 or newer, on macOS, Linux or Windows:
 
 ```bash
-npx github:oarthurbg/orchestra
+npx orchestra-install
 ```
 
 Then, in your project, run `/orchestra:init` and load the `orchestra:maestro` skill in your main session. It walks you through the rest.

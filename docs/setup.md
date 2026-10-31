@@ -9,10 +9,10 @@ Everything you need to install, update and tune orchestra. The [README](../READM
 **With the script.** [`install.mjs`](../install.mjs) adds this marketplace, installs orchestra, then installs each plugin listed below unless you already have it from any marketplace. It installs at user scope and prints what it skipped. Run it from a terminal (it needs Node 18 or newer):
 
 ```bash
-npx github:oarthurbg/orchestra
+npx orchestra-install
 ```
 
-npx fetches the script from this repository; nothing comes from the npm registry. Add `--dry-run` to see what it would run without changing anything. Without npx, pipe it into node: `curl -fsSL https://raw.githubusercontent.com/oarthurbg/orchestra/main/install.mjs | node --input-type=module` (in PowerShell, `irm` in place of `curl -fsSL`).
+npx downloads [`orchestra-install`](https://www.npmjs.com/package/orchestra-install) from npm: that package is this script and nothing else. To fetch it from this repository instead, run `npx github:oarthurbg/orchestra`. Add `--dry-run` to see what it would run without changing anything. Without npx, pipe it into node: `curl -fsSL https://raw.githubusercontent.com/oarthurbg/orchestra/main/install.mjs | node --input-type=module` (in PowerShell, `irm` in place of `curl -fsSL`).
 
 **By hand,** in a Claude Code session:
 

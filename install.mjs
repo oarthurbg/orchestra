@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Installs orchestra and the plugins its workflow uses, skipping any you already have from any marketplace.
-// Run: npx github:oarthurbg/orchestra [--dry-run]
+// Run: npx orchestra-install [--dry-run], or from the repository: npx github:oarthurbg/orchestra
 // Or: curl -fsSL https://raw.githubusercontent.com/oarthurbg/orchestra/main/install.mjs | node --input-type=module
 import { spawnSync } from 'node:child_process'
 
