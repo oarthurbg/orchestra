@@ -10,7 +10,7 @@ const EXTS = ['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs']
 const slash = f => f.replaceAll('\\', '/')
 
 // The nearest tsconfig.json or jsconfig.json between the file and the project root.
-export function findConfig(file, root) {
+function findConfig(file, root) {
   for (let dir = path.dirname(file); ; dir = path.dirname(dir)) {
     for (const name of ['tsconfig.json', 'jsconfig.json']) if (fs.existsSync(path.join(dir, name))) return path.join(dir, name)
     if (path.relative(root, dir) === '' || path.dirname(dir) === dir) return null
