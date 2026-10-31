@@ -3,6 +3,7 @@
 // Run: npx orchestra-install [--dry-run], or from the repository: npx github:oarthurbg/orchestra
 // Or: curl -fsSL https://raw.githubusercontent.com/oarthurbg/orchestra/main/install.mjs | node --input-type=module
 import { spawnSync } from 'node:child_process'
+import path from 'node:path'
 
 const MARKETPLACE = 'orchestra'
 const REPO = 'oarthurbg/orchestra'
@@ -37,7 +38,8 @@ names.sort((a, b) => (b === 'orchestra') - (a === 'orchestra'))
 
 const failed = []
 for (const name of names) {
-  const have = installed.find(p => p.id.startsWith(`${name}@`))
+  // A project or local install only counts in its own folder.
+  const have = installed.find(p => p.id.startsWith(`${name}@`) && (!p.projectPath || path.relative(p.projectPath, process.cwd()) === ''))
   if (have) { console.log(`skip ${name}: already installed as ${have.id} (${have.scope} scope${have.enabled ? '' : ', disabled'})`); continue }
   if (claude(['plugin', 'install', `${name}@${MARKETPLACE}`], { mutates: true }).status !== 0) failed.push(name)
 }

@@ -66,3 +66,13 @@ Idea, to be brainstormed and specced:
 - No build step and no update after merges: the server reads the working tree, so it also sees a worktree's own branch.
 
 Still open: a planner task on Opus, Python through `pyright-lsp`, whether subagents get the `LSP` tool, and the shape of the command orchestra would ship. Setup note: Anthropic's `typescript-lsp` plugin returns same-file references until `initializationOptions: {"tsserver": {"useSyntaxServer": "never"}}` is set; details in the measurement doc.
+
+## Phase 3: more of orchestra as mods (idea)
+
+Claude Code mods can add panes, hook every tool call, add system-prompt sections and run timers. The band is already one. Moving more of orchestra into mods gives it harness-like control while users keep their Claude plan and Claude Code does the rest. A standalone harness on the Agent SDK was considered and set aside: its users would pay API prices, not their plan, and it would rebuild what Claude Code already gives.
+
+Candidates, to be brainstormed with mockups first:
+- an inbox pane where the owner answers, and the answer reaches the session that asked (the gap item 3 leaves open);
+- the maestro and principal rules as system-prompt sections instead of a skill to load;
+- tool-call hooks that enforce the branch guard and the owner authorizations instead of asking the model to;
+- live workstream state the band and the liveview read without polling files.
