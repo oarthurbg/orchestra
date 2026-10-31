@@ -2,6 +2,10 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.3.8
+
+- The liveview's key is a table that says what each symbol means, folded under the workstreams until you open it. It remembers whether you left it open.
+
 ## 1.3.7
 
 - A guide to every command: [Commands](docs/commands.md). `/orchestra:help <command>` explains one in the chat, for example `/orchestra:help liveview`.
