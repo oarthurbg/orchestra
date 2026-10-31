@@ -376,10 +376,10 @@ export const register: Register = (on, options) => {
     }
 
     const limit = (label: string, l: { pct: number } | null, tail: string, alarm: boolean) => (
-      <Box flexDirection="row" alignItems="center" gap={1}>
+      <Box flexShrink={0} flexDirection="row" alignItems="center" gap={1}>
         <Text size="footnote" dimColor>{label}</Text>
         {l === null ? <Text size="footnote" dimColor>-</Text> : pic(bar(l.pct, alarm), `${l.pct}% of the ${label} limit`, 44, 4)}
-        {l !== null && <Text size="footnote" color={alarm ? 'error' : undefined}>{l.pct}% used</Text>}
+        {l !== null && <Text size="footnote" color={alarm ? 'error' : undefined}>{l.pct}%</Text>}
         {l !== null && tail !== '' && <Text size="footnote" color={alarm ? 'error' : undefined} dimColor={!alarm}>{tail}</Text>}
       </Box>
     )
@@ -390,52 +390,56 @@ export const register: Register = (on, options) => {
     // Every text cell of a row opens its session: a Button holds only text, so each cell is one, and the row lights as one on hover.
     // The desktop pads a plain Button's text by about a column; headings and unlinked cells take the same inset to line up.
     const inset = desktop ? 1 : 0
-    const cell = (r: BandRow, part: string, label: string, style: { bold?: boolean; dimColor?: boolean; underline?: boolean; color?: string } = {}) =>
+    const cell = (r: BandRow, part: string, label: string, style: { bold?: boolean; dimColor?: boolean; underline?: boolean; color?: string; wrap?: 'truncate-end' } = {}) =>
       r.link !== ''
         ? <Button key={`${r.key}-${part}`} plain onPress={() => open($, r.link)}><Text {...style}>{label}</Text></Button>
         : <Box paddingX={inset}><Text {...style}>{label}</Text></Box>
     const markOf = (r: BandRow) => (desktop ? pic(svg(MARK_SVG[r.mark], 12, 12), r.status, 12, 12) : <Text color={MARK_TEXT[r.mark][1]} underline={r.mark === 'waiting'}>{MARK_TEXT[r.mark][0]}</Text>)
+    // In a narrow band the status and context columns keep their text whole (the mark, the gap, a Button's inset and
+    // about a cell of slack for the desktop's proportional type); the name and detail columns shrink instead.
+    const statusMin = Math.max('Status'.length, ...v.rows.map(r => r.status.length)) + (desktop ? 3 : 2) + 2 * inset + inset
+    const contextMin = Math.max('Context'.length, ...v.rows.map(r => r.context.length)) + 2 * inset + inset
     const row = (r: BandRow, n: number) => {
       const waiting = r.mark === 'waiting'
       return (
         <Box key={`row-${r.key}`} flexDirection="row" alignItems="center" paddingX={1} {...(desktop ? { paddingY: 'xs' as const } : {})} {...(n % 2 === 1 ? { backgroundColor: STRIPE } : {})} {...(r.link !== '' ? { hover: { backgroundColor: HOVER } } : {})}>
           <Box width="24%">{cell(r, 'name', r.name, { bold: waiting, underline: r.link !== '' })}</Box>
-          <Box width="18%" flexDirection="row" alignItems="center" gap={1}>
+          <Box width="18%" minWidth={statusMin} flexShrink={0} flexDirection="row" alignItems="center" gap={1}>
             {markOf(r)}
             {cell(r, 'status', r.status, { bold: waiting })}
           </Box>
-          <Box width="9%" justifyContent="flex-end">{cell(r, 'context', r.context, r.big ? { bold: true, color: 'error' } : {})}</Box>
-          <Box flexGrow={1} paddingLeft={3}>{r.detail !== '' ? cell(r, 'detail', r.detail, { dimColor: true }) : null}</Box>
+          <Box width="9%" minWidth={contextMin} flexShrink={0} justifyContent="flex-end">{cell(r, 'context', r.context, r.big ? { bold: true, color: 'error' } : {})}</Box>
+          <Box width={0} flexGrow={1} paddingLeft={3}>{r.detail !== '' ? cell(r, 'detail', r.detail, { dimColor: true }) : null}</Box>
         </Box>
       )
     }
     const heads = (
       <Box flexDirection="row" paddingX={1} {...(desktop ? { paddingY: 'xs' as const } : {})}>
         <Box width="24%" paddingLeft={inset}><Text dimColor>Workstream</Text></Box>
-        <Box width="18%" paddingLeft={desktop ? 3 + inset : 2}><Text dimColor>Status</Text></Box>
-        <Box width="9%" justifyContent="flex-end" paddingRight={inset}><Text dimColor>Context</Text></Box>
-        <Box flexGrow={1} paddingLeft={3 + inset}><Text dimColor>Detail</Text></Box>
+        <Box width="18%" minWidth={statusMin} flexShrink={0} paddingLeft={desktop ? 3 + inset : 2}><Text dimColor>Status</Text></Box>
+        <Box width="9%" minWidth={contextMin} flexShrink={0} justifyContent="flex-end" paddingRight={inset}><Text dimColor>Context</Text></Box>
+        <Box width={0} flexGrow={1} paddingLeft={3 + inset}><Text dimColor>Detail</Text></Box>
       </Box>
     )
 
     const show5 = v.fiveHour !== null || v.inProject
     const showWeek = v.week !== null || v.inProject
     const counted = maestro && v.total > 0
-    const toggleButton = maestro && v.rows.length > 0 && <Button key="orchestra-toggle" label={shownNow === 'all' ? '▾' : shownNow === 'top' ? '▴' : '▸'} onPress={toggle} />
+    const toggleButton = maestro && v.rows.length > 0 && <Button key="orchestra-toggle" label={shownNow === 'all' ? '▾' : shownNow === 'top' ? '▴' : '◂'} onPress={toggle} />
     // Collapsed, the header names the most urgent row, opens its session, and counts the rest.
     const first = v.rows[0]
     const others = v.rows.length - 1
     const urgent = (withStatus: boolean) => collapsed && first && (
-      <Box flexShrink={1} flexDirection="row" alignItems="center" gap={1}>
+      <Box flexShrink={1} minWidth={0} flexDirection="row" alignItems="center" gap={1}>
         {markOf(first)}
-        {cell(first, 'head', first.name, { bold: first.mark === 'waiting', underline: first.link !== '' })}
+        <Box flexShrink={1} minWidth={0}>{cell(first, 'head', first.name, { bold: first.mark === 'waiting', underline: first.link !== '', wrap: 'truncate-end' })}</Box>
         {withStatus && <Text size="footnote" dimColor>{first.status}</Text>}
         {others > 0 && <Text size="footnote" dimColor>+{others}</Text>}
       </Box>
     )
     const urgentCells = (withStatus: boolean) => (collapsed && first ? 4 + first.name.length + (withStatus ? first.status.length + 1 : 0) + (others > 0 ? `+${others}`.length + 1 : 0) : 0)
     // Roughly the cells the one-line header takes (a bar is about 6); below that, as in a split view, it goes compact.
-    const cells = (label: string, l: { pct: number } | null, tail: string) => label.length + (l === null ? 2 : 8 + `${l.pct}% used`.length + (tail ? tail.length + 1 : 0))
+    const cells = (label: string, l: { pct: number } | null, tail: string) => label.length + (l === null ? 2 : 8 + `${l.pct}%`.length + (tail ? tail.length + 1 : 0))
     const wide = 16 + (show5 ? cells('5h', v.fiveHour, fiveTail) : 0) + (showWeek ? 3 + cells('Weekly', v.week, weekTail) : 0)
       + (counted ? `${v.running} of ${v.total} running`.length + 1 : 0) + (toggleButton ? 4 : 0) + urgentCells(true)
     const narrow = e.props.bodyColumns < wide
@@ -444,10 +448,10 @@ export const register: Register = (on, options) => {
     // The same words as the wide line, without the reset times; a run-out time stays.
     const runOutTail = runOutAt !== null ? `runs out ${dayTime(runOutAt)}` : ''
     const short = (label: string, l: { pct: number } | null, tail: string, alarm: boolean) => (
-      <Box flexDirection="row" alignItems="center" gap={1}>
+      <Box flexShrink={0} flexDirection="row" alignItems="center" gap={1}>
         <Text size="footnote" dimColor>{label}</Text>
         {l === null ? <Text size="footnote" dimColor>-</Text> : !tight && pic(bar(l.pct, alarm), `${l.pct}% of the ${label} limit`, 44, 4)}
-        {l !== null && <Text size="footnote" color={alarm ? 'error' : undefined}>{l.pct}% used</Text>}
+        {l !== null && <Text size="footnote" color={alarm ? 'error' : undefined}>{l.pct}%</Text>}
         {l !== null && tail !== '' && <Text size="footnote" color="error">{tail}</Text>}
       </Box>
     )
@@ -512,7 +516,6 @@ export const register: Register = (on, options) => {
 
     const footer = hasFooter ? (
       <Box flexDirection="row" alignItems="center" gap={1}>
-        {pt.shown && <Text dimColor>ponytail</Text>}
         {pt.shown && LEVELS.map(level => (
           <Button key={`orchestra-ponytail-${level}`} label={level} {...(level === pt.level ? { variant: 'secondary' as const } : { plain: true as const })} onPress={() => setLevel(level)} />
         ))}

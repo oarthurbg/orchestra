@@ -51,9 +51,11 @@ The shape is the role everywhere orchestra draws a session. How it is drawn is t
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/images/band-compact-dark.png">
-    <img alt="The band: plan limits, a workstream waiting on an answer, one over 250k tokens of context, a count of two more, then the ponytail switch and the Liveview button" src="docs/images/band-compact-light.png" width="820">
+    <img alt="The band: plan limits, a workstream waiting on an answer, one over 250k tokens of context, a count of two more, then ponytail's level buttons and the Liveview button" src="docs/images/band-compact-light.png" width="820">
   </picture>
 </p>
+
+> **Note:** the `off lite full ultra` buttons at the bottom of the band switch [ponytail](https://github.com/DietrichGebert/ponytail)'s level for every session. They show only when ponytail is installed and its own band is hidden with `/ponytail band`.
 
 **The liveview** is a local page with every workstream's progress, ETA and timeline. It runs on your machine and uses no tokens. [More about the liveview](docs/liveview.md).
 
