@@ -1,0 +1,10 @@
+{
+  "name": "orchestra-install",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Installs the orchestra Claude Code plugin and the plugins it works with. Run: npx github:oarthurbg/orchestra",
+  "license": "Apache-2.0",
+  "bin": { "orchestra-install": "install.mjs" },
+  "files": ["install.mjs"],
+  "engines": { "node": ">=18" }
+}
