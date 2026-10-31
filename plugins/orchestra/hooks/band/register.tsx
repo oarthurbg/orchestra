@@ -1,8 +1,8 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import { REFRESH_MS, buildView, isSafeTarget, mainCheckout, norm, openerArgv, parseRegistry, parseSessionFile, parseStatus, pingDue, roleOf } from './logic'
-import type { BandRow, BandView, Limit, Mark, Role, RowsShown, SessionFile } from './types'
+import { CHANGELOG_URL, REFRESH_MS, buildView, claudeArgv, isNewer, isSafeTarget, mainCheckout, norm, openerArgv, parseRegistry, parseSessionFile, parseStatus, pingDue, roleOf } from './logic'
+import type { BandRow, BandView, Limit, Mark, Role, RowsShown, SessionFile, UpdateOffer } from './types'
 
 // The desktop app's session server, as Task 1 of the plan found it.
 const APP_SESSION_SERVER = 'ccd_session_mgmt'
@@ -13,6 +13,9 @@ const rowsShown = atom({ plugin: 'orchestra', key: 'rows' } as const, 'top' as R
 const ROWS_SHOWN: RowsShown[] = ['all', 'top', 'none']
 const ponytail = atom({ plugin: 'orchestra', key: 'ponytail' } as const, { shown: false, level: 'off' })
 const LEVELS = ['off', 'lite', 'full', 'ultra']
+const offer = atom({ plugin: 'orchestra', key: 'update' } as const, { state: 'none', version: '' } as UpdateOffer)
+const RELEASES = 'https://raw.githubusercontent.com/oarthurbg/orchestra/main'
+const UPDATE_CHECK_MS = 6 * 60 * 60_000
 
 type Ctx = {
   main: string | null
@@ -231,6 +234,21 @@ async function startLiveview($: EngineInterface) {
   await $.process.run(['node', `${norm(plugin)}/liveview/server.mjs`, '--root', ctx.main, '--detach'], { timeoutMs: 60_000 })
 }
 
+// Offers a newer orchestra from GitHub's main branch, unless the person said Later to that version.
+async function checkUpdate($: EngineInterface) {
+  const plugin = await $.env.get('CLAUDE_PLUGIN_ROOT')
+  // A dev copy runs unreleased code, and the update would replace the installed plugin, not it.
+  if (!plugin || norm(plugin).includes('/dev-mods/')) return
+  const installed = JSON.parse((await read$($, `${norm(plugin)}/.claude-plugin/plugin.json`)) ?? '{}').version
+  const remote = await $.http.fetch(`${RELEASES}/plugins/orchestra/.claude-plugin/plugin.json`)
+  if (!remote.ok) return
+  const latest = JSON.parse(remote.text).version
+  if (typeof latest !== 'string' || typeof installed !== 'string' || !isNewer(latest, installed)) return
+  if ((await $.store.get('updateLater').catch(() => undefined)) === latest) return
+  // Once installed, this session still runs the old version until it restarts: keep saying so.
+  await update($, offer, o => (o.state === 'none' || o.state === 'offered' ? { state: 'offered', version: latest } : o))
+}
+
 export const register: Register = (on, options) => {
   // session.start's locate, which classic.SessionStart waits for so its watch paths know the main checkout.
   let located: Promise<void> = Promise.resolve()
@@ -252,6 +270,9 @@ export const register: Register = (on, options) => {
     await refresh($)
     await update($, rowsShown, () => shownBefore)
     await readPonytail($, true).catch(() => {})
+    // Not awaited: the network must not hold the session's start.
+    void checkUpdate($).catch(() => {})
+    $.clock.every(UPDATE_CHECK_MS, () => void checkUpdate($).catch(() => {}))
     return result
   }).catch(($, e, next) => next(e))
 
@@ -343,7 +364,8 @@ export const register: Register = (on, options) => {
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     const v = await read($, view)
     const pt = await read($, ponytail)
-    if (e.props.hasSurvey || (!v.inProject && v.fiveHour === null && v.week === null && v.pings === 0 && !pt.shown)) return next(e)
+    const up = await read($, offer)
+    if (e.props.hasSurvey || (!v.inProject && v.fiveHour === null && v.week === null && v.pings === 0 && !pt.shown && up.state === 'none')) return next(e)
     // Other mods share this slot: draw theirs beneath ours instead of replacing it.
     const below = await next(e).catch(() => undefined)
     const ui = $.ui.resolve(e)
@@ -464,7 +486,7 @@ export const register: Register = (on, options) => {
     // The app scrolls a band taller than maxRows, which hides the footer: open, the list keeps to the rows left beside
     // the header, headings and footer (one more on the desktop for its rules and gaps), with a count for the rest.
     const hasFooter = pt.shown || v.pings > 0 || v.liveview !== ''
-    const fixedRows = 1 + (maestro && isOpen ? 1 : 0) + (hasFooter ? 1 : 0) + (desktop ? 1 : 0)
+    const fixedRows = 1 + (maestro && isOpen ? 1 : 0) + (hasFooter ? 1 : 0) + (up.state !== 'none' ? 1 : 0) + (desktop ? 1 : 0)
     const room = e.props.maxRows - fixedRows
     const shown = collapsed ? [] : maestro && !isOpen ? v.rows.slice(0, 2) : v.rows.length <= room ? v.rows : v.rows.slice(0, Math.max(2, room - 1))
     const hidden = v.rows.slice(shown.length)
@@ -525,11 +547,51 @@ export const register: Register = (on, options) => {
       </Box>
     ) : null
 
+    const later = async () => {
+      await $.store.set('updateLater', up.version).catch(() => {})
+      await update($, offer, o => ({ ...o, state: 'none' }))
+    }
+    const install = async () => {
+      await update($, offer, o => ({ ...o, state: 'updating' }))
+      let done = false
+      try {
+        const os = await osName($)
+        const run = async (args: string[]) => (await $.process.run(claudeArgv(os, args), { timeoutMs: 180_000 })).exitCode === 0
+        done = (await run(['plugin', 'marketplace', 'update', 'orchestra'])) && (await run(['plugin', 'update', 'orchestra@orchestra']))
+      } catch {
+        // A command that cannot start is a failed update.
+      }
+      await update($, offer, o => ({ ...o, state: done ? 'done' : 'offered' }))
+      if (!done) {
+        try {
+          $.ui.toast('orchestra update failed; run: claude plugin update orchestra@orchestra')
+        } catch {
+          // Nothing more to do: a button press never rejects.
+        }
+      }
+    }
+    const dot = desktop ? pic(svg('<circle cx="4.5" cy="4.5" r="4.5" fill="#2450E0"/>', 9, 9), 'update', 9, 9) : <Text color="#2450E0">●</Text>
+    const updateLine = up.state === 'none' ? null : (
+      <Box flexDirection="row" alignItems="center" gap={1}>
+        {dot}
+        {up.state === 'offered' && <Box flexShrink={1} minWidth={0}><Text bold wrap="truncate-end">orchestra {up.version} is out</Text></Box>}
+        {up.state === 'updating' && <Text dimColor>Updating orchestra to {up.version}...</Text>}
+        {up.state === 'done' && <Box flexShrink={1} minWidth={0}><Text wrap="truncate-end">Updated to {up.version}. Run /reload-plugins to load it.</Text></Box>}
+        <Box flexGrow={1} />
+        {up.state === 'offered' && <Button key="orchestra-changelog" label="Changelog" plain onPress={() => open($, CHANGELOG_URL)} />}
+        {up.state === 'offered' && <Button key="orchestra-update" label="Update" variant="primary" onPress={install} />}
+        {up.state === 'offered' && <Button key="orchestra-update-later" label="Later" plain onPress={later} />}
+        {up.state === 'done' && <Button key="orchestra-update-close" label="×" plain onPress={later} />}
+      </Box>
+    )
+
     const mine = (
       <Box flexDirection="column" width={e.props.bodyColumns} gap={desktop ? 'xs' : 0}>
         {header}
         {body && rule}
         {body}
+        {updateLine && rule}
+        {updateLine}
         {footer && rule}
         {footer}
       </Box>

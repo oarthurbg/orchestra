@@ -61,6 +61,16 @@ The footer shows only when it has something to show:
 - **`kept warm 2x`**: how many keep-warm pings this session sent (see below).
 - **`Liveview`**: opens the local dashboard while it runs. The dashboard writes `.orchestra/liveview.json` with its local URL, and the button shows only for a `localhost` or `127.0.0.1` address.
 
+## Updates
+
+When a newer orchestra is out, the band adds a line above the footer: `orchestra 1.3.2 is out`, with three buttons.
+
+- **Changelog** opens [CHANGELOG.md](../CHANGELOG.md) on GitHub.
+- **Update** runs `claude plugin marketplace update orchestra` and `claude plugin update orchestra@orchestra`, then says `Updated to 1.3.2. Run /reload-plugins to load it.` Each session runs the old version until you run `/reload-plugins` in it or start a new one. If a command fails, a toast gives the command to run yourself.
+- **Later** hides the line for that version in every session. The next version shows it again.
+
+The band reads the version on GitHub's main branch when a session starts and every 6 hours. It never updates by itself, and when GitHub can't be reached it says nothing. A copy of the plugin loaded from a mods folder for development is never offered an update.
+
 ## In other sessions
 
 - A **principal's** band shows the limits and its own row: waiting, over 250k, running or idle, with its current stage.

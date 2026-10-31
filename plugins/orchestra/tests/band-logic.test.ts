@@ -5,8 +5,10 @@ import {
   STALE_MS,
   age,
   buildView,
+  claudeArgv,
   fmtK,
   isLocalUrl,
+  isNewer,
   isSafeTarget,
   mainCheckout,
   norm,
@@ -300,9 +302,25 @@ describe('small helpers', () => {
   test('isSafeTarget accepts plain claude:// and local URLs, and openerArgv refuses the rest', () => {
     expect(isSafeTarget('claude://claude.ai/epitaxy/local_0a1b2c3d-0000')).toBe(true)
     expect(isSafeTarget('http://localhost:4123/')).toBe(true)
+    expect(isSafeTarget('https://github.com/oarthurbg/orchestra/blob/main/CHANGELOG.md')).toBe(true)
     for (const bad of ['http://localhost:1/&calc.exe', 'claude://x&y', 'claude://x y', 'https://evil.example/', 'claude://x"y']) {
       expect(isSafeTarget(bad)).toBe(false)
       expect(() => openerArgv('windows', bad)).toThrow('unsafe target')
     }
+  })
+
+  test('isNewer compares x.y.z versions and ignores anything else', () => {
+    expect(isNewer('1.3.2', '1.3.1')).toBe(true)
+    expect(isNewer('1.10.0', '1.9.9')).toBe(true)
+    expect(isNewer('2.0.0', '1.99.99')).toBe(true)
+    expect(isNewer('1.3.1', '1.3.1')).toBe(false)
+    expect(isNewer('1.3.0', '1.3.1')).toBe(false)
+    for (const bad of ['', '1.3', '1.3.2-beta', 'latest', '<html>']) expect(isNewer(bad, '1.0.0')).toBe(false)
+    expect(isNewer('1.0.0', 'dev')).toBe(false)
+  })
+
+  test('claudeArgv goes through cmd on Windows only', () => {
+    expect(claudeArgv('windows', ['plugin', 'list'])).toEqual(['cmd', '/c', 'claude', 'plugin', 'list'])
+    expect(claudeArgv('linux', ['plugin', 'list'])).toEqual(['claude', 'plugin', 'list'])
   })
 })

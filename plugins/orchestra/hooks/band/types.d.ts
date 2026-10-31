@@ -48,6 +48,9 @@ export type BandRow = {
 
 export type RowsShown = 'all' | 'top' | 'none'
 
+// A newer orchestra on GitHub: offered, being installed, or installed and waiting for a restart.
+export type UpdateOffer = { state: 'none' | 'offered' | 'updating' | 'done'; version: string }
+
 export type LimitView ={ pct: number; resetsAt: number | null }
 
 export type BandView = {
@@ -73,6 +76,8 @@ declare module 'claude-code' {
       rows: RowsShown
       // ponytail's level switch, drawn when ponytail is installed and its own band is hidden.
       ponytail: { shown: boolean; level: string }
+      // A newer orchestra the band offers to install.
+      update: UpdateOffer
     }
   }
 }
