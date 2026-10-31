@@ -81,9 +81,9 @@ export function pyOutline(text) {
   return { scopes: scopes(b), imports: imports(b), ids }
 }
 
-export function which(name, env = process.env) {
-  const exts = process.platform === 'win32' ? (env.PATHEXT ?? '.EXE;.CMD;.BAT').split(';') : ['']
-  for (const dir of (env.PATH ?? '').split(path.delimiter).filter(Boolean)) {
+export function which(name) {
+  const exts = process.platform === 'win32' ? (process.env.PATHEXT ?? '.EXE;.CMD;.BAT').split(';') : ['']
+  for (const dir of (process.env.PATH ?? '').split(path.delimiter).filter(Boolean)) {
     for (const ext of exts) {
       const file = path.join(dir, name + ext)
       if (fs.statSync(file, { throwIfNoEntry: false })?.isFile()) return file

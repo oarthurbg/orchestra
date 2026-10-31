@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 export const USAGE = 'usage: lsp.mjs refs|calls|defs <file> <symbol> [--line N] [--depth N (calls only, 1 to 3)]'
-export const MAX_LINES = 200
+const MAX_LINES = 200
 
 // An error that ends the run with this exit code and one line on stderr.
 export class Exit extends Error {
@@ -26,7 +26,7 @@ export function parseArgs(argv) {
   return out
 }
 
-const LANGS = { '.ts': 'ts', '.tsx': 'ts', '.mts': 'ts', '.cts': 'ts', '.js': 'ts', '.jsx': 'ts', '.mjs': 'ts', '.cjs': 'ts', '.py': 'py', '.pyi': 'py' }
+export const LANGS = { '.ts': 'ts', '.tsx': 'ts', '.mts': 'ts', '.cts': 'ts', '.js': 'ts', '.jsx': 'ts', '.mjs': 'ts', '.cjs': 'ts', '.py': 'py', '.pyi': 'py' }
 export const langOf = file => LANGS[path.extname(file).toLowerCase()] ?? null
 
 export function findRoot(file, cwd) {
@@ -70,4 +70,4 @@ export function pick(ids, starts, { decl, line }) {
 
 export const refLine = (rel, line, name, mark, source) => `${rel}:${line}  ${name}${mark ? ` (${mark})` : ''}  |  ${source.trim().slice(0, 160)}`
 
-export const cap = (lines, max = MAX_LINES) => lines.length > max ? [...lines.slice(0, max), `... ${lines.length - max} more`] : lines
+export const cap = lines => lines.length > MAX_LINES ? [...lines.slice(0, MAX_LINES), `... ${lines.length - MAX_LINES} more`] : lines

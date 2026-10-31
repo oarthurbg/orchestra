@@ -75,9 +75,9 @@ function listen(server, port, last) {
   })
 }
 
-// Starts the server. Options exist for tests: port, clock, tick, idle limit, file size cap, transcript folder, idle action.
+// Starts the server. Options exist for tests: port, clock, file size cap, transcript folder, idle action, own timer.
 export async function startServer({
-  root, port = FIRST_PORT, now = Date.now, tickMs = TICK_MS, idleMs = IDLE_MS, fileMax = FILE_MAX,
+  root, port = FIRST_PORT, now = Date.now, fileMax = FILE_MAX,
   reader = new TranscriptReader(), onIdle = () => process.exit(0), auto = true,
 }) {
   root = path.resolve(root)
@@ -90,8 +90,9 @@ export async function startServer({
   let idle = false
 
   const tick = () => {
+    let input
     try {
-      const input = gather(root, now(), reader, history)
+      input = gather(root, now(), reader, history)
       const live = Object.values(input.workstreams).flatMap(w => (w.versions ? timedTasks(w.planPath, w.versions, w.commits) : []))
       history = appendHistory(root, history, live)
       input.history = history
@@ -101,8 +102,8 @@ export async function startServer({
       if (snapshot) snapshot.staleSince ??= now()
       else snapshot = { v: 1, error: String(err?.message ?? err), staleSince: now(), rows: [] }
     }
-    const fresh = readSessions(root).some(s => now() - Date.parse(s.updatedAt) < idleMs)
-    if (!idle && now() - startedAt >= idleMs && !fresh) {
+    const fresh = (input?.sessions ?? readSessions(root)).some(s => now() - Date.parse(s.updatedAt) < IDLE_MS)
+    if (!idle && now() - startedAt >= IDLE_MS && !fresh) {
       idle = true
       void close().then(onIdle)
     }
@@ -174,7 +175,7 @@ export async function startServer({
     return new Promise(resolve => server.close(() => resolve()))
   }
   tick()
-  if (auto) timer = setInterval(tick, tickMs)
+  if (auto) timer = setInterval(tick, TICK_MS)
   return { url, port: bound, tick, close }
 }
 
