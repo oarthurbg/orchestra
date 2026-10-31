@@ -2,7 +2,7 @@
 
 Everything you need to install, update and tune orchestra. The [README](../README.md) has the short version.
 
-[README](../README.md) · **Setup** · [Agents](agents.md) · [Stages, modes and skills](stages.md) · [The band](band.md) · [The liveview](liveview.md) · [Benchmarks](benchmarks.md)
+[README](../README.md) · **Setup** · [Commands](commands.md) · [Agents](agents.md) · [Stages, modes and skills](stages.md) · [The band](band.md) · [The liveview](liveview.md) · [Benchmarks](benchmarks.md)
 
 ## Install
 
