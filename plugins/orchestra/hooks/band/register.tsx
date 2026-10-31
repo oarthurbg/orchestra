@@ -376,7 +376,7 @@ export const register: Register = (on, options) => {
     }
 
     const limit = (label: string, l: { pct: number } | null, tail: string, alarm: boolean) => (
-      <Box flexDirection="row" alignItems="center" gap={1}>
+      <Box flexShrink={0} flexDirection="row" alignItems="center" gap={1}>
         <Text size="footnote" dimColor>{label}</Text>
         {l === null ? <Text size="footnote" dimColor>-</Text> : pic(bar(l.pct, alarm), `${l.pct}% of the ${label} limit`, 44, 4)}
         {l !== null && <Text size="footnote" color={alarm ? 'error' : undefined}>{l.pct}% used</Text>}
@@ -390,7 +390,7 @@ export const register: Register = (on, options) => {
     // Every text cell of a row opens its session: a Button holds only text, so each cell is one, and the row lights as one on hover.
     // The desktop pads a plain Button's text by about a column; headings and unlinked cells take the same inset to line up.
     const inset = desktop ? 1 : 0
-    const cell = (r: BandRow, part: string, label: string, style: { bold?: boolean; dimColor?: boolean; underline?: boolean; color?: string } = {}) =>
+    const cell = (r: BandRow, part: string, label: string, style: { bold?: boolean; dimColor?: boolean; underline?: boolean; color?: string; wrap?: 'truncate-end' } = {}) =>
       r.link !== ''
         ? <Button key={`${r.key}-${part}`} plain onPress={() => open($, r.link)}><Text {...style}>{label}</Text></Button>
         : <Box paddingX={inset}><Text {...style}>{label}</Text></Box>
@@ -430,9 +430,9 @@ export const register: Register = (on, options) => {
     const first = v.rows[0]
     const others = v.rows.length - 1
     const urgent = (withStatus: boolean) => collapsed && first && (
-      <Box flexShrink={1} flexDirection="row" alignItems="center" gap={1}>
+      <Box flexShrink={1} minWidth={0} flexDirection="row" alignItems="center" gap={1}>
         {markOf(first)}
-        {cell(first, 'head', first.name, { bold: first.mark === 'waiting', underline: first.link !== '' })}
+        <Box flexShrink={1} minWidth={0}>{cell(first, 'head', first.name, { bold: first.mark === 'waiting', underline: first.link !== '', wrap: 'truncate-end' })}</Box>
         {withStatus && <Text size="footnote" dimColor>{first.status}</Text>}
         {others > 0 && <Text size="footnote" dimColor>+{others}</Text>}
       </Box>
@@ -448,7 +448,7 @@ export const register: Register = (on, options) => {
     // The same words as the wide line, without the reset times; a run-out time stays.
     const runOutTail = runOutAt !== null ? `runs out ${dayTime(runOutAt)}` : ''
     const short = (label: string, l: { pct: number } | null, tail: string, alarm: boolean) => (
-      <Box flexDirection="row" alignItems="center" gap={1}>
+      <Box flexShrink={0} flexDirection="row" alignItems="center" gap={1}>
         <Text size="footnote" dimColor>{label}</Text>
         {l === null ? <Text size="footnote" dimColor>-</Text> : !tight && pic(bar(l.pct, alarm), `${l.pct}% of the ${label} limit`, 44, 4)}
         {l !== null && <Text size="footnote" color={alarm ? 'error' : undefined}>{l.pct}% used</Text>}
