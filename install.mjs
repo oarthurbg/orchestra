@@ -1,6 +1,7 @@
+#!/usr/bin/env node
 // Installs orchestra and the plugins its workflow uses, skipping any you already have from any marketplace.
-// Run: curl -fsSL https://raw.githubusercontent.com/oarthurbg/orchestra/main/install.mjs | node --input-type=module
-// From a clone: node install.mjs [--dry-run]
+// Run: npx github:oarthurbg/orchestra [--dry-run]
+// Or: curl -fsSL https://raw.githubusercontent.com/oarthurbg/orchestra/main/install.mjs | node --input-type=module
 import { spawnSync } from 'node:child_process'
 
 const MARKETPLACE = 'orchestra'
