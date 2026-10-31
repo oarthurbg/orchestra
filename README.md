@@ -73,6 +73,19 @@ The shape is the role everywhere orchestra draws a session. How it is drawn is t
   </picture>
 </p>
 
+## Features
+
+- **Parallel workstreams.** One session and one git worktree per feature, as many at once as your machine and plan limits allow. [Stages](docs/stages.md)
+- **Nine subagents,** each with its own model and effort, so judgment gets Opus and mechanical work gets something cheaper. [Agents](docs/agents.md)
+- **The right skills and mode at every stage,** from brainstorm and mockups to spec, plan, build, review and PR. [Stages, modes and skills](docs/stages.md)
+- **Reviews before every merge:** spec, quality and finish reviewers per task, then one whole-branch review. [Reviews](docs/stages.md#reviews)
+- **The band** above every prompt: plan limits, when they run out, and which workstream needs you. [The band](docs/band.md)
+- **The liveview and inbox:** every workstream's progress and ETA, and every question waiting on you, on a local page that uses no tokens. [The liveview](docs/liveview.md)
+- **Code navigation** with a language server instead of grep: same answers, fewer tokens. [Code navigation](docs/setup.md#code-navigation)
+- **Context kept small:** a principal over 250k tokens writes a handoff note and is cleared at the next stop, and the maestro picks up what still waits on it after a compact. [Recommended settings](docs/setup.md#recommended-settings)
+- **Keep-warm:** while a subagent runs, the band keeps the session's prompt cache from expiring, so the session doesn't pay to rebuild it. [Keep-warm](docs/band.md#keep-warm)
+- **Guardrails for bypass mode:** owner authorizations (`ask`, `tell` or `auto`) for merges, releases and clears, and a branch guard against direct pushes. [Recommended settings](docs/setup.md#recommended-settings)
+
 ## Does it help?
 
 Measured, not estimated. Every number comes from a script in [`bench/`](bench) and is explained in [Benchmarks](docs/benchmarks.md).
