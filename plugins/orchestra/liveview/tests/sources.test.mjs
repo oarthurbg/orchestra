@@ -104,6 +104,21 @@ const initRepo = (branch = 'develop') => {
 }
 const emptyReader = () => new TranscriptReader(tmp())
 
+test('planVersions skips the commit that deleted the plan and keeps every other version whole', () => {
+  const { repo, g } = initRepo()
+  const p = 'docs/superpowers/plans/x y.md'
+  const write = text => { fs.mkdirSync(path.dirname(path.join(repo, p)), { recursive: true }); fs.writeFileSync(path.join(repo, p), text) }
+  write('### Task 1: é\n\n- [ ] step')
+  g('add', p)
+  g('commit', '-q', '-m', 'plan')
+  g('rm', '-q', p)
+  g('commit', '-q', '-m', 'gone')
+  write('')
+  g('add', p)
+  g('commit', '-q', '-m', 'empty')
+  assert.deepEqual(planVersions(repo, 'HEAD', p).map(v => v.md), ['### Task 1: é\n\n- [ ] step', ''])
+})
+
 test('a branch name that starts with a dash is treated as absent, so git never reads it as an option', () => {
   const { repo, g } = initRepo()
   fs.writeFileSync(path.join(repo, 'CLAUDE.md'), 'Integration branch: `--output=x.txt`\nProduction branch: `-x`\n')

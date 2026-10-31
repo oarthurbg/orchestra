@@ -63,10 +63,29 @@ export function readSessions(main) {
 export function planVersions(cwd, ref, planPath) {
   const log = git(cwd, ['log', '--format=%H %at', ref, '--', planPath])
   if (!log) return []
-  return log.trim().split('\n').filter(Boolean).reverse().flatMap(line => {
-    const [sha, at] = line.split(' ')
-    const md = git(cwd, ['show', `${sha}:${planPath}`])
-    return md === null ? [] : [{ at: Number(at) * 1000, md, sha }]
+  const commits = log.trim().split('\n').filter(Boolean).reverse().map(line => line.split(' '))
+  const mds = blobs(cwd, commits.map(([sha]) => `${sha}:${planPath}`))
+  return commits.flatMap(([sha, at], i) => (mds[i] === null ? [] : [{ at: Number(at) * 1000, md: mds[i], sha }]))
+}
+
+// Each object's text, or null when it is not a blob, from one git process instead of one per object.
+function blobs(cwd, names) {
+  let out
+  try {
+    out = execFileSync('git', ['cat-file', '--batch'], { cwd, input: `${names.join('\n')}\n`, stdio: ['pipe', 'pipe', 'ignore'], maxBuffer: 64 * 1024 * 1024, timeout: 10_000, windowsHide: true })
+  } catch {
+    return names.map(() => null)
+  }
+  // Each answer is "<sha> blob <size>\n<bytes>\n", or one line such as "<name> missing".
+  let at = 0
+  return names.map(() => {
+    const nl = out.indexOf(10, at)
+    const [, type, size] = out.toString('utf8', at, nl).split(' ')
+    at = nl + 1
+    if (type !== 'blob') return null
+    const text = out.toString('utf8', at, at + Number(size))
+    at += Number(size) + 1
+    return text
   })
 }
 
