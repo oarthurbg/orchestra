@@ -46,7 +46,9 @@ export type BandRow = {
   detail: string
 }
 
-export type LimitView = { pct: number; resetsAt: number | null }
+export type RowsShown = 'all' | 'top' | 'none'
+
+export type LimitView ={ pct: number; resetsAt: number | null }
 
 export type BandView = {
   inProject: boolean
@@ -67,8 +69,8 @@ declare module 'claude-code' {
   interface PluginState {
     orchestra: {
       view: BandView
-      // The band shows every row (true) or the two most urgent (false); kept in $.store across sessions.
-      detailed: boolean
+      // The band shows every row, the two most urgent, or none (the header names the most urgent); kept in $.store across sessions.
+      rows: RowsShown
       // ponytail's level switch, drawn when ponytail is installed and its own band is hidden.
       ponytail: { shown: boolean; level: string }
     }

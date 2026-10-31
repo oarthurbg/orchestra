@@ -25,7 +25,16 @@ orchestra draws a band above the prompt in every Claude Code session. In the mae
 - **The orchestra mark and name.**
 - **5h** and **Weekly**: the plan limits, each with a bar, the percentage used and the reset time. When the week will run out before it resets at the current pace, the weekly limit turns red and says when (`runs out Sat 18:20`). In a narrow window, as in a split view, the line keeps the percentages and the run-out time and drops the reset times.
 - **`3 of 5 running`**: how many workstreams are running, out of how many are registered.
-- **The arrow** shows when more than two rows are due. It opens all of them and closes them again, and the band remembers your choice.
+- **The arrow** steps through every row, the two most urgent, then none, and the band remembers your choice. With two rows or fewer it only collapses the band and opens it again.
+- **Collapsed**, the band keeps its header and footer. The header names the most urgent workstream with its square and status, opens its session when clicked, and counts the others (`+3`).
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="images/band-collapsed-dark.png">
+    <img alt="The band collapsed: plan limits, then the most urgent workstream, Search filters, waiting, with a count of three more, then the footer" src="images/band-collapsed-light.png" width="820">
+  </picture>
+  <br><sub>Illustration: the band collapsed with the arrow.</sub>
+</p>
 
 ## Rows
 

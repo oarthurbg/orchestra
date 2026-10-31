@@ -80,8 +80,8 @@ test('the maestro band shows the summary and only the workstreams that need atte
     expect((await ui.find({ type: 'Text', text: /over 250k/ }))).toBeDefined()
     // auth is running, only over 250k.
     expect((await ui.find({ type: 'Text', text: /1 of 2 running/ }))).toBeDefined()
-    // Two rows fit the compact band: no arrow, no headings.
-    expect(await ui.find({ key: 'orchestra-toggle' })).toBeUndefined()
+    // Two rows fit the compact band: no headings, and the arrow only collapses it.
+    expect((await ui.find({ key: 'orchestra-toggle' }))?.props.label).toBe('▴')
     expect(await ui.find({ type: 'Text', text: /^Workstream$/ })).toBeUndefined()
     expect(await ui.find({ key: 'liveview' })).toBeUndefined()
     // The desktop draws nothing for an Svg with an empty alt.
@@ -565,6 +565,8 @@ test('more than two rows: the compact band shows two and a count, the arrow open
   let ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
   expect(await ui.find({ type: 'Text', text: /\+1 more: stale/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /no report yet/ })).toBeUndefined()
+  // From the two most urgent, the arrow collapses the band, then opens every row.
+  await ui.press({ key: 'orchestra-toggle' })
   await ui.press({ key: 'orchestra-toggle' })
   await ui.unmount()
   ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
@@ -592,12 +594,84 @@ test('an open band in a short window shows the rows that fit and a count, and ke
   await start($)
   let ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
   await ui.press({ key: 'orchestra-toggle' })
+  await ui.press({ key: 'orchestra-toggle' })
   await ui.unmount()
   ui = await $.ui.mount({ ...BAND, props: { ...BAND.props, maxRows: 6, scroll: { offset: 0, bodyRows: 6 } }, surface: 'desktop' })
   expect(await ui.find({ type: 'Text', text: /^Workstream$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /\+1 more: stale/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /no report yet/ })).toBeUndefined()
   expect(await ui.find({ key: 'liveview' })).toBeDefined()
+  await ui.unmount()
+})
+
+test('collapsed, the band keeps its header and footer and names the most urgent workstream, and is remembered', async ($, on) => {
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY3,
+    [`${ROOT}/.orchestra/liveview.json`]: JSON.stringify({ url: 'http://localhost:4123/' }),
+    [`${ROOT}/.orchestra/sessions/s2.json`]: report('s2', { workstream: 'reports', state: 'waiting', link: 'claude://claude.ai/epitaxy/local_s2' }),
+    [`${ROOT}/.orchestra/sessions/s3.json`]: report('s3', { workstream: 'auth', context: { tokens: 254_000, window: 1_000_000 } }),
+  }
+  disk(on, files)
+  session(on, ROOT, 'o')
+  // A choice stored before the collapsed band: every row.
+  mock.store(on, { detailed: true })
+  await start($)
+  const arrow = async () => {
+    const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+    const label = (await ui.find({ key: 'orchestra-toggle' }))?.props.label
+    await ui.press({ key: 'orchestra-toggle' })
+    await ui.unmount()
+    return label
+  }
+  // Every row, then the two most urgent, then none.
+  expect(await arrow()).toBe('▾')
+  expect(await arrow()).toBe('▴')
+  for (const surface of ['terminal', 'desktop'] as const) {
+    const ui = await $.ui.mount({ ...BAND, surface })
+    expect((await ui.find({ key: 'orchestra-toggle' }))?.props.label).toBe('▸')
+    expect(await ui.find({ key: 's2-head' })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /^\+2$/ })).toBeDefined()
+    expect(await ui.find({ key: 's2-name' })).toBeUndefined()
+    expect(await ui.find({ type: 'Text', text: /more:/ })).toBeUndefined()
+    expect(await ui.find({ type: 'Text', text: /42% used/ })).toBeDefined()
+    expect(await ui.find({ key: 'liveview' })).toBeDefined()
+    await ui.unmount()
+  }
+  // A new session reads the choice back.
+  await start($)
+  let ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ key: 's2-head' })).toBeDefined()
+  await ui.unmount()
+  // The arrow goes back to every row.
+  expect(await arrow()).toBe('▸')
+  ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /^Workstream$/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('with two rows the arrow collapses the band and opens it again', async ($, on) => {
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY,
+    [`${ROOT}/.orchestra/sessions/s2.json`]: report('s2', { workstream: 'reports', state: 'waiting', link: 'claude://claude.ai/epitaxy/local_s2' }),
+    [`${ROOT}/.orchestra/sessions/s3.json`]: report('s3', { workstream: 'auth', context: { tokens: 254_000, window: 1_000_000 } }),
+  }
+  disk(on, files)
+  session(on, ROOT, 'o')
+  mock.store(on)
+  await start($)
+  let ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  await ui.press({ key: 'orchestra-toggle' })
+  await ui.unmount()
+  ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ key: 's2-name' })).toBeUndefined()
+  expect(await ui.find({ key: 's2-head' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^\+1$/ })).toBeDefined()
+  await ui.press({ key: 'orchestra-toggle' })
+  await ui.unmount()
+  ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ key: 's2-name' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /over 250k/ })).toBeDefined()
+  expect((await ui.find({ key: 'orchestra-toggle' }))?.props.label).toBe('▴')
   await ui.unmount()
 })
 
