@@ -86,12 +86,12 @@ Measured, not estimated. Every number comes from a script in [`bench/`](bench) a
   </picture>
 </p>
 
-**The liveview keeps up to about 30 workstreams.** Past that, one rebuild takes longer than its 5-second refresh, and the page falls behind.
+**The liveview keeps up with 50 workstreams,** the most measured. One rebuild then takes 0.5 s of its 5-second refresh.
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/readme/bench-liveview-dark.png">
-    <img alt="Seconds to rebuild the liveview by workstreams open: 0.4 s for 1, 1.0 s for 5, 1.8 s for 10, 3.9 s for 25 and 7.8 s for 50, above the 5-second refresh." src="assets/readme/bench-liveview-light.png" width="820">
+    <img alt="Seconds to rebuild the liveview by workstreams open, before and after the git cache: 0.4 against 0.3 s for 1, 1.0 against 0.3 s for 5, 1.8 against 0.4 s for 10, 3.9 against 0.4 s for 25, and 7.8 against 0.5 s for 50, now well under the 5-second refresh." src="assets/readme/bench-liveview-light.png" width="820">
   </picture>
 </p>
 
