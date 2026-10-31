@@ -1,6 +1,6 @@
 {
   "name": "orchestra",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "Multi-session agent orchestration: a maestro session that plans the app, sizes the work to the machine and the token limits and coordinates, principals that each own a feature from spec to PR, 9 subagents with set models and ponytail modes, handoff notes and isolated test data per workstream. No database, server or Docker required.",
   "author": {
     "name": "oarthurbg",
