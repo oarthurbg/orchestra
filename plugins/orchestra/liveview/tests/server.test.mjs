@@ -408,34 +408,38 @@ test('an unnamed registry row gives a session with no workstream no files, so it
   }
 })
 
-test('tailnetSelf reads the IPv4 address and MagicDNS name of a running Tailscale', () => {
-  const self = { TailscaleIPs: ['100.64.0.7', 'fd7a:115c:a1e0::7'], DNSName: 'Desk.tail1234.ts.net.' }
-  assert.deepEqual(tailnetSelf({ BackendState: 'Running', Self: self }), { ip: '100.64.0.7', name: 'desk.tail1234.ts.net' })
-  assert.deepEqual(tailnetSelf({ BackendState: 'Running', Self: { ...self, DNSName: '' } }), { ip: '100.64.0.7', name: '' })
-  assert.deepEqual(tailnetSelf({ BackendState: 'Running', Self: { ...self, DNSName: 'bad name"' } }), { ip: '100.64.0.7', name: '' })
+test('tailnetSelf reads the address, the MagicDNS name and the owner\'s own devices of a running Tailscale', () => {
+  const self = { UserID: 1, TailscaleIPs: ['100.64.0.7', 'fd7a:115c:a1e0::7'], DNSName: 'Desk.tail1234.ts.net.' }
+  const Peer = { a: { UserID: 1, TailscaleIPs: ['100.64.0.8', 'fd7a::8'] }, b: { UserID: 2, TailscaleIPs: ['100.64.0.9'] } }
+  assert.deepEqual(tailnetSelf({ BackendState: 'Running', Self: self, Peer }), { ip: '100.64.0.7', name: 'desk.tail1234.ts.net', own: ['100.64.0.7', '100.64.0.8'] })
+  assert.deepEqual(tailnetSelf({ BackendState: 'Running', Self: { ...self, DNSName: '' } }), { ip: '100.64.0.7', name: '', own: ['100.64.0.7'] })
+  assert.equal(tailnetSelf({ BackendState: 'Running', Self: { ...self, DNSName: 'bad name"' } }).name, '')
   assert.equal(tailnetSelf({ BackendState: 'Stopped', Self: self }), null)
-  assert.equal(tailnetSelf({ BackendState: 'Running', Self: { TailscaleIPs: ['fd7a::1'] } }), null)
+  assert.equal(tailnetSelf({ BackendState: 'Running', Self: { UserID: 1, TailscaleIPs: ['fd7a::1'] } }), null)
+  assert.equal(tailnetSelf({ BackendState: 'Running', Self: { TailscaleIPs: ['100.64.0.7'] } }), null, 'no account, no way to tell whose devices are whose')
   assert.equal(tailnetSelf(null), null)
 })
 
 // A request to a given address with a given Host header.
-function getAt(address, port, host) {
+function getAt(address, port, host, from) {
   return new Promise((resolve, reject) => {
-    http.request({ host: address, port, path: '/api/snapshot', headers: { host } }, res => { res.resume(); res.on('end', () => resolve(res.statusCode)) }).on('error', reject).end()
+    http.request({ host: address, port, path: '/api/snapshot', headers: { host }, ...(from ? { localAddress: from } : {}) }, res => { res.resume(); res.on('end', () => resolve(res.statusCode)) }).on('error', reject).end()
   })
 }
 
 // 127.0.0.2 stands in for the Tailscale address: a loopback address of its own on Windows, macOS needs an alias for it.
 test('with a tailnet, a second listener answers on its address and names only, and liveview.json gives the phone address', { skip: process.platform === 'darwin' && 'macOS has no 127.0.0.2 without an alias' }, async () => {
   const root = fixture()
-  const s = await startServer({ root, port: PORT + 40, reader: reader(), auto: false, onIdle: () => {}, tailnet: { ip: '127.0.0.2', name: 'desk.tail1234.ts.net' } })
+  // 127.0.0.4 stands in for the owner's phone, 127.0.0.3 for another person's device on the same tailnet.
+  const s = await startServer({ root, port: PORT + 40, reader: reader(), auto: false, onIdle: () => {}, tailnet: { ip: '127.0.0.2', name: 'desk.tail1234.ts.net', own: ['127.0.0.2', '127.0.0.4'] } })
   try {
     assert.equal(s.phone, `http://desk.tail1234.ts.net:${s.port}/`)
     assert.equal(JSON.parse(fs.readFileSync(path.join(root, '.orchestra', 'liveview.json'), 'utf8')).phone, s.phone)
-    assert.equal(await getAt('127.0.0.2', s.port, `desk.tail1234.ts.net:${s.port}`), 200)
-    assert.equal(await getAt('127.0.0.2', s.port, `desk:${s.port}`), 200)
-    assert.equal(await getAt('127.0.0.2', s.port, `127.0.0.2:${s.port}`), 200)
-    assert.equal(await getAt('127.0.0.2', s.port, `evil.example:${s.port}`), 403)
+    assert.equal(await getAt('127.0.0.2', s.port, `desk.tail1234.ts.net:${s.port}`, '127.0.0.4'), 200)
+    assert.equal(await getAt('127.0.0.2', s.port, `desk:${s.port}`, '127.0.0.4'), 200)
+    assert.equal(await getAt('127.0.0.2', s.port, `127.0.0.2:${s.port}`, '127.0.0.4'), 200)
+    assert.equal(await getAt('127.0.0.2', s.port, `desk.tail1234.ts.net:${s.port}`, '127.0.0.3'), 403, 'another person\'s device')
+    assert.equal(await getAt('127.0.0.2', s.port, `evil.example:${s.port}`, '127.0.0.4'), 403)
     assert.equal(await getAt('127.0.0.1', s.port, `localhost:${s.port}`), 200)
   } finally {
     await s.close()
@@ -451,5 +455,20 @@ test('without a tailnet there is no phone address', async () => {
     assert.equal(JSON.parse(fs.readFileSync(path.join(root, '.orchestra', 'liveview.json'), 'utf8')).phone, undefined)
   } finally {
     await s.close()
+  }
+})
+
+test('a port taken on the Tailscale address leaves the liveview local, without a phone address', { skip: process.platform === 'darwin' && 'macOS has no 127.0.0.2 without an alias' }, async () => {
+  const taken = net.createServer()
+  await new Promise(resolve => taken.listen(PORT + 42, '127.0.0.2', resolve))
+  const root = fixture()
+  const s = await startServer({ root, port: PORT + 42, reader: reader(), auto: false, onIdle: () => {}, tailnet: { ip: '127.0.0.2', name: 'desk.tail1234.ts.net', own: ['127.0.0.2'] } })
+  try {
+    assert.equal(s.port, PORT + 42)
+    assert.equal(s.phone, null)
+    assert.equal((await get(s.port, '/api/snapshot')).status, 200)
+  } finally {
+    await s.close()
+    await new Promise(resolve => taken.close(resolve))
   }
 })

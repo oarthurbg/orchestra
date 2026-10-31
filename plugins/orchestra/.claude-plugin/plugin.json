@@ -27,7 +27,7 @@
     "liveviewTailnet": {
       "type": "boolean",
       "title": "Liveview on your Tailscale network",
-      "description": "Also open the liveview to your other devices on Tailscale, such as your phone. Needs Tailscale running on this computer; the band's start of the liveview uses it.",
+      "description": "Also open the liveview to your own devices on Tailscale, such as your phone: only devices signed in to your Tailscale account. Needs Tailscale running on this computer; the band's start of the liveview uses it.",
       "default": false
     }
   }

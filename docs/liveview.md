@@ -25,7 +25,7 @@ The liveview runs on your computer, so a phone can't open `localhost`. With [Tai
 - **Always:** turn on `liveviewTailnet` ("Liveview on your Tailscale network") in orchestra's config menu. The band then starts the liveview with it.
 - **Once:** run `/orchestra:liveview phone`.
 
-Either way the liveview prints a second address, such as `http://my-pc.tail1234.ts.net:4317/`, to open on the phone. It adds a listener on the computer's Tailscale address only, never on every network, and answers only to that address and the computer's Tailscale names. Every device on your Tailscale network can open it, including devices someone shared into it.
+Either way the liveview prints a second address, such as `http://my-pc.tail1234.ts.net:4317/`, to open on the phone. It adds a listener on the computer's Tailscale address only, never on every network, answers only to that address and the computer's Tailscale names, and only to devices signed in to your own Tailscale account. Other people's devices on the same Tailscale network get `forbidden`. A device you sign in later can open it within a minute.
 
 - Tailscale has to be running when the liveview starts. If it isn't, the liveview runs on the computer only and says there is no phone address.
 - A liveview already running without it keeps running that way: run `/orchestra:liveview stop`, then `/orchestra:liveview phone`.

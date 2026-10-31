@@ -276,7 +276,7 @@ export const register: Register = (on, options) => {
     located = locate($)
     await located
     // Not awaited: --detach waits up to 30 seconds for the server to answer.
-    if (ctx.main !== null && ctx.role === 'maestro') void startLiveview($, options.liveviewTailnet === true).catch(() => {})
+    if (ctx.main !== null && ctx.role === 'maestro') void startLiveview($, String(options.liveviewTailnet) === 'true').catch(() => {})
     await measure($)
     await writeReport($)
     await refresh($)

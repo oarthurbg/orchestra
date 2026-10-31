@@ -5,7 +5,7 @@
 //   node server.mjs --root <main checkout> --stop     stop it
 //   --tailnet  also listen on this machine's Tailscale address, for the owner's phone and other devices on their tailnet
 
-import { execFileSync, spawn } from 'node:child_process'
+import { execFile, execFileSync, spawn } from 'node:child_process'
 import fs from 'node:fs'
 import http from 'node:http'
 import path from 'node:path'
@@ -64,13 +64,19 @@ export async function liveUrl(root) {
   }
 }
 
-// This machine on Tailscale ({ ip, name }) from `tailscale status --json`, or null when Tailscale is not running.
+const ipv4 = node => (node?.TailscaleIPs ?? []).filter(a => /^\d+\.\d+\.\d+\.\d+$/.test(a))
+
+// This machine on Tailscale from `tailscale status --json`, or null when Tailscale is not running: its address, its MagicDNS
+// name ('' when MagicDNS is off, and then the address alone serves) and the addresses of every device signed in to the same
+// Tailscale account. Only those may open the liveview: a tailnet can hold other people's devices.
 export function tailnetSelf(status) {
   if (status?.BackendState !== 'Running') return null
-  const ip = (status.Self?.TailscaleIPs ?? []).find(a => /^\d+\.\d+\.\d+\.\d+$/.test(a))
-  // The MagicDNS name; '' when MagicDNS is off, and then the address alone serves.
-  const name = String(status.Self?.DNSName ?? '').replace(/\.$/, '')
-  return ip ? { ip, name: /^[a-z0-9.-]+$/i.test(name) ? name.toLowerCase() : '' } : null
+  const self = status.Self
+  const ip = ipv4(self)[0]
+  if (!ip || self.UserID == null) return null
+  const name = String(self.DNSName ?? '').replace(/\.$/, '')
+  const own = [...ipv4(self), ...Object.values(status.Peer ?? {}).filter(p => p?.UserID === self.UserID).flatMap(ipv4)]
+  return { ip, name: /^[a-z0-9.-]+$/i.test(name) ? name.toLowerCase() : '', own }
 }
 
 // The Tailscale command is often not on PATH: the installers put it in a fixed place.
@@ -81,6 +87,17 @@ function readTailnet() {
   }
   return null
 }
+// The same, without blocking the server, for the refresh of the owner's devices.
+async function readTailnetLater() {
+  for (const cmd of TAILSCALE) {
+    try {
+      const out = await new Promise((resolve, reject) => execFile(cmd, ['status', '--json'], { encoding: 'utf8', timeout: 5000, windowsHide: true }, (err, stdout) => (err ? reject(err) : resolve(stdout))))
+      return tailnetSelf(JSON.parse(out))
+    } catch { /* try the next */ }
+  }
+  return null
+}
+const OWN_REFRESH_MS = 60_000
 
 function listen(server, port, last, host = '127.0.0.1') {
   return new Promise((resolve, reject) => {
@@ -99,7 +116,7 @@ function listen(server, port, last, host = '127.0.0.1') {
 // Starts the server. Options exist for tests: port, clock, file size cap, transcript folder, idle action, own timer.
 export async function startServer({
   root, port = FIRST_PORT, now = Date.now, fileMax = FILE_MAX,
-  reader = new TranscriptReader(), onIdle = () => process.exit(0), auto = true, tailnet = null,
+  reader = new TranscriptReader(), onIdle = () => process.exit(0), auto = true, tailnet = null, refreshTailnet = readTailnetLater,
 }) {
   root = path.resolve(root)
   const page = fs.readFileSync(path.join(HERE, 'page.html'))
@@ -158,8 +175,10 @@ export async function startServer({
 
   // The names a request may use: only these, so a page on another site cannot reach the API through DNS rebinding.
   let hosts = new Set()
+  // The owner's Tailscale devices; the tailnet listener answers nobody else.
+  let own = new Set(tailnet?.own ?? [])
   const handle = (req, res) => {
-    if (!hosts.has(req.headers.host ?? '')) {
+    if (!hosts.has(req.headers.host ?? '') || (req.socket.localPort === bound && req.socket.localAddress === tailnet?.ip && !own.has(req.socket.remoteAddress))) {
       res.writeHead(403).end('forbidden')
       return
     }
@@ -193,6 +212,9 @@ export async function startServer({
       tailServer = null
     }
   }
+  // A device the owner signs in later is let in at the next refresh; a refresh that fails keeps the last list.
+  let ownTimer = null
+  if (tailServer && auto) ownTimer = setInterval(() => void refreshTailnet().then(t => { if (t?.ip === tailnet.ip) own = new Set(t.own) }).catch(() => {}), OWN_REFRESH_MS)
   fs.mkdirSync(path.join(root, '.orchestra'), { recursive: true })
   const file = infoFile(root)
   const write = () => fs.writeFileSync(file, JSON.stringify({ url, pid: process.pid, ...(phone ? { phone } : {}) }), { flag: 'wx' })
@@ -212,6 +234,7 @@ export async function startServer({
   let timer = null
   const close = () => {
     if (timer) clearInterval(timer)
+    if (ownTimer) clearInterval(ownTimer)
     if (readInfo(root)?.url === url) {
       fs.rmSync(file, { force: true })
       fs.rmSync(paceFile(root), { force: true })
@@ -242,9 +265,10 @@ async function main(argv) {
   // The phone address on a second line, when the server listens on the tailnet.
   const report = url => {
     console.log(url)
+    // liveview.json is in the project and may be planted: only a plain http address passes.
     const phone = readInfo(root)?.phone
-    if (phone) console.log(phone)
-    else if (wantsPhone) console.error('no phone address: Tailscale is not running, or this liveview started without --tailnet (stop it and start it again)')
+    if (typeof phone === 'string' && /^http:\/\/[a-z0-9.-]+:\d+\/$/.test(phone)) console.log(phone)
+    else if (wantsPhone) console.error('no phone address: Tailscale is not running, the port is taken on the Tailscale address, or this liveview started without --tailnet (stop it and start it again)')
   }
   const running = await liveUrl(root)
   if (running) { report(running); return }
