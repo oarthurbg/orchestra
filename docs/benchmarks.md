@@ -2,7 +2,7 @@
 
 [README](../README.md) · [Setup](setup.md) · [Agents](agents.md) · [Stages, modes and skills](stages.md) · [The band](band.md) · [The liveview](liveview.md) · **Benchmarks**
 
-Measured on 2026-10-30. Every number below comes from a script in `bench/` run on the machine described here, or, for the token table, from the measurement note it cites. Raw results are in `bench/results/`.
+Measured on 2026-10-30; the code navigation numbers were rerun on 2026-10-31 (UTC) after the deep import chain fix. Every number below comes from a script in `bench/` run on the machine described here, or, for the token table, from the measurement note it cites. Raw results are in `bench/results/`.
 
 ## Machine
 
@@ -16,7 +16,7 @@ Measured on 2026-10-30. Every number below comes from a script in `bench/` run o
 | grep | GNU grep 3.0, the one that ships with Git Bash |
 | TypeScript, Pyright | 5.9.3 and 1.1.414, installed by the script into temp folders |
 
-The machine was not idle: other programs ran during the runs. Each script samples how busy the whole CPU was for one second before and after it runs: 5% and 9% around the liveview run, 9% and 11% around the code navigation run.
+The machine was not idle: other programs ran during the runs. Each script samples how busy the whole CPU was for one second before and after it runs: 5% and 9% around the liveview run, 5% and 9% around the code navigation run.
 
 ## Liveview under load
 
@@ -82,32 +82,33 @@ TypeScript, layered imports:
 
 | Files | `refs` | `calls --depth 2` | `refs` recall / precision | `calls` recall / precision | grep | grep hits |
 | --- | --- | --- | --- | --- | --- | --- |
-| 100 | 0.70 s | 0.70 s | 12/12, 100% | 36/36, 100% | 0.07 s | 31 |
-| 500 | 0.95 s | 1.01 s | 12/12, 100% | 36/36, 100% | 0.22 s | 91 |
-| 2,000 | 1.88 s | 1.97 s | 12/12, 100% | 36/36, 100% | 0.79 s | 313 |
-| 5,000 | 3.68 s | 4.21 s | 12/12, 100% | 36/36, 100% | 1.97 s | 763 |
+| 100 | 0.72 s | 0.72 s | 12/12, 100% | 36/36, 100% | 0.07 s | 31 |
+| 500 | 0.98 s | 1.03 s | 12/12, 100% | 36/36, 100% | 0.24 s | 91 |
+| 2,000 | 1.88 s | 2.03 s | 12/12, 100% | 36/36, 100% | 0.82 s | 313 |
+| 5,000 | 4.13 s | 4.50 s | 12/12, 100% | 36/36, 100% | 2.07 s | 763 |
 
 TypeScript, one long import chain:
 
 | Files | `refs` | `calls --depth 2` | `refs` recall / precision | `calls` recall / precision | grep | grep hits |
 | --- | --- | --- | --- | --- | --- | --- |
-| 100 | 0.65 s | 0.67 s | 12/12, 100% | 36/36, 100% | 0.08 s | 34 |
-| 500 | 0.91 s | 1.06 s | 12/12, 100% | 36/36, 100% | 0.22 s | 94 |
-| 2,000 | failed after 1.0 s | failed after 1.0 s | 0/12 | 0/36 | 0.78 s | 319 |
-| 5,000 | failed after 1.0 s | failed after 1.0 s | 0/12 | 0/36 | 2.14 s | 769 |
+| 100 | 0.70 s | 0.69 s | 12/12, 100% | 36/36, 100% | 0.07 s | 34 |
+| 500 | 0.93 s | 1.02 s | 12/12, 100% | 36/36, 100% | 0.22 s | 94 |
+| 2,000 | 1.93 s | 2.11 s | 12/12, 100% | 36/36, 100% | 0.87 s | 319 |
+| 5,000 | 3.91 s | 4.38 s | 12/12, 100% | 36/36, 100% | 2.05 s | 769 |
 
 Python with Pyright, layered imports:
 
 | Files | `refs` | `calls --depth 2` | `refs` recall / precision | `calls` recall / precision | grep | grep hits |
 | --- | --- | --- | --- | --- | --- | --- |
-| 100 | 0.93 s | 1.11 s | 12/12, 100% | 36/36, 100% | 0.07 s | 31 |
-| 500 | 1.49 s | 1.71 s | 12/12, 100% | 36/36, 100% | 0.24 s | 91 |
+| 100 | 0.98 s | 1.06 s | 12/12, 100% | 36/36, 100% | 0.06 s | 31 |
+| 500 | 1.36 s | 1.61 s | 12/12, 100% | 36/36, 100% | 0.21 s | 91 |
 
 What it shows:
 
 - Wherever the command answered, it answered exactly: every call site and every caller, nothing else, at every size.
-- On layered TypeScript the time grows from 0.7 s at 100 files to 3.7 s (`refs`) and 4.2 s (`calls`) at 5,000 files, far inside the command's 60 s limit.
-- The failure: with an import chain 2,000 or more files deep, the command exits with code 4 and `language server failed: Maximum call stack size exceeded`. The stack trace shows TypeScript's program builder following imports depth-first and recursively (`processImportedModules` calling `findSourceFile`, about 1,270 levels deep when the stack ran out). The limit comes from the depth of the import chain, not from the number of files: the layered projects of the same sizes worked. Whether real projects have chains that deep was not measured.
+- On TypeScript the time grows from 0.7 s at 100 files to 3.9 to 4.1 s (`refs`) and 4.4 to 4.5 s (`calls`) at 5,000 files, in both import shapes, far inside the command's 60 s limit.
+- Fixed: the first run of this benchmark failed on the chain projects of 2,000 and 5,000 files, both commands exiting with code 4 and `language server failed: Maximum call stack size exceeded` after about 1.0 s. TypeScript's program builder follows imports depth-first and recursively (`processImportedModules` calling `findSourceFile`), a few stack frames per level, and node's default stack of about 1 MB ran out near 1,300 levels. The command now runs the language service in a worker thread with a 64 MB stack, and the same chains answer in 1.9 to 4.4 s with full recall and precision. If a chain is ever deeper than that stack holds, the command still exits 4, but says it ran out of stack and to use grep.
+- Against the run before the fix, the rows that worked then changed by between 0.13 s faster and 0.45 s slower, the most on layered 5,000 files (3.68 to 4.13 s for `refs`). Starting the worker thread costs a little, but two single runs on a machine that was not idle cannot separate that cost from noise.
 - Grep is faster up to 2,000 files and about half the command's time at 5,000. Its hit count is not an answer: 31 to 769 lines against 12 call sites, because it also returns imports, the declaration and every decoy line. How many extra hits a real codebase gives depends on how common the name is; the decoy rate here was chosen, not measured.
 
 ## Code navigation tokens (published earlier, not rerun)
@@ -137,6 +138,7 @@ Recall on the trace question of the 1,960-file app: Haiku with grep found all 8 
 - **Warm language servers.** Every code navigation run started its language server from nothing. A server kept running would answer later questions faster.
 - **Grep's real hit rate.** The decoy rate is a choice of the generator; grep's hit counts show that it returns lines to sort through, not how many a real codebase gives.
 - **Python at 2,000 files and more,** and Python with a deep import chain: not run.
+- **Import chains deeper than 5,000 files:** not run, so how deep a chain the 64 MB stack holds was not measured.
 - **Tokens.** No language model ran for this page. The token table is copied from an earlier note, and its own limits (few runs, large spread between runs) apply.
 
 ## Rerun
@@ -145,7 +147,7 @@ From the repository root, with Node (measured on v24.18.0), git, grep and npm on
 
 ```
 node bench/liveview.mjs           # about 20 minutes here
-node bench/lsp.mjs                # about 2.5 minutes here, including the npm installs
+node bench/lsp.mjs                # about 3 minutes here, including the npm installs
 node bench/lsp.mjs --no-python    # TypeScript only
 node bench/codenav-tokens.mjs     # under 1 second, no runs
 ```

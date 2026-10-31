@@ -5,12 +5,14 @@
 import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
+import { Worker, isMainThread } from 'node:worker_threads'
 
 import { Exit, USAGE, around, cap, enclosing, findRoot, langOf, lineOf, lineStarts, parseArgs, pick, refLine } from './core.mjs'
 import { pyOutline, pyServer } from './python.mjs'
 import { loadTs, projectDir, tsOutline, tsServer } from './typescript.mjs'
 
 const LIMIT_MS = 60_000
+const STACK_MB = 64
 
 async function run(argv, cwd) {
   const a = parseArgs(argv)
@@ -81,12 +83,16 @@ if (process.env.ORCHESTRA_LSP_CHILD !== '1') {
     process.exit(4)
   }
   process.exit(r.status)
+} else if (isMainThread) {
+  // TypeScript loads imports recursively, a few frames per level, so a long import chain needs more stack than node's main thread has.
+  new Worker(new URL(import.meta.url), { argv: process.argv.slice(2), resourceLimits: { stackSizeMb: STACK_MB } }).on('exit', code => { process.exitCode = code })
 } else {
   try {
     const lines = await run(process.argv.slice(2), process.cwd())
     if (lines.length) process.stdout.write(`${lines.join('\n')}\n`)
   } catch (e) {
-    console.error(e instanceof Exit ? e.message : `language server failed: ${e.message}`)
+    const overflow = e instanceof RangeError && /call stack/.test(e.message)
+    console.error(e instanceof Exit ? e.message : overflow ? `language server failed: ran out of its ${STACK_MB} MB stack, most likely on a very deep import chain; use grep here` : `language server failed: ${e.message}`)
     process.exitCode = e instanceof Exit ? e.code : 4
   }
 }
