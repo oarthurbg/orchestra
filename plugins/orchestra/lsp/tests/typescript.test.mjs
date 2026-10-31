@@ -134,6 +134,26 @@ test('defs lands on the declaration, through a re-export too', { skip }, () => {
   assert.equal(run('defs', path.join(FIX, 'src', 'main.ts'), 'welcome', '--line', '5').out, `${P}/src/welcome.ts:3  <module>  |  export function welcome(user: string) {\n`)
 })
 
+test('a chain of 2,000 files, each importing the next, does not overflow the stack', { skip }, () => {
+  const N = 2000
+  const dir = fs.mkdtempSync(path.join(fs.realpathSync(os.tmpdir()), 'lsp-chain-'))
+  try {
+    fs.mkdirSync(path.join(dir, '.git'))
+    fs.mkdirSync(path.join(dir, 'src'))
+    if (fs.existsSync(path.join(FIX, 'node_modules'))) fs.symlinkSync(path.join(FIX, 'node_modules'), path.join(dir, 'node_modules'), 'junction')
+    fs.writeFileSync(path.join(dir, 'tsconfig.json'), JSON.stringify({ compilerOptions: { module: 'esnext', moduleResolution: 'bundler', noEmit: true }, include: ['src'] }))
+    for (let i = 0; i < N; i++) {
+      const body = i < N - 1 ? `import { f${i + 1} } from './m${i + 1}'\nexport function f${i}(): number { return f${i + 1}() }` : `\nexport function f${i}(): number { return 0 }`
+      fs.writeFileSync(path.join(dir, 'src', `m${i}.ts`), `${body}\n`)
+    }
+    const r = run('calls', path.join(dir, 'src', `m${N - 1}.ts`), `f${N - 1}`, '--depth', '3')
+    assert.equal(r.code, 0, r.err)
+    assert.equal(r.out, `f1998  src/m1998.ts:2\n  f1997  src/m1997.ts:2\n    f1996  src/m1996.ts:2\n`)
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true, maxRetries: 5 })
+  }
+})
+
 test('a symbol that is not declared in the file exits 1', { skip }, () => {
   const r = run('refs', 'src/welcome.ts', 'nothing')
   assert.equal(r.code, 1)
