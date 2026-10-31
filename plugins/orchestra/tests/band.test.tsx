@@ -983,3 +983,103 @@ test('a Status: wait writes no options and keeps waitingSince across rewrites', 
   expect(mine().updatedAt).not.toBe(first.updatedAt)
   expect(mine().waitingSince).toBe(first.waitingSince)
 })
+
+// The installed plugin and GitHub's main branch, for the update offer.
+const PLUGIN = '/home/u/.claude/plugins/cache/orchestra/orchestra/1.3.1'
+function releases(on: On, latest: { version: string; ok: boolean }) {
+  const urls: string[] = []
+  on('http.fetch', ($, e) => {
+    urls.push(e.url)
+    if (latest.version === 'throw') return ({ deny: 'offline' }) as never
+    return { value: { status: latest.ok ? 200 : 503, ok: latest.ok, headers: {}, text: JSON.stringify({ name: 'orchestra', version: latest.version }) } } as never
+  })
+  return urls
+}
+const settle = () => new Promise(r => setTimeout(r, 50))
+const installed = (root: string, files: Record<string, string>) => { files[`${root}/.claude-plugin/plugin.json`] = JSON.stringify({ name: 'orchestra', version: '1.3.1' }) }
+
+test('a newer orchestra gets its own line; Update installs it and says how to load it', async ($, on) => {
+  const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+  installed(PLUGIN, files)
+  disk(on, files)
+  session(on, ROOT, 'o')
+  mock.store(on)
+  mock.env(on, { CLAUDE_PLUGIN_ROOT: PLUGIN })
+  releases(on, { version: '1.3.2', ok: true })
+  const argv: string[][] = []
+  on('process.run', ($, e) => { argv.push([...e.argv]); return { value: { exitCode: 0, stdout: '', stderr: '' } } as never })
+  await start($)
+  await settle()
+  let ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /^orchestra 1\.3\.2 is out$/ })).toBeDefined()
+  await ui.press({ key: 'orchestra-changelog' })
+  expect(argv.at(-1)?.at(-1)).toBe('https://github.com/oarthurbg/orchestra/blob/main/CHANGELOG.md')
+  // A double press runs one update.
+  const before = argv.length
+  await Promise.all([ui.press({ key: 'orchestra-update' }), ui.press({ key: 'orchestra-update' })])
+  expect(argv.slice(before).filter(a => a[0] === 'claude')).toHaveLength(2)
+  expect(argv).toContainEqual(['claude', 'plugin', 'marketplace', 'update', 'orchestra'])
+  expect(argv).toContainEqual(['claude', 'plugin', 'update', 'orchestra@orchestra'])
+  await ui.unmount()
+  ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /^Updated to 1\.3\.2\. Run \/reload-plugins to load it\.$/ })).toBeDefined()
+  await ui.press({ key: 'orchestra-update-close' })
+  await ui.unmount()
+  ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /Updated to|is out/ })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('Later hides one version until a newer one, and a failed update says so', async ($, on) => {
+  const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+  installed(PLUGIN, files)
+  disk(on, files)
+  session(on, ROOT, 'o')
+  mock.store(on)
+  mock.env(on, { CLAUDE_PLUGIN_ROOT: PLUGIN })
+  const latest = { version: '1.3.2', ok: true }
+  releases(on, latest)
+  const toasts: string[] = []
+  on('ui.toast', ($, e) => { toasts.push(e.text); return { value: undefined } })
+  on('process.run', () => ({ value: { exitCode: 1, stdout: '', stderr: '' } }) as never)
+  await start($)
+  await settle()
+  let ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  await ui.press({ key: 'orchestra-update-later' })
+  await ui.unmount()
+  // A new session checks again.
+  await start($)
+  await settle()
+  ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /is out/ })).toBeUndefined()
+  await ui.unmount()
+  latest.version = '1.3.3'
+  await start($)
+  await settle()
+  ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /^orchestra 1\.3\.3 is out$/ })).toBeDefined()
+  await ui.press({ key: 'orchestra-update' })
+  expect(toasts.some(t => t.includes('update failed'))).toBe(true)
+  await ui.unmount()
+  ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ key: 'orchestra-update' })).toBeDefined()
+  await ui.unmount()
+})
+
+for (const [why, root, version, ok] of [['a dev copy', '/home/u/.claude/dev-mods/x/orchestra', '9.9.9', true], ['the same version', PLUGIN, '1.3.1', true], ['an unreachable GitHub', PLUGIN, '9.9.9', false], ['a fetch that fails', PLUGIN, 'throw', true]] as const) {
+  test(`no offer from ${why}`, async ($, on) => {
+    const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+    installed(root, files)
+    disk(on, files)
+    session(on, ROOT, 'o')
+    mock.store(on)
+    mock.env(on, { CLAUDE_PLUGIN_ROOT: root })
+    const urls = releases(on, { version, ok })
+    await start($)
+    await settle()
+    const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+    expect(await ui.find({ type: 'Text', text: /is out/ })).toBeUndefined()
+    if (root.includes('dev-mods')) expect(urls).toEqual([])
+    await ui.unmount()
+  })
+}

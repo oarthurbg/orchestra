@@ -97,15 +97,29 @@ export function isLocalUrl(url: string): boolean {
   }
 }
 
+export const CHANGELOG_URL = 'https://github.com/oarthurbg/orchestra/blob/main/CHANGELOG.md'
+
 // cmd /c start re-parses & | ^ % " < >, so only plain characters may reach it.
 export function isSafeTarget(target: string): boolean {
-  return /^claude:\/\/[A-Za-z0-9._\/-]+$/.test(target) || (isLocalUrl(target) && /^[A-Za-z0-9:/._?=-]+$/.test(target))
+  return target === CHANGELOG_URL || /^claude:\/\/[A-Za-z0-9._\/-]+$/.test(target) || (isLocalUrl(target) && /^[A-Za-z0-9:/._?=-]+$/.test(target))
 }
 
 export function openerArgv(os: 'windows' | 'mac' | 'linux', target: string): string[] {
   if (!isSafeTarget(target)) throw new Error('unsafe target')
   return os === 'windows' ? ['cmd', '/c', 'start', '', target] : [os === 'mac' ? 'open' : 'xdg-open', target]
 }
+
+// True when remote is a later x.y.z version than installed; anything that is not x.y.z is never later.
+export function isNewer(remote: string, installed: string): boolean {
+  const x = /^(\d+)\.(\d+)\.(\d+)$/
+  const a = x.exec(remote), b = x.exec(installed)
+  if (!a || !b) return false
+  for (let i = 1; i <= 3; i++) if (Number(a[i]) !== Number(b[i])) return Number(a[i]) > Number(b[i])
+  return false
+}
+
+// The claude command line; on Windows it may be a .cmd shim, which only cmd can start.
+export const claudeArgv = (os: 'windows' | 'mac' | 'linux', args: string[]) => (os === 'windows' ? ['cmd', '/c', 'claude', ...args] : ['claude', ...args])
 
 export type ViewInput = {
   inProject: boolean

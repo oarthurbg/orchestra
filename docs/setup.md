@@ -51,6 +51,7 @@ Then, in your project:
 Claude Code installs a new version of orchestra only when its version number changes, and every release bumps it. Auto-update is off by default for marketplaces you add yourself, so pick one:
 
 - **Automatic:** run `/plugin`, open **Marketplaces**, select `orchestra` and choose **Enable auto-update**. Claude Code then checks for new versions up to ten minutes after your first message in a session. This covers every plugin installed from this marketplace.
+- **From the band:** when a newer orchestra is out, the band shows a line with **Changelog**, **Update** and **Later**. See [The band](band.md#updates).
 - **By hand:** run `claude plugin update orchestra@orchestra`, or choose **Update now** on the **Installed** tab of `/plugin`. The plugins listed above update the same way, with their own name in place of the first `orchestra`; they follow their authors' repositories.
 
 A new version loads in your next session, or right away after `/reload-plugins`. A liveview that is already running keeps the old version until you restart it: `/orchestra:liveview stop`, then `/orchestra:liveview`.
