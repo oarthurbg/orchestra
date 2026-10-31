@@ -136,7 +136,8 @@ plugins/orchestra/
                principal, handoff-note, test-databases (test data recipes per data store,
                plus an optional, tested Postgres-in-Docker example)
   commands/    /orchestra:init, /orchestra:start-workstream, /orchestra:status,
-               /orchestra:close-wave, /orchestra:liveview, /orchestra:settings
+               /orchestra:close-wave, /orchestra:liveview, /orchestra:settings,
+               /orchestra:help
   hooks/       the band above the prompt, and the pending-asks list after a compact
   liveview/    the local dashboard
   lsp/         the code navigation command

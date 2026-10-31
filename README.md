@@ -120,7 +120,7 @@ One command installs orchestra and the plugins it works with, and skips any you 
 npx orchestra-install
 ```
 
-Then, in your project, run `/orchestra:init` and load the `orchestra:maestro` skill in your main session. It walks you through the rest.
+Then, in your project, run `/orchestra:init` and load the `orchestra:maestro` skill in your main session. It walks you through the rest. `/orchestra:help` lists the commands and says which one to run next.
 
 What the script runs, how to install by hand, updates, orchestra's settings, requirements and recommended settings are in [Setup](docs/setup.md).
 
