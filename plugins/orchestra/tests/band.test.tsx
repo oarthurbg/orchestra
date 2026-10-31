@@ -894,6 +894,7 @@ test('a maestro session starts the liveview once, detached', async ($, on) => {
   const starts = runs.filter(r => r.includes('liveview/server.mjs'))
   expect(starts.length).toBe(1)
   expect(starts[0]).toContain('--detach')
+  expect(starts[0]).not.toContain('--tailnet')
   expect(starts[0]).toContain(ROOT)
   // --detach waits up to about 31 s: the default 30 s timeout would kill it first.
   expect(starts[0]).toContain('"timeoutMs":60000')
@@ -1115,4 +1116,16 @@ test('while the liveview runs, the weekly run-out comes from its planned work', 
   files[`${ROOT}/.orchestra/pace.json`] = JSON.stringify({ v: 1, planned: true, weekRunsOut: ahead })
   await measure()
   expect(await runsOut()).toBe(false)
+})
+
+test('with liveviewTailnet on, the band starts the liveview for the tailnet too', { options: { liveviewTailnet: true } }, async ($, on) => {
+  const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+  disk(on, files)
+  session(on, ROOT, 'o')
+  const runs: string[] = []
+  on('process.run', ($, e) => { runs.push(JSON.stringify(e)); return { value: { stdout: '', stderr: '', exitCode: 0 } } as never })
+  on('env.get', ($, e) => ({ value: JSON.stringify(e).includes('CLAUDE_PLUGIN_ROOT') ? '/plug/orchestra' : undefined }) as never)
+  await start($)
+  for (let i = 0; i < 20 && !runs.some(r => r.includes('server.mjs')); i++) await new Promise(r => setTimeout(r, 10))
+  expect(runs.find(r => r.includes('liveview/server.mjs'))).toContain('"--tailnet"')
 })

@@ -3,8 +3,9 @@
 //   node server.mjs --root <main checkout>            run in the foreground
 //   node server.mjs --root <main checkout> --detach   start in the background, print the URL
 //   node server.mjs --root <main checkout> --stop     stop it
+//   --tailnet  also listen on this machine's Tailscale address, for the owner's phone and other devices on their tailnet
 
-import { spawn } from 'node:child_process'
+import { execFileSync, spawn } from 'node:child_process'
 import fs from 'node:fs'
 import http from 'node:http'
 import path from 'node:path'
@@ -63,24 +64,42 @@ export async function liveUrl(root) {
   }
 }
 
-function listen(server, port, last) {
+// This machine on Tailscale ({ ip, name }) from `tailscale status --json`, or null when Tailscale is not running.
+export function tailnetSelf(status) {
+  if (status?.BackendState !== 'Running') return null
+  const ip = (status.Self?.TailscaleIPs ?? []).find(a => /^\d+\.\d+\.\d+\.\d+$/.test(a))
+  // The MagicDNS name; '' when MagicDNS is off, and then the address alone serves.
+  const name = String(status.Self?.DNSName ?? '').replace(/\.$/, '')
+  return ip ? { ip, name: /^[a-z0-9.-]+$/i.test(name) ? name.toLowerCase() : '' } : null
+}
+
+// The Tailscale command is often not on PATH: the installers put it in a fixed place.
+const TAILSCALE = ['tailscale', ...(process.platform === 'win32' ? ['C:\\Program Files\\Tailscale\\tailscale.exe'] : process.platform === 'darwin' ? ['/Applications/Tailscale.app/Contents/MacOS/Tailscale'] : [])]
+function readTailnet() {
+  for (const cmd of TAILSCALE) {
+    try { return tailnetSelf(JSON.parse(execFileSync(cmd, ['status', '--json'], { encoding: 'utf8', timeout: 5000, windowsHide: true }))) } catch { /* try the next */ }
+  }
+  return null
+}
+
+function listen(server, port, last, host = '127.0.0.1') {
   return new Promise((resolve, reject) => {
     const onError = err => {
       server.off('listening', onListening)
-      if (err.code === 'EADDRINUSE' && port < last) resolve(listen(server, port + 1, last))
+      if (err.code === 'EADDRINUSE' && port < last) resolve(listen(server, port + 1, last, host))
       else reject(err)
     }
     const onListening = () => { server.off('error', onError); resolve(port) }
     server.once('error', onError)
     server.once('listening', onListening)
-    server.listen(port, '127.0.0.1')
+    server.listen(port, host)
   })
 }
 
 // Starts the server. Options exist for tests: port, clock, file size cap, transcript folder, idle action, own timer.
 export async function startServer({
   root, port = FIRST_PORT, now = Date.now, fileMax = FILE_MAX,
-  reader = new TranscriptReader(), onIdle = () => process.exit(0), auto = true,
+  reader = new TranscriptReader(), onIdle = () => process.exit(0), auto = true, tailnet = null,
 }) {
   root = path.resolve(root)
   const page = fs.readFileSync(path.join(HERE, 'page.html'))
@@ -137,9 +156,10 @@ export async function startServer({
     }).end(bytes)
   }
 
-  const server = http.createServer((req, res) => {
-    const host = req.headers.host ?? ''
-    if (host !== `localhost:${bound}` && host !== `127.0.0.1:${bound}`) {
+  // The names a request may use: only these, so a page on another site cannot reach the API through DNS rebinding.
+  let hosts = new Set()
+  const handle = (req, res) => {
+    if (!hosts.has(req.headers.host ?? '')) {
       res.writeHead(403).end('forbidden')
       return
     }
@@ -153,16 +173,32 @@ export async function startServer({
     else if (route === '/api/ping') send('application/json', JSON.stringify({ root, pid: process.pid }))
     else if (route === '/api/file') serveFile(url.searchParams, res)
     else res.writeHead(404).end('not found')
-  })
+  }
+  const server = http.createServer(handle)
 
   bound = await listen(server, port, port + PORT_TRIES - 1)
   const url = `http://localhost:${bound}/`
+  hosts = new Set([`localhost:${bound}`, `127.0.0.1:${bound}`])
+  // Tailscale: a second listener on the tailnet address only, never on every interface. Skipped when that port is taken there.
+  let phone = null
+  let tailServer = null
+  if (tailnet) {
+    try {
+      tailServer = http.createServer(handle)
+      await listen(tailServer, bound, bound, tailnet.ip)
+      const names = [tailnet.ip, ...(tailnet.name ? [tailnet.name, tailnet.name.split('.')[0]] : [])]
+      for (const n of names) hosts.add(`${n}:${bound}`)
+      phone = `http://${tailnet.name || tailnet.ip}:${bound}/`
+    } catch {
+      tailServer = null
+    }
+  }
   fs.mkdirSync(path.join(root, '.orchestra'), { recursive: true })
   const file = infoFile(root)
-  const write = () => fs.writeFileSync(file, JSON.stringify({ url, pid: process.pid }), { flag: 'wx' })
+  const write = () => fs.writeFileSync(file, JSON.stringify({ url, pid: process.pid, ...(phone ? { phone } : {}) }), { flag: 'wx' })
   const raw = () => { try { return fs.readFileSync(file, 'utf8') } catch { return null } }
   const running = () => Object.assign(new Error(`liveview already running for ${root}`), { code: 'ERUNNING' })
-  const fail = async err => { await new Promise(resolve => server.close(resolve)); throw err }
+  const fail = async err => { tailServer?.close(); await new Promise(resolve => server.close(resolve)); throw err }
   try {
     write()
   } catch (err) {
@@ -181,11 +217,13 @@ export async function startServer({
       fs.rmSync(paceFile(root), { force: true })
     }
     server.closeAllConnections?.()
+    tailServer?.closeAllConnections?.()
+    tailServer?.close()
     return new Promise(resolve => server.close(() => resolve()))
   }
   tick()
   if (auto) timer = setInterval(tick, TICK_MS)
-  return { url, port: bound, tick, close }
+  return { url, phone, port: bound, tick, close }
 }
 
 // Stops the server recorded in liveview.json, killing the pid only when that server answers ping as itself.
@@ -200,10 +238,18 @@ async function main(argv) {
   const arg = name => { const i = argv.indexOf(name); return i >= 0 ? argv[i + 1] : undefined }
   const root = path.resolve(arg('--root') ?? process.cwd())
   if (argv.includes('--stop')) { await stop(root); console.log('liveview stopped'); return }
+  const wantsPhone = argv.includes('--tailnet')
+  // The phone address on a second line, when the server listens on the tailnet.
+  const report = url => {
+    console.log(url)
+    const phone = readInfo(root)?.phone
+    if (phone) console.log(phone)
+    else if (wantsPhone) console.error('no phone address: Tailscale is not running, or this liveview started without --tailnet (stop it and start it again)')
+  }
   const running = await liveUrl(root)
-  if (running) { console.log(running); return }
+  if (running) { report(running); return }
   if (argv.includes('--detach')) {
-    const args = [fileURLToPath(import.meta.url), '--root', root]
+    const args = [fileURLToPath(import.meta.url), '--root', root, ...(wantsPhone ? ['--tailnet'] : [])]
     if (process.platform === 'win32') {
       // A child stays in this process's Windows job, which the Claude app can end with the session that started it.
       // WMI creates the server outside any job, hidden, with this environment. Paths cannot hold '"'; a trailing '\' is doubled so it does not escape the closing quote.
@@ -218,7 +264,7 @@ async function main(argv) {
     while (Date.now() < deadline) {
       await new Promise(r => setTimeout(r, 100))
       const url = await liveUrl(root)
-      if (url) { console.log(url); return }
+      if (url) { report(url); return }
     }
     console.error('liveview did not start')
     process.exitCode = 1
@@ -226,14 +272,14 @@ async function main(argv) {
   }
   let s
   try {
-    s = await startServer({ root })
+    s = await startServer({ root, tailnet: wantsPhone ? readTailnet() : null })
   } catch (err) {
-    if (err.code === 'ERUNNING') { console.log((await liveUrl(root)) ?? 'liveview already starting'); return }
+    if (err.code === 'ERUNNING') { const url = await liveUrl(root); if (url) report(url); else console.log('liveview already starting'); return }
     if (err.code === 'EADDRINUSE') console.error(`liveview: no free port from ${FIRST_PORT} to ${FIRST_PORT + PORT_TRIES - 1}`)
     else console.error(`liveview: ${err.message ?? err}`)
     process.exit(1)
   }
-  console.log(s.url)
+  report(s.url)
   const quit = () => s.close().then(() => process.exit(0))
   process.on('SIGINT', quit)
   process.on('SIGTERM', quit)
