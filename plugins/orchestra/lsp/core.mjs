@@ -26,7 +26,7 @@ export function parseArgs(argv) {
   return out
 }
 
-const LANGS = { '.ts': 'ts', '.tsx': 'ts', '.mts': 'ts', '.cts': 'ts', '.js': 'ts', '.jsx': 'ts', '.mjs': 'ts', '.cjs': 'ts', '.py': 'py', '.pyi': 'py' }
+export const LANGS = { '.ts': 'ts', '.tsx': 'ts', '.mts': 'ts', '.cts': 'ts', '.js': 'ts', '.jsx': 'ts', '.mjs': 'ts', '.cjs': 'ts', '.py': 'py', '.pyi': 'py' }
 export const langOf = file => LANGS[path.extname(file).toLowerCase()] ?? null
 
 export function findRoot(file, cwd) {

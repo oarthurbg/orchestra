@@ -161,7 +161,6 @@ const open = async ($: EngineInterface, target: string) => {
   }
 }
 
-
 // Windows sets USERPROFILE, not HOME.
 const claudeDir = async ($: EngineInterface) =>
   (await $.env.get('CLAUDE_CONFIG_DIR')) ?? `${norm((await $.env.get('HOME')) ?? (await $.env.get('USERPROFILE')) ?? '')}/.claude`
@@ -433,8 +432,7 @@ export const register: Register = (on, options) => {
     )
 
     // The compact line keeps the name while it has the room (about 10 cells), then the mark alone.
-    const shortCells = (label: string, l: { pct: number } | null, tail = '') => label.length + (l === null ? 2 : 8 + `${l.pct}% used`.length + (tail ? tail.length + 1 : 0))
-    const compact = 6 + (show5 ? shortCells('5h', v.fiveHour) : 0) + (showWeek ? 2 + shortCells('Weekly', v.week, runOutTail) : 0)
+    const compact = 6 + (show5 ? cells('5h', v.fiveHour, '') : 0) + (showWeek ? 2 + cells('Weekly', v.week, runOutTail) : 0)
       + (counted ? `${v.running}/${v.total}`.length + 2 : 0) + (toggleButton ? 4 : 0)
     const named = !desktop || e.props.bodyColumns >= compact + 10
 

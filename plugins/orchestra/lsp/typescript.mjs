@@ -4,9 +4,9 @@ import fs from 'node:fs'
 import { createRequire } from 'node:module'
 import path from 'node:path'
 
-import { Exit } from './core.mjs'
+import { Exit, LANGS } from './core.mjs'
 
-const EXTS = ['.ts', '.tsx', '.mts', '.cts', '.js', '.jsx', '.mjs', '.cjs']
+const EXTS = Object.keys(LANGS).filter(e => LANGS[e] === 'ts')
 const slash = f => f.replaceAll('\\', '/')
 
 // The nearest tsconfig.json or jsconfig.json between the file and the project root.

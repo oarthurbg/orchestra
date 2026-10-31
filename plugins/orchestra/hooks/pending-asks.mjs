@@ -1,9 +1,9 @@
 // SessionStart (compact) hook: after the maestro compacts, list from disk the asks that may still wait on it.
-import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { DAY, parseRegistry } from '../liveview/snapshot.mjs'
+import { git, readText } from '../liveview/sources.mjs'
 
 const MAX_ITEMS = 15
 const MAX_CHARS = 1200
@@ -77,27 +77,22 @@ export function render({ messages, waiting, notes }) {
   return clip(out.join('\n'), MAX_OUT)
 }
 
-const git = (cwd, args) => execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
 const same = (a, b) => (process.platform === 'win32' ? resolve(a).toLowerCase() === resolve(b).toLowerCase() : resolve(a) === resolve(b))
-const read = p => { try { return readFileSync(p, 'utf8') } catch { return null } }
 
 async function main() {
   let input = {}
   try { input = JSON.parse(readFileSync(0, 'utf8') || '{}') } catch {}
   const cwd = input.cwd || process.cwd()
-  let top, main
-  try {
-    top = git(cwd, ['rev-parse', '--show-toplevel'])
-    main = /^worktree (.+)$/m.exec(git(cwd, ['worktree', 'list', '--porcelain']))?.[1]
-  } catch { return }
+  const top = git(cwd, ['rev-parse', '--show-toplevel'])?.trim()
+  const main = top && /^worktree (.+)$/m.exec(git(cwd, ['worktree', 'list', '--porcelain']) ?? '')?.[1]
   // Only the maestro, the session in the main checkout of an orchestra project.
   if (!main || !same(top, main) || !existsSync(resolve(main, '.orchestra'))) return
   const now = Date.now()
   const dir = resolve(main, '.orchestra/sessions')
-  const sessions = existsSync(dir) ? readdirSync(dir).filter(f => f.endsWith('.json')).map(f => { try { return JSON.parse(read(resolve(dir, f))) } catch { return null } }) : []
-  const registry = parseRegistry(read(resolve(main, '.orchestra/workstreams.md')) ?? '')
-  const notes = registry.map(r => ({ workstream: r.name, text: read(resolve(main, r.worktree, 'docs/workstreams', `${r.name}.md`)) }))
-  const lines = (input.transcript_path && read(input.transcript_path)?.split('\n')) || []
+  const sessions = existsSync(dir) ? readdirSync(dir).filter(f => f.endsWith('.json')).map(f => { try { return JSON.parse(readText(resolve(dir, f))) } catch { return null } }) : []
+  const registry = parseRegistry(readText(resolve(main, '.orchestra/workstreams.md')) ?? '')
+  const notes = registry.map(r => ({ workstream: r.name, text: readText(resolve(main, r.worktree, 'docs/workstreams', `${r.name}.md`)) }))
+  const lines = (input.transcript_path && readText(input.transcript_path)?.split('\n')) || []
   process.stdout.write(render({ messages: unansweredMessages(lines, now), waiting: waitingSessions(sessions, now), notes: noteWaits(notes) }))
 }
 
