@@ -22,7 +22,12 @@ It runs as a plain Node process (Node 18 or newer) and uses no LLM tokens. The b
 
 The liveview runs on your computer, so a phone can't open `localhost`. With [Tailscale](https://tailscale.com) on the computer and the phone, the phone can open it over your private Tailscale network. This is off unless you turn it on:
 
-- **Always:** turn on `liveviewTailnet` ("Liveview on your Tailscale network") in orchestra's config menu. The band then starts the liveview with it.
+- **Always:** turn on the `liveviewTailnet` setting ("Liveview on your Tailscale network"). The band then starts the liveview with it. To turn it on, run `/plugin configure orchestra@orchestra` in a Claude Code terminal session, or this in any terminal (more in [orchestra's settings](setup.md#orchestras-settings)):
+
+  ```bash
+  echo '{"liveviewTailnet":"true"}' | claude plugin configure orchestra@orchestra --values-stdin
+  ```
+
 - **Once:** run `/orchestra:liveview phone`.
 
 Either way the liveview prints a second address, such as `http://my-pc.tail1234.ts.net:4317/`, to open on the phone. It adds a listener on the computer's Tailscale address only, never on every network, answers only to that address and the computer's Tailscale names, and only to devices signed in to your own Tailscale account. Other people's devices on the same Tailscale network get `forbidden`. A device you sign in later can open it within a minute.
