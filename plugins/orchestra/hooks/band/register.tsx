@@ -395,26 +395,30 @@ export const register: Register = (on, options) => {
         ? <Button key={`${r.key}-${part}`} plain onPress={() => open($, r.link)}><Text {...style}>{label}</Text></Button>
         : <Box paddingX={inset}><Text {...style}>{label}</Text></Box>
     const markOf = (r: BandRow) => (desktop ? pic(svg(MARK_SVG[r.mark], 12, 12), r.status, 12, 12) : <Text color={MARK_TEXT[r.mark][1]} underline={r.mark === 'waiting'}>{MARK_TEXT[r.mark][0]}</Text>)
+    // In a narrow band the status and context columns keep their text whole (the mark, the gap, a Button's inset and
+    // about a cell of slack for the desktop's proportional type); the name and detail columns shrink instead.
+    const statusMin = Math.max('Status'.length, ...v.rows.map(r => r.status.length)) + (desktop ? 3 : 2) + 2 * inset + inset
+    const contextMin = Math.max('Context'.length, ...v.rows.map(r => r.context.length)) + 2 * inset + inset
     const row = (r: BandRow, n: number) => {
       const waiting = r.mark === 'waiting'
       return (
         <Box key={`row-${r.key}`} flexDirection="row" alignItems="center" paddingX={1} {...(desktop ? { paddingY: 'xs' as const } : {})} {...(n % 2 === 1 ? { backgroundColor: STRIPE } : {})} {...(r.link !== '' ? { hover: { backgroundColor: HOVER } } : {})}>
           <Box width="24%">{cell(r, 'name', r.name, { bold: waiting, underline: r.link !== '' })}</Box>
-          <Box width="18%" flexDirection="row" alignItems="center" gap={1}>
+          <Box width="18%" minWidth={statusMin} flexShrink={0} flexDirection="row" alignItems="center" gap={1}>
             {markOf(r)}
             {cell(r, 'status', r.status, { bold: waiting })}
           </Box>
-          <Box width="9%" justifyContent="flex-end">{cell(r, 'context', r.context, r.big ? { bold: true, color: 'error' } : {})}</Box>
-          <Box flexGrow={1} paddingLeft={3}>{r.detail !== '' ? cell(r, 'detail', r.detail, { dimColor: true }) : null}</Box>
+          <Box width="9%" minWidth={contextMin} flexShrink={0} justifyContent="flex-end">{cell(r, 'context', r.context, r.big ? { bold: true, color: 'error' } : {})}</Box>
+          <Box width={0} flexGrow={1} paddingLeft={3}>{r.detail !== '' ? cell(r, 'detail', r.detail, { dimColor: true }) : null}</Box>
         </Box>
       )
     }
     const heads = (
       <Box flexDirection="row" paddingX={1} {...(desktop ? { paddingY: 'xs' as const } : {})}>
         <Box width="24%" paddingLeft={inset}><Text dimColor>Workstream</Text></Box>
-        <Box width="18%" paddingLeft={desktop ? 3 + inset : 2}><Text dimColor>Status</Text></Box>
-        <Box width="9%" justifyContent="flex-end" paddingRight={inset}><Text dimColor>Context</Text></Box>
-        <Box flexGrow={1} paddingLeft={3 + inset}><Text dimColor>Detail</Text></Box>
+        <Box width="18%" minWidth={statusMin} flexShrink={0} paddingLeft={desktop ? 3 + inset : 2}><Text dimColor>Status</Text></Box>
+        <Box width="9%" minWidth={contextMin} flexShrink={0} justifyContent="flex-end" paddingRight={inset}><Text dimColor>Context</Text></Box>
+        <Box width={0} flexGrow={1} paddingLeft={3 + inset}><Text dimColor>Detail</Text></Box>
       </Box>
     )
 
