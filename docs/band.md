@@ -89,7 +89,7 @@ While one of a session's own subagents runs, the main thread makes no requests, 
 - It never pings while the main thread is making requests itself, since those keep the cache warm.
 - A cache read costs about 0.1x the input price; rewriting an expired cache costs 1.25x (5-minute cache) or 2x (1-hour cache). How cache reads count against plan limits is not published.
 
-Settings, in the plugin's config menu:
+Settings (how to change them: [orchestra's settings](setup.md#orchestras-settings)):
 
 | Setting | Default | Meaning |
 | --- | --- | --- |

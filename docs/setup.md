@@ -74,6 +74,28 @@ The explorer and planner answer "who calls X", "what breaks if X changes" and "h
 
 How much it saves, and where it breaks, is in [Benchmarks](benchmarks.md).
 
+## orchestra's settings
+
+orchestra has three settings. To see and change them, type this in a Claude Code terminal session:
+
+```text
+/plugin configure orchestra@orchestra
+```
+
+Or set one from any terminal: pipe a JSON object of the values to change, each value written as text.
+
+```bash
+echo '{"liveviewTailnet":"true"}' | claude plugin configure orchestra@orchestra --values-stdin
+```
+
+Run `claude plugin configure orchestra@orchestra` alone to see the current values. A change takes effect in sessions started after it, or after `/reload-plugins`.
+
+| Setting | Default | What it does |
+| --- | --- | --- |
+| `cacheMinutes` | 60 | Your prompt cache lifetime, for the band's [keep-warm](band.md#keep-warm). Use 5 for API keys and overage. |
+| `warmMaxHours` | 2 | Stop keeping the cache warm for a subagent that has run this long. |
+| `liveviewTailnet` | off | Open the liveview to your own devices on Tailscale, such as your phone. See [The liveview](liveview.md#on-your-phone). |
+
 ## Recommended settings
 
 - **Bypass permissions, per project.** With 4 to 6 sessions and their subagents, approval prompts would stall the work all day, so orchestra is meant to run with the permission mode set to bypass, in the project only: the desktop app's permission-mode picker per session, or `"permissions": { "defaultMode": "bypassPermissions" }` in the project's `.claude/settings.local.json` (not in your global settings). Claude Code then never stops to ask, so these take over as the gates:

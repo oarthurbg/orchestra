@@ -122,7 +122,7 @@ npx orchestra-install
 
 Then, in your project, run `/orchestra:init` and load the `orchestra:maestro` skill in your main session. It walks you through the rest.
 
-What the script runs, how to install by hand, updates, requirements and recommended settings are in [Setup](docs/setup.md).
+What the script runs, how to install by hand, updates, orchestra's settings, requirements and recommended settings are in [Setup](docs/setup.md).
 
 ## Learn more
 
