@@ -69,6 +69,7 @@ The docs page marks each ponytail mode with one shape: **full** is the circle, *
 | `docs/favicon.svg` | vector | Docs page tab |
 | `assets/brand/readme-hero-light.png`, `-dark.png` | 2560 by 800 | README, by GitHub theme |
 | `assets/readme/*-light.png`, `*-dark.png` | 1280 wide, 2x | README and docs: the diagram, the role cards, the liveview, the inbox and the benchmark charts |
+| `assets/readme/features/*.svg` | 48 square | README Features: one pictogram per feature, from the four shapes; `-light` and `-dark` where a part is drawn in ink |
 | `assets/brand/social-preview.png` | 1280 by 640 | Link cards; upload under repo Settings, Social preview |
 
 ## Using the name and logo
