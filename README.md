@@ -112,16 +112,23 @@ Measured, not estimated. Every number comes from a script in [`bench/`](bench) a
 
 ## Install
 
-In a Claude Code session:
+One command installs orchestra and the plugins it works with, and skips any you already have. It needs Claude Code and Node 18 or newer.
 
+macOS and Linux:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/oarthurbg/orchestra/main/install.mjs | node --input-type=module
 ```
-/plugin marketplace add oarthurbg/orchestra
-/plugin install orchestra@orchestra
+
+Windows (PowerShell):
+
+```powershell
+irm https://raw.githubusercontent.com/oarthurbg/orchestra/main/install.mjs | node --input-type=module
 ```
 
 Then, in your project, run `/orchestra:init` and load the `orchestra:maestro` skill in your main session. It walks you through the rest.
 
-The companion plugins (superpowers, ponytail, impeccable and others), updates, requirements and recommended settings are in [Setup](docs/setup.md).
+What the script runs, how to install by hand, updates, requirements and recommended settings are in [Setup](docs/setup.md).
 
 ## Learn more
 

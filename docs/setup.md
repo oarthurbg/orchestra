@@ -6,7 +6,15 @@ Everything you need to install, update and tune orchestra. The [README](../READM
 
 ## Install
 
-In a Claude Code session:
+**With the script.** [`install.mjs`](../install.mjs) adds this marketplace, installs orchestra, then installs each plugin listed below unless you already have it from any marketplace. It installs at user scope and prints what it skipped. Run it from a terminal (it needs Node 18 or newer):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/oarthurbg/orchestra/main/install.mjs | node --input-type=module
+```
+
+On Windows, in PowerShell: `irm https://raw.githubusercontent.com/oarthurbg/orchestra/main/install.mjs | node --input-type=module`. From a clone, `node install.mjs --dry-run` prints what it would run without changing anything.
+
+**By hand,** in a Claude Code session:
 
 ```
 /plugin marketplace add oarthurbg/orchestra
@@ -110,6 +118,7 @@ plugins/orchestra/
   lsp/         the code navigation command
   templates/   CLAUDE.md (project settings, owner authorizations), HANDOFF.md, lessons.md,
                handoff-note.md, githooks/pre-push (branch guard)
+install.mjs    the one-command install
 bench/         the benchmark scripts and their raw results
 docs/          these pages; index.html is the stack on one page
 assets/        brand files and the README's pictures
