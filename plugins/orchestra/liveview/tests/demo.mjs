@@ -53,11 +53,9 @@ write('.orchestra/workstreams.md', registry)
 // billing's branch commits what its question points at; the origin remote makes its #14 a link.
 const inboxMode = process.argv.includes('--inbox') ? process.argv[process.argv.indexOf('--inbox') + 1] : 'three'
 const billing = path.join(root, '.worktrees', 'billing')
-const brand = new URL('../../../../assets/readme/', import.meta.url)
+const fixtures = new URL('fixtures/', import.meta.url)
 const put = (rel, body) => { fs.mkdirSync(path.dirname(path.join(billing, rel)), { recursive: true }); fs.writeFileSync(path.join(billing, rel), body) }
-put('docs/mockups/invoice-light.png', fs.readFileSync(new URL('liveview-light.png', brand)))
-put('docs/mockups/invoice-dark.png', fs.readFileSync(new URL('liveview-dark.png', brand)))
-put('docs/mockups/invoice.html', '<!doctype html><title>Invoice mockup</title><h1>Invoice mockup</h1><p id="o">Scripts are sandboxed.</p><script>document.getElementById("o").textContent = `Origin: ${window.origin}`</script>')
+for (const f of ['invoice-light.png', 'invoice-dark.png', 'invoice.html']) put(`docs/mockups/${f}`, fs.readFileSync(new URL(f, fixtures)))
 put('docs/invoice-sample.pdf', '%PDF-1.4\n% made-up sample\n')
 for (const s of ['billing-design', 'billing-emails', 'billing-webhooks']) put(`docs/superpowers/specs/2026-10-28-${s}.md`, `# ${s}\n`)
 git(billing, ['add', 'docs/mockups', 'docs/invoice-sample.pdf', 'docs/superpowers/specs'], now - 140 * MIN)
