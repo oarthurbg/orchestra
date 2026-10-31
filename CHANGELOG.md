@@ -2,6 +2,10 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.3.6
+
+- `/orchestra:help` lists orchestra's commands, says which one to run next in this project, and links the docs.
+
 ## 1.3.5
 
 - `/orchestra:settings` shows and changes orchestra's settings from any Claude Code window, for example `/orchestra:settings tailscale on`.
