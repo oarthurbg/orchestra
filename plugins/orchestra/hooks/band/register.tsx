@@ -236,11 +236,11 @@ const STRIPE = '#80808012'
 const HOVER = '#80808033'
 
 // Starts the liveview for this project. The server skips the start itself when one already answers for this root.
-async function startLiveview($: EngineInterface) {
+async function startLiveview($: EngineInterface, tailnet: boolean) {
   const plugin = await $.env.get('CLAUDE_PLUGIN_ROOT')
   if (!plugin || ctx.main === null) return
   // --detach waits up to about 31 s, longer than process.run's 30 s default, which would kill the child (and the server with it).
-  await $.process.run(['node', `${norm(plugin)}/liveview/server.mjs`, '--root', ctx.main, '--detach'], { timeoutMs: 60_000 })
+  await $.process.run(['node', `${norm(plugin)}/liveview/server.mjs`, '--root', ctx.main, '--detach', ...(tailnet ? ['--tailnet'] : [])], { timeoutMs: 60_000 })
 }
 
 // Offers a newer orchestra from GitHub's main branch, unless the person said Later to that version.
@@ -276,7 +276,7 @@ export const register: Register = (on, options) => {
     located = locate($)
     await located
     // Not awaited: --detach waits up to 30 seconds for the server to answer.
-    if (ctx.main !== null && ctx.role === 'maestro') void startLiveview($).catch(() => {})
+    if (ctx.main !== null && ctx.role === 'maestro') void startLiveview($, String(options.liveviewTailnet) === 'true').catch(() => {})
     await measure($)
     await writeReport($)
     await refresh($)

@@ -15,8 +15,21 @@ A local page for the project: plan limits with a projection to the reset, what n
 
 It runs as a plain Node process (Node 18 or newer) and uses no LLM tokens. The band starts it when a maestro session opens and shows a `Liveview` button; `/orchestra:liveview` starts it by hand and `/orchestra:liveview stop` stops it. It stops on its own after 30 minutes with no session activity.
 
-- It listens on `127.0.0.1` only, from port 4317.
+- It listens on `127.0.0.1` only, from port 4317, unless you open it to your Tailscale network (below).
 - It rebuilds the page every 5 seconds. Each rebuild costs about 0.3 s plus a few milliseconds per open workstream, 0.5 s at 50 workstreams. The first rebuild after a start reads each worktree's plan history from git and takes about 0.4 s per workstream (see [Benchmarks](benchmarks.md)).
+
+## On your phone
+
+The liveview runs on your computer, so a phone can't open `localhost`. With [Tailscale](https://tailscale.com) on the computer and the phone, the phone can open it over your private Tailscale network. This is off unless you turn it on:
+
+- **Always:** turn on `liveviewTailnet` ("Liveview on your Tailscale network") in orchestra's config menu. The band then starts the liveview with it.
+- **Once:** run `/orchestra:liveview phone`.
+
+Either way the liveview prints a second address, such as `http://my-pc.tail1234.ts.net:4317/`, to open on the phone. It adds a listener on the computer's Tailscale address only, never on every network, answers only to that address and the computer's Tailscale names, and only to devices signed in to your own Tailscale account. Other people's devices on the same Tailscale network get `forbidden`. A device you sign in later can open it within a minute.
+
+- Tailscale has to be running when the liveview starts. If it isn't, the liveview runs on the computer only and says there is no phone address.
+- A liveview already running without it keeps running that way: run `/orchestra:liveview stop`, then `/orchestra:liveview phone`.
+- On Windows, the firewall may ask once whether Node can accept connections; allow it for private networks.
 
 ## What it shows
 

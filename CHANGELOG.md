@@ -2,6 +2,10 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.3.4
+
+- The liveview can open to your Tailscale network, so you can see it on your phone: the `liveviewTailnet` setting or `/orchestra:liveview phone`. Off by default.
+
 ## 1.3.3
 
 - While the liveview runs, the band's weekly run-out comes from the work still planned instead of the week's average pace.

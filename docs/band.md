@@ -89,11 +89,12 @@ While one of a session's own subagents runs, the main thread makes no requests, 
 - It never pings while the main thread is making requests itself, since those keep the cache warm.
 - A cache read costs about 0.1x the input price; rewriting an expired cache costs 1.25x (5-minute cache) or 2x (1-hour cache). How cache reads count against plan limits is not published.
 
-Two settings, in the plugin's config menu:
+Settings, in the plugin's config menu:
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
 | `cacheMinutes` | 60 | Your cache lifetime. Use 5 for API keys and overage. |
+| `liveviewTailnet` | off | Start the liveview on your Tailscale network too, to open it on your phone. See [The liveview](liveview.md#on-your-phone). |
 | `warmMaxHours` | 2 | Stop keeping the cache warm for a subagent that has run this long. Pings stop once every running subagent is older than this. |
 
 A subagent's age counts from when the band first saw it running, so one that was already running when the session started gets the full limit.

@@ -1,6 +1,6 @@
 {
   "name": "orchestra",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "description": "Multi-session agent orchestration: a maestro session that plans the app, sizes the work to the machine and the token limits and coordinates, principals that each own a feature from spec to PR, 9 subagents with set models and ponytail modes, handoff notes and isolated test data per workstream. No database, server or Docker required.",
   "author": {
     "name": "oarthurbg",
@@ -23,6 +23,12 @@
       "title": "Keep-warm limit (hours)",
       "description": "Stop keeping the cache warm for a subagent that has run this long.",
       "default": 2
+    },
+    "liveviewTailnet": {
+      "type": "boolean",
+      "title": "Liveview on your Tailscale network",
+      "description": "Also open the liveview to your own devices on Tailscale, such as your phone: only devices signed in to your Tailscale account. Needs Tailscale running on this computer; the band's start of the liveview uses it.",
+      "default": false
     }
   }
 }
