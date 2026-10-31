@@ -990,6 +990,7 @@ function releases(on: On, latest: { version: string; ok: boolean }) {
   const urls: string[] = []
   on('http.fetch', ($, e) => {
     urls.push(e.url)
+    if (latest.version === 'throw') return ({ deny: 'offline' }) as never
     return { value: { status: latest.ok ? 200 : 503, ok: latest.ok, headers: {}, text: JSON.stringify({ name: 'orchestra', version: latest.version }) } } as never
   })
   return urls
@@ -1013,7 +1014,10 @@ test('a newer orchestra gets its own line; Update installs it and says how to lo
   expect(await ui.find({ type: 'Text', text: /^orchestra 1\.3\.2 is out$/ })).toBeDefined()
   await ui.press({ key: 'orchestra-changelog' })
   expect(argv.at(-1)?.at(-1)).toBe('https://github.com/oarthurbg/orchestra/blob/main/CHANGELOG.md')
-  await ui.press({ key: 'orchestra-update' })
+  // A double press runs one update.
+  const before = argv.length
+  await Promise.all([ui.press({ key: 'orchestra-update' }), ui.press({ key: 'orchestra-update' })])
+  expect(argv.slice(before).filter(a => a[0] === 'claude')).toHaveLength(2)
   expect(argv).toContainEqual(['claude', 'plugin', 'marketplace', 'update', 'orchestra'])
   expect(argv).toContainEqual(['claude', 'plugin', 'update', 'orchestra@orchestra'])
   await ui.unmount()
@@ -1062,7 +1066,7 @@ test('Later hides one version until a newer one, and a failed update says so', a
   await ui.unmount()
 })
 
-for (const [why, root, version, ok] of [['a dev copy', '/home/u/.claude/dev-mods/x/orchestra', '9.9.9', true], ['the same version', PLUGIN, '1.3.1', true], ['an unreachable GitHub', PLUGIN, '9.9.9', false]] as const) {
+for (const [why, root, version, ok] of [['a dev copy', '/home/u/.claude/dev-mods/x/orchestra', '9.9.9', true], ['the same version', PLUGIN, '1.3.1', true], ['an unreachable GitHub', PLUGIN, '9.9.9', false], ['a fetch that fails', PLUGIN, 'throw', true]] as const) {
   test(`no offer from ${why}`, async ($, on) => {
     const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
     installed(root, files)

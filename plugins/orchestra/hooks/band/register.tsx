@@ -16,6 +16,7 @@ const LEVELS = ['off', 'lite', 'full', 'ultra']
 const offer = atom({ plugin: 'orchestra', key: 'update' } as const, { state: 'none', version: '' } as UpdateOffer)
 const RELEASES = 'https://raw.githubusercontent.com/oarthurbg/orchestra/main'
 const UPDATE_CHECK_MS = 6 * 60 * 60_000
+let installing = false
 
 type Ctx = {
   main: string | null
@@ -238,7 +239,7 @@ async function startLiveview($: EngineInterface) {
 async function checkUpdate($: EngineInterface) {
   const plugin = await $.env.get('CLAUDE_PLUGIN_ROOT')
   // A dev copy runs unreleased code, and the update would replace the installed plugin, not it.
-  if (!plugin || norm(plugin).includes('/dev-mods/')) return
+  if (!plugin || norm(plugin).includes('/dev-mods/') || (await $.env.get('CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC'))) return
   const installed = JSON.parse((await read$($, `${norm(plugin)}/.claude-plugin/plugin.json`)) ?? '{}').version
   const remote = await $.http.fetch(`${RELEASES}/plugins/orchestra/.claude-plugin/plugin.json`)
   if (!remote.ok) return
@@ -255,6 +256,9 @@ export const register: Register = (on, options) => {
   on('session.start', async ($, e, next) => {
     const result = await next(e)
     $.clock.every(REFRESH_MS, () => void tick($, options).catch(() => {}))
+    // Not awaited: the network must not hold the session's start.
+    void checkUpdate($).catch(() => {})
+    $.clock.every(UPDATE_CHECK_MS, () => void checkUpdate($).catch(() => {}))
     Object.assign(ctx, fresh())
     const stored = await $.store.get('rows').catch(() => undefined)
     // Before the collapsed band the choice was a boolean under 'detailed'.
@@ -270,9 +274,6 @@ export const register: Register = (on, options) => {
     await refresh($)
     await update($, rowsShown, () => shownBefore)
     await readPonytail($, true).catch(() => {})
-    // Not awaited: the network must not hold the session's start.
-    void checkUpdate($).catch(() => {})
-    $.clock.every(UPDATE_CHECK_MS, () => void checkUpdate($).catch(() => {}))
     return result
   }).catch(($, e, next) => next(e))
 
@@ -552,19 +553,25 @@ export const register: Register = (on, options) => {
       await update($, offer, o => ({ ...o, state: 'none' }))
     }
     const install = async () => {
-      await update($, offer, o => ({ ...o, state: 'updating' }))
+      // A second press before the redraw finds the update already started; checked before any await.
+      if (installing) return
+      installing = true
       let done = false
       try {
+        await update($, offer, o => ({ ...o, state: 'updating' }))
         const os = await osName($)
-        const run = async (args: string[]) => (await $.process.run(claudeArgv(os, args), { timeoutMs: 180_000 })).exitCode === 0
+        // Out of the project, where cmd would run a claude.cmd before the one on PATH.
+        const cwd = await claudeDir($)
+        const run = async (args: string[]) => (await $.process.run(claudeArgv(os, args), { cwd, timeoutMs: 180_000 })).exitCode === 0
         done = (await run(['plugin', 'marketplace', 'update', 'orchestra'])) && (await run(['plugin', 'update', 'orchestra@orchestra']))
       } catch {
         // A command that cannot start is a failed update.
       }
+      installing = false
       await update($, offer, o => ({ ...o, state: done ? 'done' : 'offered' }))
       if (!done) {
         try {
-          $.ui.toast('orchestra update failed; run: claude plugin update orchestra@orchestra')
+          $.ui.toast('orchestra update failed; run: claude plugin marketplace update orchestra, then claude plugin update orchestra@orchestra')
         } catch {
           // Nothing more to do: a button press never rejects.
         }
@@ -575,7 +582,7 @@ export const register: Register = (on, options) => {
       <Box flexDirection="row" alignItems="center" gap={1}>
         {dot}
         {up.state === 'offered' && <Box flexShrink={1} minWidth={0}><Text bold wrap="truncate-end">orchestra {up.version} is out</Text></Box>}
-        {up.state === 'updating' && <Text dimColor>Updating orchestra to {up.version}...</Text>}
+        {up.state === 'updating' && <Box flexShrink={1} minWidth={0}><Text dimColor wrap="truncate-end">Updating orchestra to {up.version}...</Text></Box>}
         {up.state === 'done' && <Box flexShrink={1} minWidth={0}><Text wrap="truncate-end">Updated to {up.version}. Run /reload-plugins to load it.</Text></Box>}
         <Box flexGrow={1} />
         {up.state === 'offered' && <Button key="orchestra-changelog" label="Changelog" plain onPress={() => open($, CHANGELOG_URL)} />}
