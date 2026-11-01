@@ -1,6 +1,6 @@
 # The liveview
 
-A local page for the project: plan limits with a projection to the reset, what needs you, every workstream's progress, ETA and timeline, and an inbox of the questions waiting on you.
+A local web page for the project: plan limits with a projection to the reset, what needs you, each workstream's progress, ETA and timeline, and an inbox of the questions waiting on you.
 
 [README](../README.md) · [Setup](setup.md) · [Commands](commands.md) · [Agents](agents.md) · [Stages, modes and skills](stages.md) · [The band](band.md) · **The liveview** · [Benchmarks](benchmarks.md)
 
@@ -13,31 +13,41 @@ A local page for the project: plan limits with a projection to the reset, what n
 
 ## Running it
 
-It runs as a plain Node process (Node 18 or newer) and uses no LLM tokens. The band starts it when a maestro session opens and shows a `Liveview` button; `/orchestra:liveview` starts it by hand and `/orchestra:liveview stop` stops it. It stops on its own after 30 minutes with no session activity.
+The liveview is a plain Node process (Node 18 or newer) and uses no tokens.
 
+- The [band](band.md) starts it when a maestro session opens and shows a `Liveview` button to open it.
+- `/orchestra:liveview` starts it by hand and prints its address. `/orchestra:liveview stop` stops it.
+- It stops on its own after 30 minutes with no session activity.
 - It listens on `127.0.0.1` only, from port 4317, unless you open it to your Tailscale network (below).
-- It rebuilds the page every 5 seconds. Each rebuild costs about 0.3 s plus a few milliseconds per open workstream, 0.5 s at 50 workstreams. The first rebuild after a start reads each worktree's plan history from git and takes about 0.4 s per workstream (see [Benchmarks](benchmarks.md)).
+- It refreshes every 5 seconds. For timings, see [Benchmarks](benchmarks.md).
 
 ## On your phone
 
-The liveview runs on your computer, so a phone can't open `localhost`. With [Tailscale](https://tailscale.com) on the computer and the phone, the phone can open it over your private Tailscale network. This is off unless you turn it on:
+A phone can't open your computer's `localhost`. With [Tailscale](https://tailscale.com) on both, the phone can open the liveview over your private Tailscale network. This is off unless you turn it on:
 
-- **Always:** run `/orchestra:settings tailscale on`. The band and `/orchestra:liveview` then start the liveview with it. More in [orchestra's settings](setup.md#orchestras-settings).
+- **Always:** `/orchestra:settings tailscale on`. The band and `/orchestra:liveview` then start it this way. See [orchestra's settings](setup.md#orchestras-settings).
+- **Once:** `/orchestra:liveview phone`.
 
-- **Once:** run `/orchestra:liveview phone`.
+The liveview then prints a second address, such as `http://my-pc.tail1234.ts.net:4317/`, to open on the phone.
 
-Either way the liveview prints a second address, such as `http://my-pc.tail1234.ts.net:4317/`, to open on the phone. It adds a listener on the computer's Tailscale address only, never on every network, answers only to that address and the computer's Tailscale names, and only to devices signed in to your own Tailscale account. Other people's devices on the same Tailscale network get `forbidden`. A device you sign in later can open it within a minute.
+Security limits:
 
-- Tailscale has to be running when the liveview starts. If it isn't, the liveview runs on the computer only and says there is no phone address.
-- A liveview already running without it keeps running that way: run `/orchestra:liveview stop`, then `/orchestra:liveview phone`.
-- On Windows, the firewall may ask once whether Node can accept connections; allow it for private networks.
+- It listens on the computer's Tailscale address only, never on every network.
+- It answers only devices signed in to your own Tailscale account. Other people's devices on the same Tailscale network get `forbidden`. A device you sign in later gets in within a minute.
+
+Notes:
+
+- Tailscale must be running when the liveview starts. If it isn't, the liveview runs on the computer only and says there is no phone address.
+- A liveview already running without Tailscale stays that way: run `/orchestra:liveview stop`, then `/orchestra:liveview phone`.
+- On Windows, the firewall may ask once whether Node can accept connections. Allow it for private networks.
 
 ## What it shows
 
-- **Symbols.** Each session is drawn with the symbols in [`BRAND.md`](BRAND.md#symbols): the shape is the role, the way it is drawn is the state, and a context of 250k or more shows as a bold vermilion number.
-- **Progress** comes from the plan checkboxes. **ETAs** come from how long past tasks took, measured from the commits that ticked them: tasks with the same agent and risk, else the same agent, else all past tasks, using the first group with 3 finished tasks. Until one has 3, the ETA shows `?`.
-- **The limit projection** reads token counts (never message content) from Claude Code's transcripts for every project on this machine, because plan limits are per account, and calibrates them on the band's latest limit reading.
-- **The band's run-out:** after each rebuild the liveview writes `.orchestra/pace.json` with when the planned work spends the week, and the band shows that time while the liveview runs.
+- **Symbols**: each session uses the symbols in [`BRAND.md`](BRAND.md#symbols). The shape is the role, the way it is drawn is the state, and a context of 250k or more is a bold vermilion number.
+- **Progress** comes from the plan checkboxes.
+- **ETAs** come from how long past tasks took, measured from the commits that ticked them. It uses past tasks with the same agent and risk, else the same agent, else all tasks: the first group with at least 3 finished. Until then it uses a default length, marked `?`.
+- **The limit projection** reads token counts (never message content) from Claude Code's transcripts for every project on this computer, since plan limits are per account. It is calibrated on the band's latest limit reading.
+- **The band's run-out time**: while the liveview runs, it tells the band when the planned work will use up the week.
 
 ## The inbox
 
@@ -48,4 +58,4 @@ Either way the liveview prints a second address, such as `http://my-pc.tail1234.
   </picture>
 </p>
 
-The `Inbox` view lists every question a workstream is waiting on you to answer, oldest first, with the options it offers and the pictures, pages and docs on its branch. `Answer in` opens the session, where you answer. Chrome asks once before it opens a `claude://` link.
+The `Inbox` view lists every question a workstream is waiting on you to answer, oldest first, with the options it offers and the pictures, pages and docs on its branch. `Answer in` opens the session, where you answer. Chrome asks once before it opens a `claude://` link. A question left unanswered for a day leaves the inbox.

@@ -1,18 +1,24 @@
 # Setup
 
-Everything you need to install, update and tune orchestra. The [README](../README.md) has the short version.
+How to install, update and configure orchestra.
 
 [README](../README.md) · **Setup** · [Commands](commands.md) · [Agents](agents.md) · [Stages, modes and skills](stages.md) · [The band](band.md) · [The liveview](liveview.md) · [Benchmarks](benchmarks.md)
 
 ## Install
 
-**With the script.** [`install.mjs`](../install.mjs) adds this marketplace, installs orchestra, then installs each plugin listed below unless you already have it from any marketplace. It installs at user scope and prints what it skipped. Run it from a terminal (it needs Node 18 or newer):
+Install at user scope (the default). Principals work in their own worktrees, so a project-scope install reaches them only if `.claude/settings.json` is committed.
+
+**With the script** (needs Node 18 or newer). From a terminal:
 
 ```bash
 npx orchestra-install
 ```
 
-npx downloads [`orchestra-install`](https://www.npmjs.com/package/orchestra-install) from npm: that package is this script and nothing else, published by a [workflow](../.github/workflows/publish-installer.yml) whenever the script changes on main. To fetch it from this repository instead, run `npx github:oarthurbg/orchestra`. Add `--dry-run` to see what it would run without changing anything. Without npx, pipe it into node: `curl -fsSL https://raw.githubusercontent.com/oarthurbg/orchestra/main/install.mjs | node --input-type=module` (in PowerShell, `irm` in place of `curl -fsSL`).
+It adds this marketplace, installs orchestra, then installs each companion plugin listed below, skipping any you already have from any marketplace. It prints what it skipped. Other ways to run it:
+
+- `npx orchestra-install --dry-run`: show what it would run, change nothing.
+- `npx github:oarthurbg/orchestra`: fetch the script from this repository instead of npm. The [npm package](https://www.npmjs.com/package/orchestra-install) is the same [`install.mjs`](../install.mjs), published by a [workflow](../.github/workflows/publish-installer.yml).
+- Without npx: `curl -fsSL https://raw.githubusercontent.com/oarthurbg/orchestra/main/install.mjs | node --input-type=module` (in PowerShell, use `irm` in place of `curl -fsSL`).
 
 **By hand,** in a Claude Code session:
 
@@ -21,9 +27,7 @@ npx downloads [`orchestra-install`](https://www.npmjs.com/package/orchestra-inst
 /plugin install orchestra@orchestra
 ```
 
-Install it at user scope (the default). Principals work in their own worktrees, so a project-scope install reaches them only if `.claude/settings.json` is committed.
-
-Then install the plugins the workflow uses. This marketplace lists them, fetched from their own upstream repositories (nothing is copied here):
+Then the companion plugins the workflow uses. Each is fetched from its own repository:
 
 ```
 /plugin install superpowers@orchestra
@@ -36,60 +40,50 @@ Then install the plugins the workflow uses. This marketplace lists them, fetched
 /plugin install playwright-cli@orchestra
 ```
 
-Skip any you already have from another marketplace (for example `superpowers@claude-plugins-official`): two copies of one plugin load duplicate skills. From a shell, the same steps are `claude plugin marketplace add oarthurbg/orchestra` and `claude plugin install <name>@orchestra`.
+From a shell, the same steps are `claude plugin marketplace add oarthurbg/orchestra` and `claude plugin install <name>@orchestra`.
 
-`dataviz` (chart and dashboard design) is built into recent Claude Code versions, so there is nothing to install. If you already added `security-audit` or `playwright-cli` by hand to `~/.claude/skills`, skip their plugins. `playwright-cli` is only for apps with a web UI, and it also needs the CLI itself: `npm install -g @playwright/cli@latest`. `claude-security` is an optional deep scan of finished code before a release.
+Notes on the companions:
 
-Then, in your project:
+- Skip any you already have from another marketplace (for example `superpowers@claude-plugins-official`) or as a skill in `~/.claude/skills`: two copies load duplicate skills.
+- `playwright-cli` is only for apps with a web UI, and also needs its CLI: `npm install -g @playwright/cli@latest`.
+- `dataviz` (chart and dashboard design) is built into recent Claude Code versions.
+- `claude-security` is an optional deep scan of finished code before a release.
 
-1. Run `/orchestra:init`. It looks at the project, proposes the "Project settings" (including test data commands that match your data store, or `none`), and scaffolds `CLAUDE.md` settings, `docs/HANDOFF.md` and `docs/workstreams/`.
-2. In your main session, load the `orchestra:maestro` skill. Its "First session" steps confirm the settings and owner authorizations with you, write the first backlog and open the first workstreams with `/orchestra:start-workstream <name> <goal>`.
-3. Ask "how is it going?" any time: the maestro answers with `/orchestra:status`, one table of every workstream plus what needs you.
+**Then, in your project:**
+
+1. Run `/orchestra:init`. It proposes the project settings and scaffolds the files (see [Commands](commands.md#orchestrainit)).
+2. In your main session, load the `orchestra:maestro` skill. Its "First session" steps confirm the settings and owner authorizations with you, write the first backlog and open the first workstreams with `/orchestra:start-workstream`.
+3. Ask "how is it going?" any time. The maestro answers with `/orchestra:status`.
 
 ## Updating
 
-Claude Code installs a new version of orchestra only when its version number changes, and every release bumps it. Auto-update is off by default for marketplaces you add yourself, so pick one:
+Claude Code installs a new version only when the version number changes, and every release bumps it. Auto-update is off by default for marketplaces you add yourself. Pick one:
 
-- **Automatic:** run `/plugin`, open **Marketplaces**, select `orchestra` and choose **Enable auto-update**. Claude Code then checks for new versions up to ten minutes after your first message in a session. This covers every plugin installed from this marketplace.
-- **From the band:** when a newer orchestra is out, the band shows a line with **Changelog**, **Update** and **Later**. See [The band](band.md#updates).
-- **By hand:** run `claude plugin update orchestra@orchestra`, or choose **Update now** on the **Installed** tab of `/plugin`. The plugins listed above update the same way, with their own name in place of the first `orchestra`; they follow their authors' repositories.
+- **Automatic:** run `/plugin`, open **Marketplaces**, select `orchestra` and choose **Enable auto-update**. This covers every plugin from this marketplace.
+- **From the band:** when a newer orchestra is out, the band offers **Changelog**, **Update** and **Later**. See [The band](band.md#updates).
+- **By hand:** `claude plugin update orchestra@orchestra`, or **Update now** on the **Installed** tab of `/plugin`. Companion plugins update the same way with their own name.
 
-A new version loads in your next session, or right away after `/reload-plugins`. A liveview that is already running keeps the old version until you restart it: `/orchestra:liveview stop`, then `/orchestra:liveview`.
+A new version loads in your next session, or after `/reload-plugins`. A running liveview keeps the old version until you restart it: `/orchestra:liveview stop`, then `/orchestra:liveview`.
 
 ## Requirements
 
-- **Claude Code desktop app** (Code tab) for the session tools the workflow relies on: starting sessions, messaging between them, reading their context size, clearing and archiving them. In the plain CLI the roles and agents still work, but you start, brief, clear and archive sessions by hand.
-- **Docker** only if you pick the optional Postgres-in-Docker test data example.
-- **git** with worktrees, and the **GitHub CLI** (`gh`) for PRs.
+- **Claude Code desktop app** (Code tab), for starting, messaging, measuring, clearing and archiving sessions. In the plain CLI the roles and agents still work, but you do those steps by hand.
 - **Claude Code 2.1.309 or newer** for the band. Older versions were not tested.
-- **Node 18 or newer** for the liveview and the code navigation command.
+- **git** with worktrees, and the **GitHub CLI** (`gh`) for PRs.
+- **Node 18 or newer** for the install script, the liveview and code navigation.
+- **Docker** only if you pick the optional Postgres-in-Docker test data example.
 
 ## Code navigation
 
-The explorer and planner answer "who calls X", "what breaks if X changes" and "how is X reached" with a language server instead of sweeping files with grep. The command (`lsp/lsp.mjs`) prints each reference with its source line and the function around it, or the callers as a tree. It needs no build step and no index: it reads the working tree, so each worktree sees its own branch.
+The explorer and planner answer "who calls X", "what breaks if X changes" and "how is X reached" with a language server instead of grep. The command (`lsp/lsp.mjs`) needs no build step and no index: it reads the working tree, so each worktree sees its own branch.
 
 - **TypeScript and JavaScript:** nothing to install. It uses the project's own `typescript` package.
 - **Python:** needs Pyright on `PATH` (`npm install -g pyright` or `pip install pyright`). `/orchestra:init` checks for it.
-- **Anything else,** or when the server is missing or fails: the agents use grep and say so.
+- **Anything else,** or when the server fails: the agents use grep and say so.
 
-How much it saves, and where it breaks, is in [Benchmarks](benchmarks.md).
+Savings and limits are in [Benchmarks](benchmarks.md).
 
 ## orchestra's settings
-
-orchestra has three settings. `/orchestra:settings` shows them, in any Claude Code window, the desktop app and Remote Control included. To change one, name it and give the value:
-
-```text
-/orchestra:settings tailscale on
-/orchestra:settings cacheMinutes 5
-```
-
-In a Claude Code terminal session, `/plugin configure orchestra@orchestra` opens the same settings as a menu. From any terminal, pipe a JSON object of the values to change, each value written as text:
-
-```bash
-echo '{"liveviewTailnet":"true"}' | claude plugin configure orchestra@orchestra --values-stdin
-```
-
-`claude plugin configure orchestra@orchestra` alone shows the current values. A change takes effect in sessions started after it, or after `/reload-plugins`.
 
 | Setting | Default | What it does |
 | --- | --- | --- |
@@ -97,13 +91,30 @@ echo '{"liveviewTailnet":"true"}' | claude plugin configure orchestra@orchestra 
 | `warmMaxHours` | 2 | Stop keeping the cache warm for a subagent that has run this long. |
 | `liveviewTailnet` | off | Open the liveview to your own devices on Tailscale, such as your phone. See [The liveview](liveview.md#on-your-phone). |
 
+Show or change them with [`/orchestra:settings`](commands.md#orchestrasettings), in any Claude Code window:
+
+```text
+/orchestra:settings tailscale on
+/orchestra:settings cacheMinutes 5
+```
+
+From a terminal, `claude plugin configure orchestra@orchestra` shows the values; `/plugin configure orchestra@orchestra` in a terminal session opens them as a menu. To set values from a script, pipe JSON with each value as text:
+
+```bash
+echo '{"liveviewTailnet":"true"}' | claude plugin configure orchestra@orchestra --values-stdin
+```
+
+A change takes effect in sessions started after it, or after `/reload-plugins`.
+
 ## Recommended settings
 
-- **Bypass permissions, per project.** With 4 to 6 sessions and their subagents, approval prompts would stall the work all day, so orchestra is meant to run with the permission mode set to bypass, in the project only: the desktop app's permission-mode picker per session, or `"permissions": { "defaultMode": "bypassPermissions" }` in the project's `.claude/settings.local.json` (not in your global settings). Claude Code then never stops to ask, so these take over as the gates:
-  - **Owner authorizations** in the project's `CLAUDE.md`: for merges, releases, hotfixes, clears, archiving and new sessions, `ask`, `tell` or `auto`. They start at `ask`. Anything that needs admin rights, deletes data or branches, or touches credentials, money or production data is always `ask`, for every session and subagent.
-  - **The branch guard**, which `/orchestra:init` offers to install: a `pre-push` hook that refuses direct pushes to your integration and production branches. It is a local net (per clone, and skipped by `--no-verify`), so also turn on branch protection on GitHub for both branches.
+orchestra never changes these for you. Apply them yourself.
 
-  Use bypass permissions only in repositories you trust, keep real credentials out of the repository, and don't run it on a machine where an agent could reach production data you can't afford to lose.
+- **Bypass permissions, in the project only.** With 4 to 6 sessions and their subagents, approval prompts would stall the work. Set it with the desktop app's permission-mode picker per session, or `"permissions": { "defaultMode": "bypassPermissions" }` in the project's `.claude/settings.local.json`. Never in your global settings. Claude Code then never asks, so two gates take over:
+  - **Owner authorizations** in the project's `CLAUDE.md`: `ask`, `tell` or `auto` for merges, releases, hotfixes, clears, archiving and new sessions. They start at `ask`. Anything that needs admin rights, deletes data or branches, or touches credentials, money or production data is always `ask`.
+  - **The branch guard**, offered by `/orchestra:init`: a `pre-push` hook that refuses direct pushes to your integration and production branches. It is per clone and `--no-verify` skips it, so also turn on branch protection on GitHub for both branches.
+
+  Use bypass only in repositories you trust, keep real credentials out of the repository, and don't run it where an agent could reach production data you can't afford to lose.
 
 - **Auto-compact safety net at 600k tokens.** In `~/.claude/settings.json`:
 
@@ -114,46 +125,41 @@ echo '{"liveviewTailnet":"true"}' | claude plugin configure orchestra@orchestra 
   }
   ```
 
-  A window under `modelSettings` beats the top-level key in the same file for that model, and `/autocompact` writes one there, so check that entry too (or remove it). It applies to new or restarted sessions. The real rule is earlier: a principal above 250k tokens at the end of a wave writes its handoff note and gets cleared at a natural stop. The 600k net catches the case where nobody checked in time.
+  A value under `modelSettings` beats the top-level key for that model, and `/autocompact` writes one there, so check that entry too. It applies to new or restarted sessions. The normal rule clears a principal earlier, at 250k tokens at the end of a wave; this net catches a missed check.
 
-  The maestro cannot get a larger window than principals in the desktop app: the window is set per model, not per session, and a worktree session started from the app reads project settings from the main checkout's root, so a window in the main checkout's `.claude/settings.local.json` reaches every principal too. In the plain CLI, start the maestro with `claude --autocompact 800000`, which applies to that launch only.
+  In the desktop app the maestro cannot get a larger window than principals: the window is per model, and worktree sessions read project settings from the main checkout. In the plain CLI, start the maestro with `claude --autocompact 800000` (that launch only).
 
-  **After a compact.** Several principals reporting at once can push the maestro over its window. When it compacts, orchestra's `SessionStart` hook rebuilds what still waits on it from disk and puts the list in its context: messages from sessions it has not answered with `SendMessage` (from its own transcript, last 24 hours), waiting band reports in `.orchestra/sessions/`, and handoff notes whose status line waits on someone. The maestro then answers each one that is still open.
-- **Auto-archive on PR close: off** (desktop app setting). Archiving a session kills its process and its background agents, and unarchiving does not bring them back. Principals open spec and plan PRs and keep working after those merge, so auto-archive would stop them mid-workstream. The maestro archives finished sessions itself, after checking nothing is running.
-- **Session models.** Subagents carry their own model and effort (see [Agents](agents.md)); the sessions run on what you pick:
-  - **maestro:** Opus at medium effort. Its turns are short (status rounds, checklists, merges): judgment matters, long thinking mostly spends plan limits.
-  - **principals:** Opus at high effort, for brainstorming, specs and judging reviews. Raise it to xhigh for a hard spec or a long debugging stretch, then lower it again.
-- **Ponytail modes per session.** Every session starts in full. The maestro stays in full. The principal switches its own mode per stage and states it in every subagent briefing: brainstorm and mockups off, spec lite, plan ultra, backend full, UI lite, infrastructure ultra, reviews off. The full table is in [`stages.md`](../plugins/orchestra/skills/maestro/stages.md).
+  If the maestro compacts anyway, orchestra's `SessionStart` hook lists what still waits on it: unanswered messages from other sessions (last 24 hours), sessions waiting in their band reports, and handoff notes waiting on someone. The maestro then answers each one still open.
+
+- **Auto-archive on PR close: off** (desktop app setting). Archiving kills a session and its background agents, and unarchiving does not bring them back. Principals keep working after their spec and plan PRs merge. The maestro archives finished sessions itself.
+
+- **Session models.** Subagents set their own model (see [Agents](agents.md)). For the sessions:
+  - **maestro:** Opus at medium effort. Its turns are short.
+  - **principals:** Opus at high effort. Raise to xhigh for a hard spec or long debugging, then lower it again.
+
+- **Ponytail modes.** Every session starts in full. The principal switches mode per stage, as [Stages, modes and skills](stages.md) lists.
 
 ## What's inside
 
 ```
 plugins/orchestra/
-  agents/      explorer, planner, implementer, implementer-advanced, mechanic,
-               spec-reviewer, quality-reviewer, screenshotter, verifier
-  skills/      maestro (with stages.md: modes, skills and reviews per stage,
-               and checklists.md: merge, release and hotfix)
-               principal, handoff-note, test-databases (test data recipes per data store,
-               plus an optional, tested Postgres-in-Docker example)
-  commands/    /orchestra:init, /orchestra:start-workstream, /orchestra:status,
-               /orchestra:close-wave, /orchestra:liveview, /orchestra:settings,
-               /orchestra:help
-  hooks/       the band above the prompt, and the pending-asks list after a compact
+  agents/      the nine subagents
+  skills/      maestro, principal, handoff-note, test-databases
+  commands/    the seven /orchestra: commands
+  hooks/       the band, and the pending-asks list after a compact
   liveview/    the local dashboard
   lsp/         the code navigation command
-  templates/   CLAUDE.md (project settings, owner authorizations), HANDOFF.md, lessons.md,
-               handoff-note.md, githooks/pre-push (branch guard)
-install.mjs    the one-command install (package.json makes it the npx entry point)
-bench/         the benchmark scripts and their raw results
-docs/          these pages; index.html is the stack on one page
-assets/        brand files and the README's pictures
+  templates/   CLAUDE.md, HANDOFF.md, lessons.md, handoff-note.md, githooks/pre-push
+install.mjs    the install script
+bench/         benchmark scripts and raw results
+docs/          these pages
 ```
 
-Every project-specific value (branches, commands, dev server, test data commands, how agents sign in for browser checks) lives in one "Project settings" block in the project's `CLAUDE.md`, which `/orchestra:init` writes.
+Every project-specific value (branches, commands, dev server, test data, browser sign-in) lives in the "Project settings" block of the project's `CLAUDE.md`, which `/orchestra:init` writes.
 
 ## Credits
 
-orchestra only decides where each of these enters the flow. All credit for the skills themselves goes to their authors:
+orchestra only decides where each of these enters the flow. All credit for the skills goes to their authors:
 
 - [superpowers](https://github.com/obra/superpowers) by Jesse Vincent (obra): brainstorming, plans, subagent-driven development, TDD, debugging, code review. MIT.
 - [ponytail](https://github.com/DietrichGebert/ponytail) by Dietrich Gebert: the lite, full and ultra modes, review, debt and audit. MIT.
