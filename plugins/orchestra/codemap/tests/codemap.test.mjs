@@ -72,6 +72,33 @@ test('collect maps structure, imports, tests and history', () => {
   }
 })
 
+test('collect reads C# namespaces, a separate tests tree and Portuguese fix commits', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'codemap-'))
+  const put = (f, text) => { fs.mkdirSync(path.dirname(path.join(dir, f)), { recursive: true }); fs.writeFileSync(path.join(dir, f), text) }
+  try {
+    run(dir, 'init', '-q')
+    put('App.sln', '')
+    put('src/App.Core/Store.cs', 'namespace App.Core;\npublic class Store {}\n')
+    put('src/App.Web/Program.cs', 'using System;\nusing App.Core;\nusing static App.Core.Store;\nnamespace App.Web;\n')
+    put('tests/App.Core.Tests/StoreTests.cs', 'using App.Core;\nnamespace App.Core.Tests;\n')
+    run(dir, 'add', '.')
+    run(dir, 'commit', '-qm', 'início')
+    for (const msg of ['Correção do Store', 'corrige a gravação', 'Store: prefixo fixado']) {
+      fs.appendFileSync(path.join(dir, 'src/App.Core/Store.cs'), `// ${msg}\n`)
+      run(dir, 'commit', '-qam', msg)
+    }
+    const m = collect(dir)
+    const edges = Object.fromEntries(m.imports.map(e => [e.edge, e.count]))
+    assert.equal(edges['src/App.Web -> src/App.Core'], 2, 'using and using static')
+    assert.equal(edges['tests/App.Core.Tests -> src/App.Core'], 1)
+    assert.deepEqual(m.manifests.dotnet, { solutions: 1, projects: 0 })
+    assert.ok(m.entries.includes('src/App.Web/Program.cs'))
+    assert.deepEqual(m.history.risk, [{ file: 'src/App.Core/Store.cs', fixes: 2, commits: 4, hasTest: true }])
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
+})
+
 test('collect refuses a folder that is not a git repository, or has no commits', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'codemap-'))
   try {

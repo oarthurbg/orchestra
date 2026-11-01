@@ -2,6 +2,11 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.5.1
+
+- `/orchestra:codemap` now maps C# and .NET projects: it follows `using` lines to the folder that declares each namespace, finds `Program.cs` entry points, counts solutions and projects, and pairs a separate tests tree with the code it tests.
+- It recognizes fix commits written in Portuguese and Spanish (corrige, correção, conserta, defeito, arregla), and test folders named `testes`.
+
 ## 1.5.0
 
 - `/orchestra:codemap` maps a codebase that already exists into `docs/codebase-map.md`: how it is built, its parts, its conventions, where the risk is, and a little history. A script gathers the facts from the code and git history at no token cost, and the explorer writes them up. See [`/orchestra:codemap`](docs/commands.md#orchestracodemap).

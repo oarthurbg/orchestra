@@ -8,14 +8,18 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const CODE = /\.(ts|tsx|js|jsx|mjs|cjs|py|go|rs|java|kt|rb|php|cs|swift|vue|svelte)$/
-const TEST = /(^|\/)(tests?|__tests__|spec)\/|\.(test|spec)\.[a-z]+$|(^|\/)test_[^/]+\.py$|_test\.(go|py)$/
-const ENTRY = /(^|\/)(index|main|app|server|cli|manage|wsgi|asgi)\.(ts|tsx|js|mjs|cjs|py|go)$/
+const TEST = /(^|\/)(tests?|testes|__tests__|spec)\/|(Tests?|Testes)\.cs$|\.(test|spec)\.[a-z]+$|(^|\/)test_[^/]+\.py$|_test\.(go|py)$/
+const ENTRY = /(^|\/)(index|main|app|server|cli|manage|wsgi|asgi|program)\.(ts|tsx|js|mjs|cjs|py|go|cs)$/i
 const VENDOR = /(^|\/)(node_modules|vendor|third_party|dist|build|\.venv)\/|\.min\.js$/
-const FIX =/\b(fix|fixes|fixed|bug|hotfix|regression)\b/i
+// Fix commits in English, Portuguese and Spanish (fix, corrige, correção, conserta, defeito, arregla, corrección).
+const FIX = /(^|[^\p{L}])(fix|fixes|fixed|bugs?|hotfix|regression|corrig[\p{L}]*|corre[çc](?:[ãa]o|[õo]es|i[oó]n)|consert[\p{L}]*|defeitos?|arregl[\p{L}]*)(?![\p{L}])/iu
 const MANIFESTS = ['package.json', 'pyproject.toml', 'requirements.txt', 'go.mod', 'Cargo.toml', 'Gemfile', 'composer.json', 'pom.xml', 'build.gradle', 'docker-compose.yml', 'Dockerfile']
 const TEST_TOOLS = ['vitest', 'jest', 'mocha', 'ava', '@playwright/test', 'cypress', 'pytest']
 // shortcut: imports are read with regular expressions, not a parser, so dynamic paths and aliases are missed; good enough for folder-level edges.
 const JS_IMPORT = /(?:\bfrom\s*|\bimport\s*\(\s*|\brequire\s*\(\s*|^\s*import\s+)['"]([^'"]+)['"]/gm
+// C# names namespaces, not files: a using points at the module where that namespace is declared.
+const CS_NAMESPACE = /^\s*namespace\s+([\w.]+)/gm
+const CS_USING = /^\s*(?:global\s+)?using\s+(?:static\s+)?(?:\w+\s*=\s*)?([\w.]+)\s*;/gm
 const PY_IMPORT = /^\s*(?:from\s+(\.*[\w.]*)\s+import|import\s+([\w.]+))/gm
 const MAX_FILES = 5000
 const MAX_BYTES = 256 * 1024
@@ -27,7 +31,7 @@ const git = (root, args) => {
 }
 
 // A tests folder belongs to the folder it tests.
-const dirs = f => { const d = path.posix.dirname(f).split('/').filter(s => s !== '.'); while (d.length > 1 && /^(tests?|__tests__|spec)$/.test(d.at(-1))) d.pop(); return d }
+const dirs = f => { const d = path.posix.dirname(f).split('/').filter(s => s !== '.'); while (d.length > 1 && /^(tests?|testes|__tests__|spec)$/.test(d.at(-1))) d.pop(); return d }
 const DOC = /\.(md|mdx|txt|rst)$/
 
 // The folder a file belongs to, two levels deep: the unit the map talks about. A folder holding half the code is split
@@ -44,7 +48,7 @@ export function modulesFor(code) {
   }
   return mod
 }
-const stem = f => path.posix.basename(f).replace(/\.[^.]+$/, '').replace(/\.(test|spec)$/, '').replace(/^test_|_test$/, '')
+const stem = f => path.posix.basename(f).replace(/\.[^.]+$/, '').replace(/\.(test|spec)$/, '').replace(/^test_|_test$|(Tests?|Testes)$/, '')
 const top = (counts, n) => Object.entries(counts).sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)).slice(0, n)
 
 function resolveJs(from, spec, files) {
@@ -97,23 +101,33 @@ export function collect(root, { months = 12, now = Date.now() } = {}) {
     } catch { manifests['package.json'] = 'unreadable' }
   }
 
+  const sln = all.filter(f => f.endsWith('.sln')).length, csproj = all.filter(f => f.endsWith('.csproj')).length
+  if (sln || csproj) manifests.dotnet = { solutions: sln, projects: csproj }
+
   const entries = code.filter(f => ENTRY.test(f) && !TEST.test(f))
 
   const edges = {}, fanIn = {}
+  const edge = (a, b) => { if (a === b) return; edges[`${a} -> ${b}`] = (edges[`${a} -> ${b}`] ?? 0) + 1; fanIn[b] = (fanIn[b] ?? 0) + 1 }
+  const nsModules = {}, usings = []
   const scanned = code.slice(0, MAX_FILES)
   for (const f of scanned) {
     const full = path.join(root, f)
     if ((fs.statSync(full, { throwIfNoEntry: false })?.size ?? MAX_BYTES + 1) > MAX_BYTES) continue
     const text = fs.readFileSync(full, 'utf8')
+    if (f.endsWith('.cs')) {
+      for (const m of text.matchAll(CS_NAMESPACE)) { const c = (nsModules[m[1]] ??= {}); c[moduleOf(f)] = (c[moduleOf(f)] ?? 0) + 1 }
+      for (const m of text.matchAll(CS_USING)) usings.push([f, m[1]])
+      continue
+    }
     const py = f.endsWith('.py')
     for (const m of text.matchAll(py ? PY_IMPORT : JS_IMPORT)) {
       const target = py ? resolvePy(f, m[1] ?? m[2], files) : resolveJs(f, m[1], files)
-      if (!target) continue
-      const a = moduleOf(f), b = moduleOf(target)
-      if (a === b) continue
-      edges[`${a} -> ${b}`] = (edges[`${a} -> ${b}`] ?? 0) + 1
-      fanIn[b] = (fanIn[b] ?? 0) + 1
+      if (target) edge(moduleOf(f), moduleOf(target))
     }
+  }
+  for (const [f, ns] of usings) {
+    const owner = nsModules[ns] ?? nsModules[ns.replace(/\.\w+$/, '')] // using static names a type inside the namespace
+    if (owner) edge(moduleOf(f), top(owner, 1)[0][0])
   }
 
   const since = Math.floor((now - months * 30.44 * 86400e3) / 1000)
@@ -133,8 +147,10 @@ export function collect(root, { months = 12, now = Date.now() } = {}) {
     }
   }
   // A test covers a file when it is named after the file or its folder and sits in the file's module or a parent of it.
+  // A test elsewhere (a separate tests tree, as in .NET) still counts when no other code file shares the name.
   const within = (t, f) => { const a = moduleOf(t), b = moduleOf(f); return a === '.' || b === a || b.startsWith(`${a}/`) }
-  const covered = f => tests.some(t => [stem(f), path.posix.basename(path.posix.dirname(f))].includes(stem(t)) && within(t, f))
+  const unique = f => code.filter(c => !TEST.test(c) && stem(c) === stem(f)).length === 1
+  const covered = f => tests.some(t => (stem(t) === stem(f) && (within(t, f) || unique(f))) || (stem(t) === path.posix.basename(path.posix.dirname(f)) && within(t, f)))
   // Several roots happen (subtree merges); the oldest one dates the project.
   const first = Math.min(...(git(root, ['log', '--max-parents=0', '--format=%ct', 'HEAD']) ?? '').split('\n').filter(Boolean).map(Number))
   const last = Number(git(root, ['log', '-1', '--format=%ct']) ?? 0) || null
