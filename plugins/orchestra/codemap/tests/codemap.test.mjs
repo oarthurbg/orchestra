@@ -63,6 +63,8 @@ test('collect maps structure, imports, tests and history', () => {
     assert.equal(edges['app -> app/models'], 1)
     assert.equal(m.mostImported[0].module, 'src/db')
     assert.equal(m.history.totalCommits, 4)
+    assert.equal(m.history.shallow, false)
+    assert.match(m.history.firstCommit, /^\d{4}-\d{2}-\d{2}$/)
     assert.equal(m.history.hotspots[0].file, 'src/db/client.ts')
     assert.deepEqual(m.history.risk, [{ file: 'src/db/client.ts', fixes: 2, commits: 4, hasTest: false }])
   } finally {
@@ -70,10 +72,12 @@ test('collect maps structure, imports, tests and history', () => {
   }
 })
 
-test('collect refuses a folder that is not a git repository', () => {
+test('collect refuses a folder that is not a git repository, or has no commits', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'codemap-'))
   try {
     assert.throws(() => collect(dir), /not a git repository/)
+    run(dir, 'init', '-q')
+    assert.throws(() => collect(dir), /no commits yet/)
   } finally {
     fs.rmSync(dir, { recursive: true, force: true })
   }

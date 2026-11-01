@@ -21,7 +21,8 @@ const MAX_FILES = 5000
 const MAX_BYTES = 256 * 1024
 
 const git = (root, args) => {
-  const r = spawnSync('git', ['-C', root, ...args], { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
+  // quotePath=false: git log would otherwise quote non-ASCII paths, and they would not match ls-files.
+  const r = spawnSync('git', ['-c', 'core.quotePath=false', '-C', root, ...args], { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
   return r.status === 0 ? r.stdout : null
 }
 
@@ -66,6 +67,7 @@ function resolvePy(from, spec, files) {
 export function collect(root, { months = 12, now = Date.now() } = {}) {
   const listed = git(root, ['ls-files', '-z'])
   if (listed === null) throw new Error(`not a git repository: ${root}`)
+  if (git(root, ['rev-parse', '--verify', '-q', 'HEAD']) === null) throw new Error(`no commits yet: ${root}`)
   const all = listed.split('\0').filter(f => f && !VENDOR.test(f))
   const files = new Set(all)
   const code = all.filter(f => CODE.test(f))
@@ -115,7 +117,8 @@ export function collect(root, { months = 12, now = Date.now() } = {}) {
   }
 
   const since = Math.floor((now - months * 30.44 * 86400e3) / 1000)
-  const log = git(root, ['log', `--since=${since}`, '--no-merges', '--format=%x1e%ct%x1f%s', '--name-only']) ?? ''
+  const log = git(root, ['log', `--since=${since}`, '--no-merges', '--format=%x1e%ct%x1f%s', '--name-only'])
+  if (log === null) throw new Error('git log failed (history too large or unreadable)')
   const touched = {}, fixes = {}, monthly = {}
   let commits = 0
   for (const chunk of log.split('\x1e').slice(1)) {
@@ -129,9 +132,11 @@ export function collect(root, { months = 12, now = Date.now() } = {}) {
       if (FIX.test(subject)) fixes[n] = (fixes[n] ?? 0) + 1
     }
   }
-  const testStems = new Set(tests.map(stem))
-  const firstRoot = (git(root, ['rev-list', '--max-parents=0', 'HEAD']) ?? '').trim().split('\n')[0]
-  const first = firstRoot ? Number(git(root, ['log', '-1', '--format=%ct', firstRoot])) : null
+  // A test covers a file when it is named after the file or its folder and sits in the file's module or a parent of it.
+  const within = (t, f) => { const a = moduleOf(t), b = moduleOf(f); return a === '.' || b === a || b.startsWith(`${a}/`) }
+  const covered = f => tests.some(t => [stem(f), path.posix.basename(path.posix.dirname(f))].includes(stem(t)) && within(t, f))
+  // Several roots happen (subtree merges); the oldest one dates the project.
+  const first = Math.min(...(git(root, ['log', '--max-parents=0', '--format=%ct', 'HEAD']) ?? '').split('\n').filter(Boolean).map(Number))
   const last = Number(git(root, ['log', '-1', '--format=%ct']) ?? 0) || null
 
   return {
@@ -147,14 +152,15 @@ export function collect(root, { months = 12, now = Date.now() } = {}) {
     tests: { byModule: top(Object.fromEntries(Object.entries(structure).filter(([, v]) => v.tests).map(([k, v]) => [k, v.tests])), 15) },
     history: {
       months,
+      shallow: git(root, ['rev-parse', '--is-shallow-repository'])?.trim() === 'true',
       totalCommits: Number(git(root, ['rev-list', '--count', 'HEAD']) ?? 0),
-      firstCommit: first ? new Date(first * 1000).toISOString().slice(0, 10) : null,
+      firstCommit: Number.isFinite(first) ? new Date(first * 1000).toISOString().slice(0, 10) : null,
       lastCommit: last ? new Date(last * 1000).toISOString().slice(0, 10) : null,
       commitsInWindow: commits,
       byMonth: Object.entries(monthly).sort(),
       hotspots: top(touched, 15).map(([file, count]) => ({ file, commits: count, fixes: fixes[file] ?? 0 })),
       risk: top(Object.fromEntries(Object.entries(fixes).filter(([f, n]) => n >= 2 && !TEST.test(f) && !DOC.test(f))), 15)
-        .map(([file, count]) => ({ file, fixes: count, commits: touched[file], hasTest: testStems.has(stem(file)) || testStems.has(path.posix.basename(path.posix.dirname(file))) })),
+        .map(([file, count]) => ({ file, fixes: count, commits: touched[file], hasTest: covered(file) })),
     },
   }
 }
