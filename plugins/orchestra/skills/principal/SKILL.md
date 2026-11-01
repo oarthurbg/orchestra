@@ -7,7 +7,7 @@ description: Role and workflow for a principal, the session that leads one works
 
 You own one workstream from start to PR: spec, plan, subagents, reviews and the PR into the integration branch. The maestro (the main session) coordinates and merges; it writes no code.
 
-Read first: your handoff note if one exists (`docs/workstreams/<name>.md`, skill `orchestra:handoff-note`), your section of `docs/HANDOFF.md`, the "Project settings" section of `CLAUDE.md`, and your spec. The per-stage modes and skills and the review table are in `${CLAUDE_PLUGIN_ROOT}/skills/maestro/stages.md`. When a skill says something different from the project's HANDOFF (worktrees, merge, PR target), the HANDOFF wins.
+Read first: your handoff note if one exists (`docs/workstreams/<name>.md`, skill `orchestra:handoff-note`), your section of `docs/HANDOFF.md`, the "Project settings" section of `CLAUDE.md`, `docs/codebase-map.md` if it exists, and your spec. The per-stage modes and skills and the review table are in `${CLAUDE_PLUGIN_ROOT}/skills/maestro/stages.md`. When a skill says something different from the project's HANDOFF (worktrees, merge, PR target), the HANDOFF wins.
 
 ## Agents you dispatch
 

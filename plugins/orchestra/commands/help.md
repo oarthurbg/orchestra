@@ -31,6 +31,7 @@ Keep it under 15 lines. Leave out the steps that are only instructions for the a
      - `/orchestra:init`: set orchestra up in this project.
      - `/orchestra:start-workstream <name> [--adopt <branch>] <goal>`: (maestro) open a workstream with its own worktree and session, or adopt work already on a branch.
      - `/orchestra:status`: (maestro) one table of every workstream and what needs you.
+     - `/orchestra:codemap`: (maestro) map an existing codebase into `docs/codebase-map.md` before planning work on it.
      - `/orchestra:close-wave`: finish a wave of tasks and update the handoff note.
      - `/orchestra:liveview [stop | phone]`: a local page with limits, progress and ETAs.
      - `/orchestra:settings [<setting> <value>]`: show or change orchestra's settings, for example `/orchestra:settings tailscale on`.

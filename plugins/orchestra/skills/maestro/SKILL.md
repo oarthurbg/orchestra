@@ -51,6 +51,8 @@ The other six (planner, implementers, reviewers, screenshotter) are for principa
    | --- | --- | --- | --- |
 
    Suggest one action per row: **adopt** it as a workstream (unfinished work worth carrying on), **let it finish** as it is (nearly done, or someone else's), **backlog** (an idea or issue not started), or **close** (stale or replaced). The owner decides every row. Adopted items open with `/orchestra:start-workstream <name> --adopt <branch> <goal>`. Closing a PR or deleting a branch is the owner's call each time, never yours.
+
+   Then, if the project has code and no `docs/codebase-map.md`, run `/orchestra:codemap`: the planners and principals read the map before they plan, and the planner treats its risk files as sensitive.
 5. Plan the app with the owner: write the backlog in "Next workstreams" in the HANDOFF, each item with what it waits on, including the rows marked backlog and what the adopted work waits on.
 6. Open every item that is ready and fits (see "Capacity") with `/orchestra:start-workstream`, then run the first `/orchestra:status`.
 

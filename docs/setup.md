@@ -62,6 +62,7 @@ orchestra works on a project already under way, not only on new ones.
 - `/orchestra:init` reads the code first (scripts, tests, branches, data) and adds its sections to your existing `CLAUDE.md` without replacing it. It never overwrites a file without asking.
 - If the project has only one long-lived branch, such as `main`, init offers to create an integration branch from it, or to use that one branch for both settings.
 - In the first session, the maestro takes stock of the work already under way: open PRs, branches not yet merged, worktrees, open issues and any roadmap file. It shows you one table with a suggested action for each: **adopt** it as a workstream, **let it finish** as it is, put it in the **backlog**, or **close** it. You decide every row; it closes nothing on its own.
+- The maestro then maps the code with [`/orchestra:codemap`](commands.md#orchestracodemap): how it is built, its conventions, and the files that break most often. Planners and principals read that map before they plan, and changes to the risky files get the stricter reviews.
 - An adopted branch becomes a workstream with [`/orchestra:start-workstream --adopt`](commands.md#orchestrastart-workstream). Its principal writes a spec of what is built and what is left, you confirm it, and the normal plan and reviews take over from there.
 
 ## Updating
