@@ -46,7 +46,7 @@ The shape is the role everywhere orchestra draws a session. How it is drawn is t
 
 ## See it
 
-**The band** sits above the prompt in every session: your plan limits, and each workstream that needs you, most urgent first. [More about the band](docs/band.md).
+**The band** sits above the prompt in every session: your plan limits, when the week will run out at the pace of the work still planned, and each workstream that needs you, most urgent first. When a new version of orchestra is out, it offers to update, with the changelog one click away. [More about the band](docs/band.md).
 
 <p align="center">
   <picture>
@@ -57,7 +57,7 @@ The shape is the role everywhere orchestra draws a session. How it is drawn is t
 
 > **Note:** the `off lite full ultra` buttons at the bottom of the band switch [ponytail](https://github.com/DietrichGebert/ponytail)'s level for every session. They show only when ponytail is installed and its own band is hidden with `/ponytail band`.
 
-**The liveview** is a local page with every workstream's progress, ETA and timeline. It runs on your machine and uses no tokens. [More about the liveview](docs/liveview.md).
+**The liveview** is a local page with every workstream's progress, ETA and timeline. It runs on your machine and uses no tokens. With [Tailscale](https://tailscale.com), your phone can open it too: run `/orchestra:settings tailscale on`. [More about the liveview](docs/liveview.md).
 
 <p align="center">
   <picture>
@@ -82,8 +82,8 @@ The shape is the role everywhere orchestra draws a session. How it is drawn is t
   <tr><td><img alt="" src="assets/readme/features/subagents.svg" width="40"></td><td><b>Nine subagents.</b> Each with its own model: Opus for judgment, cheaper for chores. <a href="docs/agents.md">Read more</a></td></tr>
   <tr><td><img alt="" src="assets/readme/features/stages.svg" width="40"></td><td><b>The right skills at every stage.</b> Brainstorm, spec, plan, build, review, PR. <a href="docs/stages.md">Read more</a></td></tr>
   <tr><td><picture><source media="(prefers-color-scheme: dark)" srcset="assets/readme/features/reviews-dark.svg"><img alt="" src="assets/readme/features/reviews-light.svg" width="40"></picture></td><td><b>Reviews before every merge.</b> Spec, quality and finish reviews, then the whole branch. <a href="docs/stages.md#reviews">Read more</a></td></tr>
-  <tr><td><img alt="" src="assets/readme/features/band.svg" width="40"></td><td><b>The band.</b> Plan limits and who needs you, above every prompt. <a href="docs/band.md">Read more</a></td></tr>
-  <tr><td><picture><source media="(prefers-color-scheme: dark)" srcset="assets/readme/features/liveview-dark.svg"><img alt="" src="assets/readme/features/liveview-light.svg" width="40"></picture></td><td><b>The liveview and inbox.</b> Progress, ETAs and your questions. No tokens. <a href="docs/liveview.md">Read more</a></td></tr>
+  <tr><td><img alt="" src="assets/readme/features/band.svg" width="40"></td><td><b>The band.</b> Plan limits, when the week runs out, who needs you, and updates. <a href="docs/band.md">Read more</a></td></tr>
+  <tr><td><picture><source media="(prefers-color-scheme: dark)" srcset="assets/readme/features/liveview-dark.svg"><img alt="" src="assets/readme/features/liveview-light.svg" width="40"></picture></td><td><b>The liveview and inbox.</b> Progress, ETAs and your questions, on your phone too. No tokens. <a href="docs/liveview.md">Read more</a></td></tr>
   <tr><td><img alt="" src="assets/readme/features/code-navigation.svg" width="40"></td><td><b>Code navigation.</b> A language server instead of grep. Fewer tokens. <a href="docs/setup.md#code-navigation">Read more</a></td></tr>
   <tr><td><img alt="" src="assets/readme/features/context.svg" width="40"></td><td><b>Context kept small.</b> Handoff and clear past 250k; nothing lost on a compact. <a href="docs/setup.md#recommended-settings">Read more</a></td></tr>
   <tr><td><img alt="" src="assets/readme/features/keep-warm.svg" width="40"></td><td><b>Keep-warm.</b> The prompt cache stays warm while subagents run. <a href="docs/band.md#keep-warm">Read more</a></td></tr>
@@ -127,6 +127,7 @@ What the script runs, how to install by hand, updates, orchestra's settings, req
 ## Learn more
 
 - [Setup](docs/setup.md): install, update, requirements and recommended settings.
+- [Commands](docs/commands.md): how to use each command, including `/orchestra:settings` to change orchestra's settings from any window.
 - [Agents](docs/agents.md): the nine subagents, their models and their jobs.
 - [Stages, modes and skills](docs/stages.md): what runs at each stage, and why.
 - [The band](docs/band.md) and [the liveview](docs/liveview.md).

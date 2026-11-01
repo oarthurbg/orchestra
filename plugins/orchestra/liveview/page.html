@@ -105,8 +105,21 @@ h2{font-family:var(--display);font-weight:800;font-size:17px;line-height:24px;le
 .row.head{padding-top:12px}
 .tasks{background:var(--raised);padding:4px var(--pad) 12px calc(var(--pad) + 32px);border-top:1px solid var(--rule)}
 .task{display:grid;grid-template-columns:16px minmax(0,320px) 220px auto;gap:8px;min-height:28px;align-items:center}
-.legend{display:flex;flex-wrap:wrap;gap:6px 18px;padding:12px var(--pad) 16px;color:var(--muted);font-size:13px;border-top:1px solid var(--rule)}
-.legend > span > svg{vertical-align:-1px;margin:0 2px}
+.legend{border-top:1px solid var(--rule)}
+.legend summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:12px var(--pad)}
+.legend summary::-webkit-details-marker{display:none}
+.legend summary:focus-visible{outline:2px solid var(--data);outline-offset:-2px}
+.legend-toggle::after{content:"Show"}
+.legend[open] .legend-toggle::after{content:"Hide"}
+.legend[open]{padding-bottom:8px}
+.key-group{color:var(--muted);font-size:12px;font-weight:600;padding:4px var(--pad)}
+.key{border-collapse:collapse;width:100%;margin-bottom:8px;table-layout:fixed}
+.key .big{font-size:13px}
+.key td{padding:7px 0;vertical-align:top;border-top:1px solid var(--rule)}
+.key td:first-child{width:78px;box-sizing:border-box;padding-left:var(--pad)}
+.key td:last-child{padding-right:var(--pad)}
+.key b{font-weight:500}
+.key small{display:block;color:var(--muted);font-size:13px;line-height:18px}
 .wait-sw{background:var(--pause);border:1px solid var(--border)}
 .sw{display:inline-block;width:18px;height:10px;border-radius:5px;vertical-align:-1px;margin-right:6px}
 .error{color:var(--negative)}
@@ -263,7 +276,7 @@ ul.opts li{color:var(--text)}
   <section class="card" aria-labelledby="h-work">
     <div class="card-head"><h2 id="h-work">Workstreams</h2><span class="meta" id="work-meta"></span></div>
     <div class="score"><div class="score-inner" id="grid" role="table" aria-labelledby="h-work"></div></div>
-    <div class="legend" id="legend"></div>
+    <details class="legend" id="legend-box"><summary>What the symbols mean<span class="meta legend-toggle" aria-hidden="true"></span></summary><div id="legend"></div></details>
   </section>
   <section class="card" aria-labelledby="h-cal">
     <div class="card-head"><h2 id="h-cal">Delivery calendar</h2><span class="meta" id="cal-meta"></span></div>
@@ -334,6 +347,10 @@ document.getElementById('cycle').addEventListener('click', () => applyTheme(THEM
 let open = new Set()
 try { open = new Set(JSON.parse(localStorage.getItem('liveview-open') || '[]')) } catch { /* private window */ }
 const saveOpen = () => { try { localStorage.setItem('liveview-open', JSON.stringify([...open])) } catch { /* private window */ } }
+// The key stays folded until the owner opens it, and remembers either way.
+const legendBox = document.getElementById('legend-box')
+try { legendBox.open = localStorage.getItem('liveview-legend') === 'open' } catch { /* private window */ }
+legendBox.addEventListener('toggle', () => { try { localStorage.setItem('liveview-legend', legendBox.open ? 'open' : 'closed') } catch { /* private window */ } })
 
 // The band's symbols (docs/BRAND.md): the shape is the role, the way it is drawn the state.
 // Solid running, outlined idle, over a heavy rule waiting on you, outlined in grey stale. Over 250k flags the context number instead.
@@ -532,17 +549,26 @@ function grid(snap) {
   // Table semantics: every row is a row, every direct child a cell (the ETA button sits inside its cell).
   rows.forEach((row, i) => { if (row.getAttribute('role')) return; row.setAttribute('role', 'row'); for (const c of row.children) c.setAttribute('role', i ? 'cell' : 'columnheader') })
   document.getElementById('grid').replaceChildren(...rows)
-  const key = (g, text) => $('span', {}, $('span', { style: 'display:inline-block;vertical-align:-2px;margin-right:6px' }, g), text)
+  const key = (sym, name, note) => $('tr', {}, $('td', {}, sym), $('td', {}, $('b', {}, name), note ? $('small', {}, note) : null))
+  const group = (title, rows) => [$('div', { class: 'key-group' }, title), $('table', { class: 'key' }, $('tbody', {}, rows))]
   document.getElementById('legend').replaceChildren(
-    key(glyph('maestro', 'running', ''), 'Maestro'), key(glyph('principal', 'running', ''), 'Principal, running'), key(glyph('principal', 'idle', ''), 'Idle'),
-    key(glyph('principal', 'waiting', ''), 'Waiting on you'), key(glyph('principal', 'stale', ''), 'Stale or unregistered'),
-    $('span', {}, $('span', { class: 'big', style: 'margin-right:6px' }, '250k'), 'Context to clear'),
-    $('span', {}, $('span', { class: 'sw', style: 'background:var(--data)' }), 'Done'),
-    $('span', {}, $('span', { class: 'sw', style: 'background:var(--data-tint)' }), 'Estimated'),
-    $('span', {}, $('span', { class: 'sw', style: 'border:1px dashed var(--muted);border-radius:5px' }), 'Queued'),
-    $('span', {}, $('span', { class: 'sw wait-sw' }), 'Waiting for a limit reset'),
-    $('span', {}, diamond(true), ' Merged or released · ', diamond(false), ' Projected merge'),
-    $('span', {}, '? Uncalibrated estimate'),
+    ...group('Sessions', [
+      key(glyph('maestro', 'running', ''), 'Maestro', 'Your main session.'),
+      key(glyph('principal', 'running', ''), 'Principal, running', "A workstream's session, working now."),
+      key(glyph('principal', 'idle', ''), 'Idle', 'Outlined: nothing running.'),
+      key(glyph('principal', 'waiting', ''), 'Waiting on you', 'Over a heavy rule: it has a question for you.'),
+      key(glyph('principal', 'stale', ''), 'Stale or unregistered', 'Grey: no report for 30 minutes, or not in the registry.'),
+      key($('span', { class: 'big' }, '250k'), 'Context to clear', 'At 250k tokens or more, clear it at the next natural stop.'),
+    ]),
+    ...group('Timeline', [
+      key($('span', { class: 'sw', style: 'background:var(--data)' }), 'Done'),
+      key($('span', { class: 'sw', style: 'background:var(--data-tint)' }), 'Estimated', 'The tasks left, at the measured pace.'),
+      key($('span', { class: 'sw', style: 'border:1px dashed var(--muted);border-radius:5px' }), 'Queued', 'Starts when a workstream slot frees up.'),
+      key($('span', { class: 'sw wait-sw' }), 'Waiting for a limit reset'),
+      key(diamond(true), 'Merged or released'),
+      key(diamond(false), 'Projected merge'),
+      key($('b', { class: 'meta' }, '?'), 'Uncalibrated estimate', 'Fewer than three similar tasks finished yet, so it uses a default.'),
+    ]),
   )
 }
 
