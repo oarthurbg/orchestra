@@ -15,7 +15,7 @@ Every workstream goes through the same stages, from brainstorm to PR. At each st
 | **full** | The smallest complete change | Backend, mechanical work, searches, close-out; the default |
 | **ultra** | Cuts hardest | Plans and infrastructure |
 
-Every session starts in full and the maestro stays there. A principal switches its own mode at each stage and states the mode in every subagent briefing. Each agent's file also fixes its own mode, so a subagent keeps the right one whatever the session is in.
+Every session starts in full and the maestro stays there. A principal switches its own mode at each stage and states the mode in every subagent briefing.
 
 ## The stages at a glance
 
