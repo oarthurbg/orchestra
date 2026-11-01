@@ -7,7 +7,7 @@ What each orchestra command does and when to run it. In Claude Code, `/orchestra
 | Command | Run it in | Use |
 | --- | --- | --- |
 | [`/orchestra:init`](#orchestrainit) | Your main session | Set orchestra up in a project, once. |
-| [`/orchestra:start-workstream`](#orchestrastart-workstream) | The maestro | Open a workstream with its own branch, worktree and session. |
+| [`/orchestra:start-workstream`](#orchestrastart-workstream) | The maestro | Open a workstream with its own branch, worktree and session, or adopt work already on a branch. |
 | [`/orchestra:status`](#orchestrastatus) | The maestro | One table of every workstream and what needs you. |
 | [`/orchestra:close-wave`](#orchestraclose-wave) | A principal or the maestro | Finish a wave of tasks and clear a full session. |
 | [`/orchestra:liveview`](#orchestraliveview) | Any session | A page with limits, progress and ETAs. |
@@ -39,13 +39,16 @@ It shows every change to an existing file before making it, never changes your C
 ```text
 /orchestra:start-workstream <name> <one-line goal>
 /orchestra:start-workstream invoices Let customers download their invoices as PDF
+/orchestra:start-workstream search --adopt feature/search Finish the search page
 ```
 
 Opens a new workstream. Run it in the maestro. The name becomes the branch: lowercase letters, digits, `_` and `-`.
 
+With `--adopt <branch>`, the workstream takes over work already on that branch instead of starting a new one. The branch keeps its name and its commits; nothing on it is reset or rebased. The principal's first job is a spec of what is built and what is left, which you confirm before any new code. The maestro offers this when it [takes stock of an ongoing project](setup.md#already-have-a-project).
+
 First it checks that the goal does not overlap an open spec or workstream, that no other workstream is changing the same data schema, and that the machine and your token limits have room. Then it:
 
-- creates a worktree on a new branch from your integration branch, next to the main checkout;
+- creates a worktree on a new branch from your integration branch, next to the main checkout (when adopting, on the existing branch, or reuses the worktree it already has);
 - creates the workstream's test data and picks a free dev server port, when the project has them;
 - adds a row to `.orchestra/workstreams.md`;
 - starts the principal's session in the worktree with a briefing, at the level of "Start a new principal session" in your owner authorizations. Outside the desktop app, it prints the briefing for you to paste.

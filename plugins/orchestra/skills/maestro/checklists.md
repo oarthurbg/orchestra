@@ -22,6 +22,8 @@ Run them in order and stop at the first item that fails. Before each merge, chec
 
 ## Release (integration branch into production branch)
 
+When both settings name the same branch, there is no release PR: a release is steps 1, 2 and 5 only.
+
 1. Everything meant for this release is merged, and no workstream PR is half-merged.
 2. `verifier` passes in a fresh worktree on the latest integration branch, and the release PR's CI is green.
 3. The release PR description says: what goes in, migrations, 👤 steps, and how to roll back.
@@ -32,4 +34,4 @@ Run them in order and stop at the first item that fails. Before each merge, chec
 
 1. Branch from the production branch, PR into the production branch, same reviews as its risk requires, and CI green.
 2. Merge with a merge commit, never `--delete-branch`.
-3. Right after: a PR from the production branch back into the integration branch, merged with a merge commit, so the fix is not lost at the next release.
+3. Right after: a PR from the production branch back into the integration branch, merged with a merge commit, so the fix is not lost at the next release. Skip it when both settings name the same branch.

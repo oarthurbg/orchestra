@@ -29,7 +29,7 @@ Keep it under 15 lines. Leave out the steps that are only instructions for the a
    - The next step from step 2, as one or two lines.
    - A table of the commands, each name linking to its section in the guide, with its one-line use:
      - `/orchestra:init`: set orchestra up in this project.
-     - `/orchestra:start-workstream <name> <goal>`: (maestro) open a workstream with its own worktree and session.
+     - `/orchestra:start-workstream <name> [--adopt <branch>] <goal>`: (maestro) open a workstream with its own worktree and session, or adopt work already on a branch.
      - `/orchestra:status`: (maestro) one table of every workstream and what needs you.
      - `/orchestra:close-wave`: finish a wave of tasks and update the handoff note.
      - `/orchestra:liveview [stop | phone]`: a local page with limits, progress and ETAs.
