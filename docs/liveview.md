@@ -46,7 +46,7 @@ Notes:
 - **Symbols**: each session uses the symbols in [`BRAND.md`](BRAND.md#symbols). The shape is the role, the way it is drawn is the state, and a context of 250k or more is a bold vermilion number.
 - **Progress** comes from the plan checkboxes.
 - **ETAs** come from how long past tasks took, measured from the commits that ticked them. It uses past tasks with the same agent and risk, else the same agent, else all tasks: the first group with at least 3 finished. Until then it uses a default length, marked `?`.
-- **The limit projection** reads token counts (never message content) from Claude Code's transcripts for every project on this computer, since plan limits are per account. It is calibrated on the band's latest limit reading.
+- **The limit projection** reads token counts (never message content) from Claude Code's transcripts for every project on this computer, since plan limits are per account.
 - **The band's run-out time**: while the liveview runs, it tells the band when the planned work will use up the week.
 
 ## The inbox

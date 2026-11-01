@@ -101,15 +101,6 @@ Measured, not estimated: every number comes from a script in [`bench/`](bench), 
   </picture>
 </p>
 
-**The liveview keeps up with 50 workstreams,** the most measured: a rebuild takes 0.5 s of its 5-second refresh.
-
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="assets/readme/bench-liveview-dark.png">
-    <img alt="Seconds to rebuild the liveview by workstreams open, before and after the git cache: 0.4 against 0.3 s for 1, 1.0 against 0.3 s for 5, 1.8 against 0.4 s for 10, 3.9 against 0.4 s for 25, and 7.8 against 0.5 s for 50, now well under the 5-second refresh." src="assets/readme/bench-liveview-light.png" width="820">
-  </picture>
-</p>
-
 ## Install
 
 One command installs orchestra and the plugins it works with, skipping any you already have. It needs Claude Code and Node 18 or newer, on macOS, Linux or Windows:

@@ -52,13 +52,13 @@ Commands, branches, test data and the dev server come from the "Project settings
 
 ## explorer
 
-Searches and summarizes the repository: where X lives, who calls Y, what a large file does. Answers with `file:line` for each finding. For who-calls and impact questions in TypeScript, JavaScript or Python it uses the plugin's `lsp/lsp.mjs` command, with grep as the fallback.
+Searches and summarizes the repository: where X lives, who calls Y, what a large file does. Answers with `file:line` for each finding. For who-calls and impact questions in TypeScript, JavaScript or Python it uses a language server, with grep as the fallback.
 
 It exists so the maestro and principals never read whole files and keep only the conclusion. It changes nothing and never reads credentials, `.env` files or confidential paths.
 
 ## planner
 
-Turns an approved spec into a plan with `superpowers:writing-plans`. Each task is self-contained, fits a subagent with a 100k to 200k token window, and has an **Interfaces** block of exact names, signatures and paths. Each task is tagged with the agent that builds it and a risk (`mechanical`, `normal`, `sensitive` or `ui`) that picks its [reviews](stages.md#reviews).
+Turns an approved spec into a plan with `superpowers:writing-plans`. Each task is self-contained, fits one subagent, and has an **Interfaces** block of exact names, signatures and paths. Each task is tagged with the agent that builds it and a risk (`mechanical`, `normal`, `sensitive` or `ui`) that picks its [reviews](stages.md#reviews).
 
 It reads the HANDOFF, the spec, earlier plans on the same files and `docs/lessons.md` first. Ultra cuts whatever the spec does not ask for, never what it does. If the spec is wrong, incomplete or overlaps another workstream, it stops and reports: the spec gets fixed first.
 

@@ -74,7 +74,7 @@ The band checks GitHub when a session starts and every 6 hours. It never updates
 - In a project without orchestra, the band shows the limits only, plus the keep-warm count once it has pinged.
 - Other mods that use the same slot are drawn beneath the band.
 
-The band redraws within seconds of a change: each session writes a small report to `.orchestra/sessions/` (not versioned) and the band watches that folder.
+The band redraws within seconds of a change.
 
 ## Keep-warm
 
@@ -87,7 +87,7 @@ While a subagent runs, the main thread sends no requests and its prompt cache ca
 | Setting | Default | Meaning |
 | --- | --- | --- |
 | `cacheMinutes` | 60 | Your cache lifetime. Use 5 for API keys and overage. |
-| `warmMaxHours` | 2 | Stop pinging for a subagent that has run this long, counted from when the band first saw it. |
+| `warmMaxHours` | 2 | Stop pinging for a subagent that has run this long. |
 
 How to change them: [orchestra's settings](setup.md#orchestras-settings).
 

@@ -75,7 +75,7 @@ A new version loads in your next session, or after `/reload-plugins`. A running 
 
 ## Code navigation
 
-The explorer and planner answer "who calls X", "what breaks if X changes" and "how is X reached" with a language server instead of grep. The command (`lsp/lsp.mjs`) needs no build step and no index: it reads the working tree, so each worktree sees its own branch.
+The explorer and planner answer "who calls X", "what breaks if X changes" and "how is X reached" with a language server instead of grep. It needs no build step and no index: it reads the working tree, so each worktree sees its own branch.
 
 - **TypeScript and JavaScript:** nothing to install. It uses the project's own `typescript` package.
 - **Python:** needs Pyright on `PATH` (`npm install -g pyright` or `pip install pyright`). `/orchestra:init` checks for it.
@@ -139,33 +139,7 @@ orchestra never changes these for you. Apply them yourself.
 
 - **Ponytail modes.** Every session starts in full. The principal switches mode per stage, as [Stages, modes and skills](stages.md) lists.
 
-## What's inside
-
-```
-plugins/orchestra/
-  agents/      the nine subagents
-  skills/      maestro, principal, handoff-note, test-databases
-  commands/    the seven /orchestra: commands
-  hooks/       the band, and the pending-asks list after a compact
-  liveview/    the local dashboard
-  lsp/         the code navigation command
-  templates/   CLAUDE.md, HANDOFF.md, lessons.md, handoff-note.md, githooks/pre-push
-install.mjs    the install script
-bench/         benchmark scripts and raw results
-docs/          these pages
-```
-
-Every project-specific value (branches, commands, dev server, test data, browser sign-in) lives in the "Project settings" block of the project's `CLAUDE.md`, which `/orchestra:init` writes.
-
 ## Credits
 
-orchestra only decides where each of these enters the flow. All credit for the skills goes to their authors:
+orchestra builds on open-source plugins by their authors. Each one, its license and where it enters the flow are listed in [Credits](stages.md#credits).
 
-- [superpowers](https://github.com/obra/superpowers) by Jesse Vincent (obra): brainstorming, plans, subagent-driven development, TDD, debugging, code review. MIT.
-- [ponytail](https://github.com/DietrichGebert/ponytail) by Dietrich Gebert: the lite, full and ultra modes, review, debt and audit. MIT.
-- [impeccable](https://github.com/pbakaus/impeccable) by Paul Bakaus: UI implementation craft, the detector and the finish reviewer. Apache-2.0.
-- [taste-skill](https://github.com/Leonxlnx/taste-skill) by leonxlnx: art direction for mockups. MIT.
-- [frontend-design](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/frontend-design) by Anthropic: visual direction for mockups. Apache-2.0.
-- [design](https://github.com/anthropics/knowledge-work-plugins/tree/main/design) by Anthropic (knowledge-work plugins): design critique and accessibility review. Apache-2.0.
-- [security-audit](https://github.com/cloudflare/security-audit-skill) by Cloudflare: multi-phase security audits with verified findings. MIT.
-- [playwright-cli](https://github.com/microsoft/playwright-cli) by Microsoft: browser checks and screenshots from the command line. Apache-2.0.

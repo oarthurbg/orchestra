@@ -13,19 +13,19 @@ Every number below comes from a script in `bench/`, run on 2026-10-31 (UTC) on t
 
 ## Liveview under load
 
-**Result.** At 50 workstreams a refresh (server tick) takes 0.5 s of its 5 s interval. Before the git cache of plugin 1.2.3 it took 7.8 s. No request waited more than 0.3 s while the server refreshed.
+**Result.** At 50 workstreams a refresh (server tick) takes 0.5 s of its 5 s interval. No request waited more than 0.3 s while the server refreshed.
 
 Times in milliseconds, medians unless marked.
 
-| Workstreams | Server tick, before 1.2.3 | Server tick, now | First snapshot | Later snapshot | `/api/snapshot` between ticks | `/api/snapshot` while ticking, median / max | Requests over 1 s (of 20) | RSS after first tick / after 20 ticks | Snapshot size |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 389 | 285 | 648 | 284 | 15 | 17 / 291 | 0 | 75 / 76 MB | 3 KB |
-| 5 | 971 | 301 | 2,114 | 309 | 15 | 17 / 291 | 0 | 76 / 81 MB | 11 KB |
-| 10 | 1,825 | 324 | 3,996 | 324 | 15 | 17 / 270 | 0 | 76 / 82 MB | 21 KB |
-| 25 | 3,909 | 382 | 9,577 | 377 | 2 | 17 / 280 | 0 | 81 / 92 MB | 50 KB |
-| 50 | 7,758 | 478 | 18,898 | 472 | 10 | 18 / 324 | 0 | 82 / 96 MB | 99 KB |
+| Workstreams | Server tick | First snapshot | Later snapshot | `/api/snapshot` between ticks | `/api/snapshot` while ticking, median / max | Requests over 1 s (of 20) | RSS after first tick / after 20 ticks | Snapshot size |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | 285 | 648 | 284 | 15 | 17 / 291 | 0 | 75 / 76 MB | 3 KB |
+| 5 | 301 | 2,114 | 309 | 15 | 17 / 291 | 0 | 76 / 81 MB | 11 KB |
+| 10 | 324 | 3,996 | 324 | 15 | 17 / 270 | 0 | 76 / 82 MB | 21 KB |
+| 25 | 382 | 9,577 | 377 | 2 | 17 / 280 | 0 | 81 / 92 MB | 50 KB |
+| 50 | 478 | 18,898 | 472 | 10 | 18 / 324 | 0 | 82 / 96 MB | 99 KB |
 
-- A later tick costs about 280 ms of fixed git calls plus about 4 ms per workstream. Before 1.2.3 each tick started 4 git processes per workstream; now it starts none per workstream.
+- A later tick costs about 280 ms of fixed git calls plus about 4 ms per workstream.
 - The first tick still reads each plan's history from git, about 380 ms per workstream: 19 s at 50 workstreams, during which the server answers nothing.
 - Serving the snapshot is cheap: read the between-tick times as "under 20 ms" (they cluster near 1 to 2 ms and 15 ms, the step of the Windows timer).
 
@@ -57,8 +57,6 @@ Times in milliseconds, medians unless marked.
 | Python (Pyright), layered | 100 | 0.98 s | 1.06 s | 0.06 s | 31 |
 | Python (Pyright), layered | 500 | 1.36 s | 1.61 s | 0.21 s | 91 |
 
-The long chain projects of 2,000 and 5,000 files used to crash the language server with a stack overflow. The command now runs it in a worker thread with a 64 MB stack, which is what these rows measure.
-
 **Method.** [`bench/lsp.mjs`](../bench/lsp.mjs) generates projects with a known call graph: one function `target`, 12 callers in their own files, and 2 callers of each of those. Every 20th file adds a decoy: a method also named `target`, a call to it and a comment with the word. *Layered* projects import in 10 layers (longest chain 11 files); *one long chain* has file i import files i+1 to i+3, a stress case. Each run is `node plugins/orchestra/lsp/lsp.mjs refs|calls <file> target` in a fresh process, so the language server starts cold. Grep is `grep -rnw --include=*.ts target .` (or `*.py`). TypeScript and Pyright are installed into temp folders, nothing globally.
 
 **Limits.**
@@ -66,7 +64,7 @@ The long chain projects of 2,000 and 5,000 files used to crash the language serv
 - Projects are synthetic. Real code has bigger files and uneven imports.
 - Every run started the language server cold; a running server answers faster.
 - The decoy rate was chosen, not measured, so grep's hit counts show it returns lines to sort through, not how many a real codebase gives.
-- Not run: Python at 2,000 files or more, Python with a long chain, and chains longer than 5,000 files (so how deep the 64 MB stack reaches is unknown).
+- Not run: Python at 2,000 files or more, Python with a long chain, and chains longer than 5,000 files.
 - One Windows machine, not idle during the run.
 
 ## Code navigation tokens
