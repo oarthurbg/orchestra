@@ -16,9 +16,9 @@
 
 **Run one project with many Claude Code sessions at once.**
 
-One session plans. One session per feature builds. You answer questions.
+One session plans. One session per feature builds. You make the decisions, and every change is reviewed before it merges.
 
-A Claude Code plugin, built while developing an internal media-planning app. It works for any kind of app: no database, server or Docker required.
+orchestra is a Claude Code plugin, built while developing an internal media-planning app. It works for any kind of app: no database, server or Docker required.
 
 ## How it works
 
@@ -42,11 +42,11 @@ A Claude Code plugin, built while developing an internal media-planning app. It 
   </picture>
 </p>
 
-The shape is the role everywhere orchestra draws a session. How it is drawn is the state: **solid** running, **outlined** idle, **over a heavy rule** waiting on you, **grey** stale. The rules are in [`BRAND.md`](docs/BRAND.md#symbols), and the nine subagents are in [Agents](docs/agents.md).
+Wherever orchestra draws a session, its shape tells you the role and its fill tells you the state: solid is running, outlined is idle, over a heavy rule is waiting on you. [Agents](docs/agents.md) has the nine subagents.
 
 ## See it
 
-**The band** sits above the prompt in every session: your plan limits, when the week will run out at the pace of the work still planned, and each workstream that needs you, most urgent first. When a new version of orchestra is out, it offers to update, with the changelog one click away. [More about the band](docs/band.md).
+**The band** sits above the prompt in every session: your plan limits, when the week will run out, and who needs you, most urgent first. It also offers new versions of orchestra. [More about the band](docs/band.md).
 
 <p align="center">
   <picture>
@@ -55,9 +55,7 @@ The shape is the role everywhere orchestra draws a session. How it is drawn is t
   </picture>
 </p>
 
-> **Note:** the `off lite full ultra` buttons at the bottom of the band switch [ponytail](https://github.com/DietrichGebert/ponytail)'s level for every session. They show only when ponytail is installed and its own band is hidden with `/ponytail band`.
-
-**The liveview** is a local page with every workstream's progress, ETA and timeline. It runs on your machine and uses no tokens. With [Tailscale](https://tailscale.com), your phone can open it too: run `/orchestra:settings tailscale on`. [More about the liveview](docs/liveview.md).
+**The liveview** is a page with every workstream's progress, ETA and timeline. It runs on your machine, uses no tokens, and opens on your phone too, over [Tailscale](https://tailscale.com). [More about the liveview](docs/liveview.md).
 
 <p align="center">
   <picture>
@@ -75,26 +73,26 @@ The shape is the role everywhere orchestra draws a session. How it is drawn is t
   </picture>
 </p>
 
-## Features
+## Why orchestra
 
 <table>
-  <tr><td><img alt="" src="assets/readme/features/workstreams.svg" width="40"></td><td><b>Parallel workstreams.</b> One session and one worktree per feature, all at once. <a href="docs/stages.md">Read more</a></td></tr>
-  <tr><td><img alt="" src="assets/readme/features/subagents.svg" width="40"></td><td><b>Nine subagents.</b> Each with its own model: Opus for judgment, cheaper for chores. <a href="docs/agents.md">Read more</a></td></tr>
-  <tr><td><img alt="" src="assets/readme/features/stages.svg" width="40"></td><td><b>The right skills at every stage.</b> Brainstorm, spec, plan, build, review, PR. <a href="docs/stages.md">Read more</a></td></tr>
-  <tr><td><picture><source media="(prefers-color-scheme: dark)" srcset="assets/readme/features/reviews-dark.svg"><img alt="" src="assets/readme/features/reviews-light.svg" width="40"></picture></td><td><b>Reviews before every merge.</b> Spec, quality and finish reviews, then the whole branch. <a href="docs/stages.md#reviews">Read more</a></td></tr>
-  <tr><td><img alt="" src="assets/readme/features/band.svg" width="40"></td><td><b>The band.</b> Plan limits, when the week runs out, who needs you, and updates. <a href="docs/band.md">Read more</a></td></tr>
-  <tr><td><picture><source media="(prefers-color-scheme: dark)" srcset="assets/readme/features/liveview-dark.svg"><img alt="" src="assets/readme/features/liveview-light.svg" width="40"></picture></td><td><b>The liveview and inbox.</b> Progress, ETAs and your questions, on your phone too. No tokens. <a href="docs/liveview.md">Read more</a></td></tr>
-  <tr><td><img alt="" src="assets/readme/features/code-navigation.svg" width="40"></td><td><b>Code navigation.</b> A language server instead of grep. Fewer tokens. <a href="docs/setup.md#code-navigation">Read more</a></td></tr>
-  <tr><td><img alt="" src="assets/readme/features/context.svg" width="40"></td><td><b>Context kept small.</b> Handoff and clear past 250k; nothing lost on a compact. <a href="docs/setup.md#recommended-settings">Read more</a></td></tr>
-  <tr><td><img alt="" src="assets/readme/features/keep-warm.svg" width="40"></td><td><b>Keep-warm.</b> The prompt cache stays warm while subagents run. <a href="docs/band.md#keep-warm">Read more</a></td></tr>
-  <tr><td><img alt="" src="assets/readme/features/guardrails.svg" width="40"></td><td><b>Guardrails for bypass mode.</b> Owner authorizations and a branch guard. <a href="docs/setup.md#recommended-settings">Read more</a></td></tr>
+  <tr><td><img alt="" src="assets/readme/features/workstreams.svg" width="40"></td><td><b>Ship features in parallel.</b> One session and one worktree per feature, as many as your machine and plan allow. <a href="docs/stages.md">Read more</a></td></tr>
+  <tr><td><img alt="" src="assets/readme/features/subagents.svg" width="40"></td><td><b>The right model for each job.</b> Nine subagents: Opus for judgment, cheaper models for chores. <a href="docs/agents.md">Read more</a></td></tr>
+  <tr><td><img alt="" src="assets/readme/features/stages.svg" width="40"></td><td><b>A proven process, built in.</b> Brainstorm, spec, plan, build, review, PR, with the best skill at each stage. <a href="docs/stages.md">Read more</a></td></tr>
+  <tr><td><picture><source media="(prefers-color-scheme: dark)" srcset="assets/readme/features/reviews-dark.svg"><img alt="" src="assets/readme/features/reviews-light.svg" width="40"></picture></td><td><b>Nothing merges unreviewed.</b> Spec, quality and finish reviews, then the whole branch. No session merges its own PR. <a href="docs/stages.md#reviews">Read more</a></td></tr>
+  <tr><td><img alt="" src="assets/readme/features/band.svg" width="40"></td><td><b>No surprises with your limits.</b> The band shows what is left, when the week runs out, and who needs you. <a href="docs/band.md">Read more</a></td></tr>
+  <tr><td><picture><source media="(prefers-color-scheme: dark)" srcset="assets/readme/features/liveview-dark.svg"><img alt="" src="assets/readme/features/liveview-light.svg" width="40"></picture></td><td><b>See everything from anywhere.</b> Progress, ETAs and your questions, on your phone too. No tokens. <a href="docs/liveview.md">Read more</a></td></tr>
+  <tr><td><img alt="" src="assets/readme/features/code-navigation.svg" width="40"></td><td><b>Fewer tokens to find code.</b> A language server instead of grep: up to 65% less, measured. <a href="docs/setup.md#code-navigation">Read more</a></td></tr>
+  <tr><td><img alt="" src="assets/readme/features/context.svg" width="40"></td><td><b>Long sessions stay sharp.</b> A handoff note and a clear past 250k tokens; nothing lost on a compact. <a href="docs/setup.md#recommended-settings">Read more</a></td></tr>
+  <tr><td><img alt="" src="assets/readme/features/keep-warm.svg" width="40"></td><td><b>Cheaper waits.</b> The prompt cache stays warm while subagents run. <a href="docs/band.md#keep-warm">Read more</a></td></tr>
+  <tr><td><img alt="" src="assets/readme/features/guardrails.svg" width="40"></td><td><b>Safe to leave running.</b> You set what sessions may do alone; a branch guard blocks direct pushes. <a href="docs/setup.md#recommended-settings">Read more</a></td></tr>
 </table>
 
 ## Does it help?
 
-Measured, not estimated. Every number comes from a script in [`bench/`](bench) and is explained in [Benchmarks](docs/benchmarks.md).
+Measured, not estimated: every number comes from a script in [`bench/`](bench), explained in [Benchmarks](docs/benchmarks.md).
 
-**Code navigation saves tokens.** Explorers find who calls what with a language server instead of grep, and reach the same answers with fewer tokens. The saving is largest for small models on big codebases.
+**Code navigation saves tokens.** Finding who calls what with a language server instead of grep reaches the same answers with fewer tokens, most of all for small models on big codebases.
 
 <p align="center">
   <picture>
@@ -103,7 +101,7 @@ Measured, not estimated. Every number comes from a script in [`bench/`](bench) a
   </picture>
 </p>
 
-**The liveview keeps up with 50 workstreams,** the most measured. One rebuild then takes 0.5 s of its 5-second refresh.
+**The liveview keeps up with 50 workstreams,** the most measured: a rebuild takes 0.5 s of its 5-second refresh.
 
 <p align="center">
   <picture>
@@ -114,20 +112,20 @@ Measured, not estimated. Every number comes from a script in [`bench/`](bench) a
 
 ## Install
 
-One command installs orchestra and the plugins it works with, and skips any you already have. It needs Claude Code and Node 18 or newer, on macOS, Linux or Windows:
+One command installs orchestra and the plugins it works with, skipping any you already have. It needs Claude Code and Node 18 or newer, on macOS, Linux or Windows:
 
 ```bash
 npx orchestra-install
 ```
 
-Then, in your project, run `/orchestra:init` and load the `orchestra:maestro` skill in your main session. It walks you through the rest. `/orchestra:help` lists the commands and says which one to run next; [Commands](docs/commands.md) explains each one.
+Then, in your project, run `/orchestra:init` and load the `orchestra:maestro` skill in your main session. It walks you through the rest, and `/orchestra:help` always says what to run next.
 
-What the script runs, how to install by hand, updates, orchestra's settings, requirements and recommended settings are in [Setup](docs/setup.md).
+To install by hand, update, or change settings, see [Setup](docs/setup.md).
 
 ## Learn more
 
-- [Setup](docs/setup.md): install, update, requirements and recommended settings.
-- [Commands](docs/commands.md): how to use each command, including `/orchestra:settings` to change orchestra's settings from any window.
+- [Setup](docs/setup.md): install, update, settings and requirements.
+- [Commands](docs/commands.md): how to use each command.
 - [Agents](docs/agents.md): the nine subagents, their models and their jobs.
 - [Stages, modes and skills](docs/stages.md): what runs at each stage, and why.
 - [The band](docs/band.md) and [the liveview](docs/liveview.md).

@@ -2,124 +2,76 @@
 
 [README](../README.md) · [Setup](setup.md) · [Commands](commands.md) · [Agents](agents.md) · [Stages, modes and skills](stages.md) · [The band](band.md) · [The liveview](liveview.md) · **Benchmarks**
 
-Measured on 2026-10-30; the code navigation numbers were rerun on 2026-10-31 (UTC) after the deep import chain fix, and the liveview numbers on the same day after the per-workstream git calls were removed. Every number below comes from a script in `bench/` run on the machine described here, or, for the token table, from the measurement note it cites. Raw results are in `bench/results/`.
+Every number below comes from a script in `bench/`, run on 2026-10-31 (UTC) on the machine described here. The token table is copied from an earlier measurement note. Raw results are in `bench/results/`.
 
-## Machine
-
-| | |
+| Machine | |
 | --- | --- |
-| CPU | AMD Ryzen 9 5900X 12-Core Processor, 24 logical cores |
+| CPU | AMD Ryzen 9 5900X, 12 cores, 24 logical |
 | RAM | 32 GB |
-| OS | Windows_NT 10.0.26300 (Windows 11) |
-| Node | v24.18.0 |
-| git | 2.55.0 |
-| grep | GNU grep 3.0, the one that ships with Git Bash |
-| TypeScript, Pyright | 5.9.3 and 1.1.414, installed by the script into temp folders |
-
-The machine was not idle: other programs ran during the runs. Each script samples how busy the whole CPU was for one second before and after it runs: 10% and 1% around the liveview run, 5% and 9% around the code navigation run.
+| OS | Windows 11 (Windows_NT 10.0.26300) |
+| Tools | Node v24.18.0, git 2.55.0, GNU grep 3.0 (from Git Bash), TypeScript 5.9.3, Pyright 1.1.414 |
 
 ## Liveview under load
 
-### Method
-
-`bench/liveview.mjs` builds one synthetic orchestra project for each size of 1, 5, 10, 25 and 50 workstreams, in the OS temp folder. Each project is a real git repository with:
-
-- a `CLAUDE.md` naming the integration and production branches, and a handoff note with three queued workstreams;
-- one registry row per workstream in `.orchestra/workstreams.md`, each with its own branch and real `git worktree`;
-- one plan file per workstream with 8 tasks, of which 0 to 7 are ticked, one commit per tick, 40 to 90 minutes apart;
-- one session report per workstream in `.orchestra/sessions/`, one in three of them `waiting` with three options, plus a maestro report.
-
-For each size it measures, as the median of 5 runs after 1 warm-up:
-
-- **First snapshot:** `gather()` then `buildSnapshot()`, called directly, on a fresh copy of `sources.mjs`, so its per-worktree git caches start empty, as on a newly started server.
-- **Later snapshots:** the same calls on one module copy that has already run once, so cached git results are reused while a worktree's HEAD does not move, as on every tick after the first.
-- **`/api/snapshot` between ticks:** a GET on a started server (in a child process) with its timer off. The route only serializes the snapshot the last tick built.
-- **`/api/snapshot` while ticking:** 20 GETs, 500 ms apart, on a server whose own 5 s timer runs, as in real use. A tick is synchronous, so a request that arrives during one waits for it to end.
-- **Server memory:** the child process's RSS after the first tick and after 20 more ticks run back to back.
-
-It also checks every snapshot: one row per workstream, every waiting session in the inbox, 8 tasks per plan, no error. All checks passed at every size. The transcript folder given to the server is empty and the ETA history is empty. The temp projects are deleted at the end.
-
-### Results
+**Result.** At 50 workstreams a refresh (server tick) takes 0.5 s of its 5 s interval. Before the git cache of plugin 1.2.3 it took 7.8 s. No request waited more than 0.3 s while the server refreshed.
 
 Times in milliseconds, medians unless marked.
 
-| Workstreams | First snapshot | Later snapshot | Server tick | `/api/snapshot` between ticks | `/api/snapshot` while ticking, median / max | Requests over 1 s (of 20) | RSS after first tick | RSS after 20 ticks | Snapshot size |
+| Workstreams | Server tick, before 1.2.3 | Server tick, now | First snapshot | Later snapshot | `/api/snapshot` between ticks | `/api/snapshot` while ticking, median / max | Requests over 1 s (of 20) | RSS after first tick / after 20 ticks | Snapshot size |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | 648 | 284 | 285 | 15 | 17 / 291 | 0 | 75 MB | 76 MB | 3 KB |
-| 5 | 2,114 | 309 | 301 | 15 | 17 / 291 | 0 | 76 MB | 81 MB | 11 KB |
-| 10 | 3,996 | 324 | 324 | 15 | 17 / 270 | 0 | 76 MB | 82 MB | 21 KB |
-| 25 | 9,577 | 377 | 382 | 2 | 17 / 280 | 0 | 81 MB | 92 MB | 50 KB |
-| 50 | 18,898 | 472 | 478 | 10 | 18 / 324 | 0 | 82 MB | 96 MB | 99 KB |
+| 1 | 389 | 285 | 648 | 284 | 15 | 17 / 291 | 0 | 75 / 76 MB | 3 KB |
+| 5 | 971 | 301 | 2,114 | 309 | 15 | 17 / 291 | 0 | 76 / 81 MB | 11 KB |
+| 10 | 1,825 | 324 | 3,996 | 324 | 15 | 17 / 270 | 0 | 76 / 82 MB | 21 KB |
+| 25 | 3,909 | 382 | 9,577 | 377 | 2 | 17 / 280 | 0 | 81 / 92 MB | 50 KB |
+| 50 | 7,758 | 478 | 18,898 | 472 | 10 | 18 / 324 | 0 | 82 / 96 MB | 99 KB |
 
-Before plugin 1.2.3, server tick: 389 ms at 1 workstream, 971 at 5, 1,825 at 10, 3,909 at 25 and 7,758 at 50, about 150 ms per workstream. Each tick then started 4 git processes per workstream (2 to read HEAD, 2 to find the plan the branch adds), at about 36 ms each on this machine. Now one `git worktree list` gives every HEAD, the integration branch is read once per tick, and the plan a branch adds is reused until its HEAD or the integration branch moves, so a later tick starts no git process per workstream.
+- A later tick costs about 280 ms of fixed git calls plus about 4 ms per workstream. Before 1.2.3 each tick started 4 git processes per workstream; now it starts none per workstream.
+- The first tick still reads each plan's history from git, about 380 ms per workstream: 19 s at 50 workstreams, during which the server answers nothing.
+- Serving the snapshot is cheap: read the between-tick times as "under 20 ms" (they cluster near 1 to 2 ms and 15 ms, the step of the Windows timer).
 
-What it shows:
+**Method.** [`bench/liveview.mjs`](../bench/liveview.mjs) builds a synthetic orchestra project for 1, 5, 10, 25 and 50 workstreams: a real git repository with one branch, worktree, registry row, plan (8 tasks, 0 to 7 ticked, one commit per tick) and session report per workstream, one session in three waiting. Each measure is the median of 5 runs after 1 warm-up. The first snapshot uses empty git caches, as on a newly started server; later snapshots reuse them. The `/api/snapshot` times come from a real server in a child process, the "while ticking" ones from 20 requests 500 ms apart while its own 5 s timer runs. Every snapshot is checked (one row per workstream, every waiting session in the inbox, no error); all checks passed.
 
-- A later tick costs about 280 ms of fixed git calls plus about 4 ms per workstream. At 50 workstreams it takes 0.5 s of its 5 s interval.
-- No request waited more than 0.3 s, at any size, while the server's own timer ran.
-- The first tick still reads each worktree's plan history from git, about 380 ms per workstream: 19 s at 50 workstreams, during which the server answers nothing. Before plugin 1.2.5 it started one git process per plan version and took 25 s.
-- Serving the snapshot itself is cheap. The between-tick times cluster near 1 to 2 ms and near 15 ms in the raw runs, which looks like the step of the Windows timer, so read them as "under 20 ms".
-- Memory stays near 75 to 80 MB after the first tick. It rose by 14 MB over 20 ticks at 50 workstreams; 20 ticks are too few to tell growth from garbage not yet collected.
+**Limits.**
+
+- Projects are synthetic, with small plans (8 tasks, at most 8 commits).
+- The transcript folder was empty, so reading transcripts for the limit meters is not measured. The first tick will be slower on a machine with many recent transcripts.
+- The 20 ticks ran back to back, not every 5 s for hours: memory rose 14 MB at 50 workstreams, too few ticks to tell growth from uncollected garbage.
+- One Windows machine, not idle during the run. Starting a process costs differently elsewhere, and the liveview starts git processes on every tick.
 
 ## Code navigation at scale
 
-### Method
+**Result.** The `lsp` command found every call site and every caller, and nothing else, at every size. On 5,000 TypeScript files it answers in about 4 s, far inside its 60 s limit. Grep is faster, but returns 31 to 769 lines against 12 call sites, because it also matches imports, the declaration and decoys.
 
-`bench/lsp.mjs` generates synthetic projects with a known call graph and runs the plugin's command on them as a user would: `node plugins/orchestra/lsp/lsp.mjs refs <file> target` and `... calls <file> target --depth 2`, each a fresh process, so the language server starts cold every time. Wall time is the median of 3 runs.
+`refs` must find 12 call sites; `calls --depth 2` must find 36 callers. Every row scored 12/12 and 36/36 at 100% precision. Times are the median of 3 runs.
 
-- **The call graph:** one function `target`; 12 functions that call it, one call site each, each in its own file; and 2 callers of each of those, 24 functions in their own files. The right answer for `refs` is the 12 call sites (plus 12 imports and the declaration, which the command marks and which are not scored). The right answer for `calls --depth 2` is the 12 direct callers and the 24 second-level ones, by name, file and line.
-- **Decoys:** every 20th plain file has a class with a method also named `target`, a call to that method, and a comment with the word. They should not appear in a language-server answer, and they do appear in grep's.
-- **Two import shapes:**
-  - *layered:* 10 layers; each file imports 3 files from the layer below, the bottom layer imports 3 base files that import nothing, so the longest import chain is 11 files. Closer to real code. The target sits in the bottom layer, its callers in the middle, theirs at the top.
-  - *chain:* file i imports files i+1, i+2 and i+3, so one import chain runs through the whole project. A stress case.
-- **Sizes:** TypeScript at 100, 500, 2,000 and 5,000 files in both shapes; Python, layered, at 100 and 500 files.
-- **Installs:** `typescript@5` goes into one temp folder with `npm install --prefix`, and each TypeScript project gets a `node_modules` junction to it. Pyright goes into another temp folder, and only the benchmark's child processes get its `bin` folder on their PATH. Nothing is installed globally; the temp folders are deleted at the end.
-- **Grep:** `grep -rnw --include=*.ts target .` (or `*.py`), median of 3 runs, for time and hit count only.
+| Project | Files | `refs` | `calls --depth 2` | grep | grep hits |
+| --- | --- | --- | --- | --- | --- |
+| TypeScript, layered | 100 | 0.72 s | 0.72 s | 0.07 s | 31 |
+| TypeScript, layered | 500 | 0.98 s | 1.03 s | 0.24 s | 91 |
+| TypeScript, layered | 2,000 | 1.88 s | 2.03 s | 0.82 s | 313 |
+| TypeScript, layered | 5,000 | 4.13 s | 4.50 s | 2.07 s | 763 |
+| TypeScript, one long chain | 100 | 0.70 s | 0.69 s | 0.07 s | 34 |
+| TypeScript, one long chain | 500 | 0.93 s | 1.02 s | 0.22 s | 94 |
+| TypeScript, one long chain | 2,000 | 1.93 s | 2.11 s | 0.87 s | 319 |
+| TypeScript, one long chain | 5,000 | 3.91 s | 4.38 s | 2.05 s | 769 |
+| Python (Pyright), layered | 100 | 0.98 s | 1.06 s | 0.06 s | 31 |
+| Python (Pyright), layered | 500 | 1.36 s | 1.61 s | 0.21 s | 91 |
 
-Recall is the share of the right answers the command returned. Precision is the share of what it returned that is right.
+The long chain projects of 2,000 and 5,000 files used to crash the language server with a stack overflow. The command now runs it in a worker thread with a 64 MB stack, which is what these rows measure.
 
-### Results
+**Method.** [`bench/lsp.mjs`](../bench/lsp.mjs) generates projects with a known call graph: one function `target`, 12 callers in their own files, and 2 callers of each of those. Every 20th file adds a decoy: a method also named `target`, a call to it and a comment with the word. *Layered* projects import in 10 layers (longest chain 11 files); *one long chain* has file i import files i+1 to i+3, a stress case. Each run is `node plugins/orchestra/lsp/lsp.mjs refs|calls <file> target` in a fresh process, so the language server starts cold. Grep is `grep -rnw --include=*.ts target .` (or `*.py`). TypeScript and Pyright are installed into temp folders, nothing globally.
 
-TypeScript, layered imports:
+**Limits.**
 
-| Files | `refs` | `calls --depth 2` | `refs` recall / precision | `calls` recall / precision | grep | grep hits |
-| --- | --- | --- | --- | --- | --- | --- |
-| 100 | 0.72 s | 0.72 s | 12/12, 100% | 36/36, 100% | 0.07 s | 31 |
-| 500 | 0.98 s | 1.03 s | 12/12, 100% | 36/36, 100% | 0.24 s | 91 |
-| 2,000 | 1.88 s | 2.03 s | 12/12, 100% | 36/36, 100% | 0.82 s | 313 |
-| 5,000 | 4.13 s | 4.50 s | 12/12, 100% | 36/36, 100% | 2.07 s | 763 |
+- Projects are synthetic. Real code has bigger files and uneven imports.
+- Every run started the language server cold; a running server answers faster.
+- The decoy rate was chosen, not measured, so grep's hit counts show it returns lines to sort through, not how many a real codebase gives.
+- Not run: Python at 2,000 files or more, Python with a long chain, and chains longer than 5,000 files (so how deep the 64 MB stack reaches is unknown).
+- One Windows machine, not idle during the run.
 
-TypeScript, one long import chain:
+## Code navigation tokens
 
-| Files | `refs` | `calls --depth 2` | `refs` recall / precision | `calls` recall / precision | grep | grep hits |
-| --- | --- | --- | --- | --- | --- | --- |
-| 100 | 0.70 s | 0.69 s | 12/12, 100% | 36/36, 100% | 0.07 s | 34 |
-| 500 | 0.93 s | 1.02 s | 12/12, 100% | 36/36, 100% | 0.22 s | 94 |
-| 2,000 | 1.93 s | 2.11 s | 12/12, 100% | 36/36, 100% | 0.87 s | 319 |
-| 5,000 | 3.91 s | 4.38 s | 12/12, 100% | 36/36, 100% | 2.05 s | 769 |
-
-Python with Pyright, layered imports:
-
-| Files | `refs` | `calls --depth 2` | `refs` recall / precision | `calls` recall / precision | grep | grep hits |
-| --- | --- | --- | --- | --- | --- | --- |
-| 100 | 0.98 s | 1.06 s | 12/12, 100% | 36/36, 100% | 0.06 s | 31 |
-| 500 | 1.36 s | 1.61 s | 12/12, 100% | 36/36, 100% | 0.21 s | 91 |
-
-What it shows:
-
-- Wherever the command answered, it answered exactly: every call site and every caller, nothing else, at every size.
-- On TypeScript the time grows from 0.7 s at 100 files to 3.9 to 4.1 s (`refs`) and 4.4 to 4.5 s (`calls`) at 5,000 files, in both import shapes, far inside the command's 60 s limit.
-- Fixed: the first run of this benchmark failed on the chain projects of 2,000 and 5,000 files, both commands exiting with code 4 and `language server failed: Maximum call stack size exceeded` after about 1.0 s. TypeScript's program builder follows imports depth-first and recursively (`processImportedModules` calling `findSourceFile`), a few stack frames per level, and node's default stack of about 1 MB ran out near 1,300 levels. The command now runs the language service in a worker thread with a 64 MB stack, and the same chains answer in 1.9 to 4.4 s with full recall and precision. If a chain is ever deeper than that stack holds, the command still exits 4, but says it ran out of stack and to use grep.
-- Against the run before the fix, the rows that worked then changed by between 0.13 s faster and 0.45 s slower, the most on layered 5,000 files (3.68 to 4.13 s for `refs`). Starting the worker thread costs a little, but two single runs on a machine that was not idle cannot separate that cost from noise.
-- Grep is faster up to 2,000 files and about half the command's time at 5,000. Its hit count is not an answer: 31 to 769 lines against 12 call sites, because it also returns imports, the declaration and every decoy line. How many extra hits a real codebase gives depends on how common the name is; the decoy rate here was chosen, not measured.
-
-## Code navigation tokens (published earlier, not rerun)
-
-### Method
-
-`bench/codenav-tokens.mjs` runs nothing. It copies the token figures already published in `docs/superpowers/specs/2026-10-30-lsp-measurement.md` into `bench/results/codenav-tokens.json`, per question and arm: work tokens, tool calls, and recall where the note gives it. See that note for how they were measured. In short: an agent answered who-calls, impact and trace questions about real public code, once with grep tools only and once with a language server, and work tokens are the agent's tokens minus those of a no-tool run.
-
-### Results
+**Result.** With the `lsp` command, Haiku used 30% fewer work tokens on 3 open-source codebases (239k against 339k with grep), and 65% fewer on a 1,960-file TypeScript app (657k against 1,870k). Opus on the same app used 16% fewer (1,351k against 1,599k). Every language-server arm found all 8 callers on the app's trace question; grep missed some.
 
 Sums over each table's questions. Work tokens in thousands, tool calls in brackets.
 
@@ -129,26 +81,21 @@ Sums over each table's questions. Work tokens in thousands, tool calls in bracke
 | Haiku, 1,960-file TypeScript app, 3 questions, mean of 3 runs | 1,870 [62] | 2,146 [72] | 657 [15] | 1,737 [68] |
 | Opus (high effort), same app and questions, mean of 3 runs | 1,599 [47] | 1,707 [40] | 1,351 [26] | |
 
-Recall on the trace question of the 1,960-file app: Haiku with grep found all 8 callers in 2 of 3 runs and 7 in the third; Opus with grep found 6 of 8 in every run; every language-server arm found 8 of 8 in every run. The first table and the other two count tokens differently and cannot be compared with each other.
+Recall on the app's trace question: Haiku with grep found 8 of 8 callers in 2 of 3 runs and 7 in the third; Opus with grep found 6 of 8 in every run; every language-server arm found 8 of 8 in every run.
 
-## What this does not show
+**Method.** An agent answered who-calls, impact and trace questions about real code, once with grep only and once with a language server. Work tokens are the agent's tokens minus those of a no-tool run. [`bench/codenav-tokens.mjs`](../bench/codenav-tokens.mjs) runs nothing: it copies the published figures, per question and arm, from `docs/superpowers/specs/2026-10-30-lsp-measurement.md` into `bench/results/codenav-tokens.json`. That note has the full method.
 
-- **Real projects.** All projects are generated. Real repositories have bigger files, uneven import graphs, more branches and more history.
-- **Liveview transcripts.** The server was given an empty transcript folder, so the cost of reading session transcripts for the limit meters is not in these numbers. On a machine with a lot of recent transcripts the first tick will be slower.
-- **Liveview in steady use.** The 20 ticks ran back to back over seconds, not every 5 s over hours, so memory growth over a long session is not measured. Plans have 8 tasks and at most 8 commits each.
-- **Other machines.** One Windows machine only. The cost of starting a process differs between systems, and the liveview starts a few git processes on every tick and several per workstream on its first, so its numbers may be quite different elsewhere.
-- **Warm language servers.** Every code navigation run started its language server from nothing. A server kept running would answer later questions faster.
-- **Grep's real hit rate.** The decoy rate is a choice of the generator; grep's hit counts show that it returns lines to sort through, not how many a real codebase gives.
-- **Python at 2,000 files and more,** and Python with a deep import chain: not run.
-- **Import chains deeper than 5,000 files:** not run, so how deep a chain the 64 MB stack holds was not measured.
-- **Tokens.** No language model ran for this page. The token table is copied from an earlier note, and its own limits (few runs, large spread between runs) apply.
+**Limits.**
+
+- Not rerun for this page. Few runs per cell, with a large spread between runs.
+- The first table counts tokens differently from the other two; do not compare across them.
 
 ## Rerun
 
-From the repository root, with Node (measured on v24.18.0), git, grep and npm on the PATH and network access for the npm installs:
+From the repository root, with Node, git, grep and npm on the PATH, and network access for the npm installs:
 
 ```
-node bench/liveview.mjs           # about 11 minutes here
+node bench/liveview.mjs           # about 9 minutes here
 node bench/lsp.mjs                # about 3 minutes here, including the npm installs
 node bench/lsp.mjs --no-python    # TypeScript only
 node bench/codenav-tokens.mjs     # under 1 second, no runs
