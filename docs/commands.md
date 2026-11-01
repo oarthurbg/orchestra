@@ -9,6 +9,7 @@ What each orchestra command does and when to run it. In Claude Code, `/orchestra
 | [`/orchestra:init`](#orchestrainit) | Your main session | Set orchestra up in a project, once. |
 | [`/orchestra:start-workstream`](#orchestrastart-workstream) | The maestro | Open a workstream with its own branch, worktree and session, or adopt work already on a branch. |
 | [`/orchestra:status`](#orchestrastatus) | The maestro | One table of every workstream and what needs you. |
+| [`/orchestra:codemap`](#orchestracodemap) | The maestro | Map an existing codebase before planning work on it. |
 | [`/orchestra:close-wave`](#orchestraclose-wave) | A principal or the maestro | Finish a wave of tasks and clear a full session. |
 | [`/orchestra:liveview`](#orchestraliveview) | Any session | A page with limits, progress and ETAs. |
 | [`/orchestra:settings`](#orchestrasettings) | Any session | Show or change orchestra's settings. |
@@ -65,6 +66,20 @@ A status round. Run it in the maestro whenever you want to know how things are g
 | --- | --- | --- | --- | --- | --- | --- |
 
 Then two lists: **Needs you** (decisions and approvals, most urgent first, with the session to answer in) and **I'll do next** (with each action's authorization level). It also nudges stalled sessions, proposes clearing any session at 250k tokens or more, and runs the merge checklist on a ready PR. The table is also saved to `.orchestra/status.md`, which is not committed.
+
+## `/orchestra:codemap`
+
+```text
+/orchestra:codemap
+```
+
+Maps a codebase that already exists, so every plan starts from how it is really built. The maestro runs it once when it [takes stock of an ongoing project](setup.md#already-have-a-project); run it again yourself after the code has moved a lot.
+
+- A script reads the folders, entry points, which folders import which, the tests, and the last 12 months of git history: the files that change most and the files with the most fix commits. It costs no tokens and records no names.
+- The explorer turns that into `docs/codebase-map.md`: how it is built, its parts, its conventions, where the risk is, and a little history. It arrives through a docs PR.
+- Planners and principals read the map before they plan. A task that changes a file listed under Risk is reviewed as `sensitive`.
+
+The map does not refresh itself. The raw facts stay in `.orchestra/codemap.json`, which is not committed.
 
 ## `/orchestra:close-wave`
 

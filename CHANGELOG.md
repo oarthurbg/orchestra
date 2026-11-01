@@ -2,6 +2,11 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.5.0
+
+- `/orchestra:codemap` maps a codebase that already exists into `docs/codebase-map.md`: how it is built, its parts, its conventions, where the risk is, and a little history. A script gathers the facts from the code and git history at no token cost, and the explorer writes them up. See [`/orchestra:codemap`](docs/commands.md#orchestracodemap).
+- The maestro runs it when it takes stock of an ongoing project. Planners and principals read the map first, and a task that changes one of its risk files is reviewed as sensitive.
+
 ## 1.4.0
 
 - orchestra now fits a project already under way. In its first session, the maestro takes stock of open PRs, unmerged branches, worktrees, issues and roadmap files, and suggests for each one: adopt it, let it finish, backlog or close. You decide every row. See [Already have a project?](docs/setup.md#already-have-a-project).
