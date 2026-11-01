@@ -45,12 +45,18 @@ The other six (planner, implementers, reviewers, screenshotter) are for principa
 1. If `docs/HANDOFF.md` does not exist, run `/orchestra:init`.
 2. Confirm "Project settings" and "Owner authorizations" in `CLAUDE.md` with the owner.
 3. Check the recommended settings (orchestra's `docs/setup.md`): bypass permissions for this project, this session on Opus at medium effort, `autoCompactWindow: 600000` at the top level and under `modelSettings` for Opus, auto-archive on PR close off, the branch guard from `/orchestra:init` installed, and branch protection on GitHub for the integration and production branches.
-4. Plan the app with the owner: write the backlog in "Next workstreams" in the HANDOFF, each item with what it waits on.
-5. Open every item that is ready and fits (see "Capacity") with `/orchestra:start-workstream`, then run the first `/orchestra:status`.
+4. **Take stock of work already under way** (skip it in a new project with nothing open). Read, without changing anything: open PRs (`gh pr list --state open`), branches with work not yet in the integration branch (`git fetch origin` then `git branch -r --no-merged origin/<integration branch>`), worktrees (`git worktree list`), open issues (`gh issue list --state open --limit 50`), and any roadmap or TODO file. Show the owner one table, one row per item:
+
+   | Item | What it is | Last activity | Suggested action |
+   | --- | --- | --- | --- |
+
+   Suggest one action per row: **adopt** it as a workstream (unfinished work worth carrying on), **let it finish** as it is (nearly done, or someone else's), **backlog** (an idea or issue not started), or **close** (stale or replaced). The owner decides every row. Adopted items open with `/orchestra:start-workstream <name> --adopt <branch> <goal>`. Closing a PR or deleting a branch is the owner's call each time, never yours.
+5. Plan the app with the owner: write the backlog in "Next workstreams" in the HANDOFF, each item with what it waits on, including the rows marked backlog and what the adopted work waits on.
+6. Open every item that is ready and fits (see "Capacity") with `/orchestra:start-workstream`, then run the first `/orchestra:status`.
 
 ## Spec first
 
-- Every workstream starts from a spec (`docs/superpowers/specs/`, written after `superpowers:brainstorming` with the owner), never from code. The plan and its tasks come from the spec.
+- Every workstream starts from a spec (`docs/superpowers/specs/`, written after `superpowers:brainstorming` with the owner), never from code. The plan and its tasks come from the spec. An adopted workstream is the one exception to the order: its principal writes the spec from the work already on the branch, then the owner confirms it before any new code.
 - If anyone finds the spec wrong or incomplete, work stops and the change goes into the spec first (recorded in the decisions log), then into the code.
 - Before you open a workstream, check that its spec does not overlap another open spec or worktree. Two workstreams never own the same thing.
 

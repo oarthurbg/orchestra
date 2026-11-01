@@ -2,6 +2,13 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.4.0
+
+- orchestra now fits a project already under way. In its first session, the maestro takes stock of open PRs, unmerged branches, worktrees, issues and roadmap files, and suggests for each one: adopt it, let it finish, backlog or close. You decide every row. See [Already have a project?](docs/setup.md#already-have-a-project).
+- `/orchestra:start-workstream <name> --adopt <branch> <goal>` turns work already on a branch into a workstream. Its principal starts with a spec of what is built and what is left.
+- `/orchestra:init` handles projects with a single branch such as `main`.
+- Each new version is now published as a GitHub release, with its changelog section as the notes.
+
 ## 1.3.8
 
 - The liveview's key is a table that says what each symbol means, folded under the workstreams until you open it. It remembers whether you left it open.

@@ -55,6 +55,15 @@ Notes on the companions:
 2. In your main session, load the `orchestra:maestro` skill. Its "First session" steps confirm the settings and owner authorizations with you, write the first backlog and open the first workstreams with `/orchestra:start-workstream`.
 3. Ask "how is it going?" any time. The maestro answers with `/orchestra:status`.
 
+### Already have a project?
+
+orchestra works on a project already under way, not only on new ones.
+
+- `/orchestra:init` reads the code first (scripts, tests, branches, data) and adds its sections to your existing `CLAUDE.md` without replacing it. It never overwrites a file without asking.
+- If the project has only one long-lived branch, such as `main`, init offers to create an integration branch from it, or to use that one branch for both settings.
+- In the first session, the maestro takes stock of the work already under way: open PRs, branches not yet merged, worktrees, open issues and any roadmap file. It shows you one table with a suggested action for each: **adopt** it as a workstream, **let it finish** as it is, put it in the **backlog**, or **close** it. You decide every row; it closes nothing on its own.
+- An adopted branch becomes a workstream with [`/orchestra:start-workstream --adopt`](commands.md#orchestrastart-workstream). Its principal writes a spec of what is built and what is left, you confirm it, and the normal plan and reviews take over from there.
+
 ## Updating
 
 Claude Code installs a new version only when the version number changes, and every release bumps it. Auto-update is off by default for marketplaces you add yourself. Pick one:

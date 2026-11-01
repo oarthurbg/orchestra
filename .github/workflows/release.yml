@@ -1,0 +1,25 @@
+# Publishes a GitHub release whenever the plugin's version changes on main, with that version's changelog section as its notes.
+name: Release
+on:
+  push:
+    branches: [main]
+    paths: [plugins/orchestra/.claude-plugin/plugin.json]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Release the version in plugin.json, once
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(node -p "require('./plugins/orchestra/.claude-plugin/plugin.json').version")
+          if gh release view "v$version" >/dev/null 2>&1; then echo "v$version is already released"; exit 0; fi
+          # Relative links in the changelog would break on the release page, so point them at main.
+          awk -v h="## $version" '$0 == h {on = 1; next} on && /^## / {exit} on' CHANGELOG.md \
+            | sed -E "s#\]\((docs/[^)]*)\)#](https://github.com/$GITHUB_REPOSITORY/blob/main/\1)#g" > notes.md
+          if ! grep -q '[^[:space:]]' notes.md; then echo "CHANGELOG.md has no section for $version" >&2; exit 1; fi
+          gh release create "v$version" --target "$GITHUB_SHA" --title "orchestra $version" --notes-file notes.md --latest

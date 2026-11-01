@@ -18,7 +18,7 @@
 
 One session plans. One session per feature builds. You make the decisions, and every change is reviewed before it merges.
 
-orchestra is a Claude Code plugin, built while developing an internal media-planning app. It works for any kind of app: no database, server or Docker required.
+orchestra is a Claude Code plugin, built while developing an internal media-planning app. It works for any kind of app, new or [already under way](docs/setup.md#already-have-a-project): no database, server or Docker required.
 
 ## How it works
 

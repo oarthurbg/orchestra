@@ -15,7 +15,7 @@ All nine, shared with the maestro: `explorer`, `planner`, `implementer`, `implem
 
 ## How a workstream runs
 
-1. **Brainstorm and mockups** (ponytail off): `superpowers:brainstorming` with the owner. For UI, mockups follow the mockup recipe in the maestro's `stages.md`: a brief, a builder subagent (`frontend-design`, `taste-skill`), a separate reviewer (the impeccable detector, `design:design-critique`) and one fix round, before the owner sees them.
+1. **Brainstorm and mockups** (ponytail off): `superpowers:brainstorming` with the owner. An adopted workstream (its briefing says so) skips this stage: write the spec from the work already on the branch instead, and brainstorm only what that spec leaves unclear. For UI, mockups follow the mockup recipe in the maestro's `stages.md`: a brief, a builder subagent (`frontend-design`, `taste-skill`), a separate reviewer (the impeccable detector, `design:design-critique`) and one fix round, before the owner sees them.
 2. **Spec** (ponytail lite): write it in `docs/superpowers/specs/`. Sensitive specs get `security-audit` early. Any detail the brainstorm left open that you decide in the spec goes to the owner as a short list, and the plan starts only after their yes.
 3. **Plan:** dispatch `planner` (it runs in ultra). Each task comes back tagged with an agent and a risk.
 4. **Implementation:** `superpowers:subagent-driven-development`, one subagent at a time, visible in the conversation. Backend, database and integrations: `implementer` or `implementer-advanced` in full. UI: `implementer` in lite with `impeccable:impeccable`. Infrastructure: ultra. Mechanical: `mechanic`.
