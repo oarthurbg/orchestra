@@ -10,6 +10,7 @@ What each orchestra command does and when to run it. In Claude Code, `/orchestra
 | [`/orchestra:start-workstream`](#orchestrastart-workstream) | The maestro | Open a workstream with its own branch, worktree and session, or adopt work already on a branch. |
 | [`/orchestra:status`](#orchestrastatus) | The maestro | One table of every workstream and what needs you. |
 | [`/orchestra:codemap`](#orchestracodemap) | The maestro | Map an existing codebase before planning work on it. |
+| [`/orchestra:cost`](#orchestracost) | Any session | Where the project's tokens went, per branch and per session. |
 | [`/orchestra:close-wave`](#orchestraclose-wave) | A principal or the maestro | Finish a wave of tasks and clear a full session. |
 | [`/orchestra:liveview`](#orchestraliveview) | Any session | A page with limits, progress and ETAs. |
 | [`/orchestra:settings`](#orchestrasettings) | Any session | Show or change orchestra's settings. |
@@ -80,6 +81,17 @@ Maps a codebase that already exists, so every plan starts from how it is really 
 - Planners and principals read the map before they plan. A task that changes a file listed under Risk is reviewed as `sensitive`.
 
 The map does not refresh itself. The raw facts stay in `.orchestra/codemap.json`, which is not committed.
+
+## `/orchestra:cost`
+
+```text
+/orchestra:cost
+/orchestra:cost 7
+```
+
+Shows where the project's tokens went, from Claude Code's own transcripts on this computer: one table per branch and one per session, for all time or the last few days. It covers the main checkout and every worktree beside or under it, subagents included, and counts each model request once.
+
+The numbers are weighted by what each kind of token costs (input 1, cache write 1.25, cache read 0.1, output 5), so they compare sessions but are not dollars. A long-lived maestro often tops the list without writing any code: every wake re-reads its whole context, which is why it clears at the end of each wave.
 
 ## `/orchestra:close-wave`
 
