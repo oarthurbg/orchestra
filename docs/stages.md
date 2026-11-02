@@ -36,7 +36,7 @@ flowchart LR
 
 | Stage | Who | Ponytail | Skills |
 | --- | --- | --- | --- |
-| [Brainstorm and mockups](#brainstorm-and-mockups) | Principal with the owner; a builder and a reviewer subagent | off; fix round lite | `superpowers:brainstorming`, one of `frontend-design`, `taste-skill` or `impeccable:impeccable`, the impeccable detector, `design:design-critique`, `design:ux-copy`, `dataviz` |
+| [Brainstorm and mockups](#brainstorm-and-mockups) | Principal with the owner; a builder and a reviewer subagent | off; fix round lite | `superpowers:brainstorming`, `impeccable:impeccable` for app screens or `frontend-design` for pages, `taste-skill` or the impeccable detector and `design:design-critique` to review, `design:ux-copy`, `dataviz` |
 | [Spec](#spec) | Principal | lite | `security-audit` on sensitive specs |
 | [Plan](#plan) | `planner` | ultra | `superpowers:writing-plans` |
 | [Backend, database and integrations](#backend-database-and-integrations) | `implementer` or `implementer-advanced` | full | `superpowers:subagent-driven-development`, `superpowers:dispatching-parallel-agents`, `test-driven-development`, `verification-before-completion`, `systematic-debugging` |
@@ -55,14 +55,21 @@ flowchart LR
 **Off**, because a brainstorm widens the options before picking one. A mode that pushes for the smallest answer would close it too early.
 
 - `superpowers:brainstorming` runs the conversation: one question at a time, two or three approaches with a recommendation, and a design the owner approves before anything is built.
-- One skill sets the visual direction: `frontend-design` by default, `taste-skill` for a page with no brand yet (it deals three directions from a library of real sites), or `impeccable:impeccable` for the strongest app screen at about twice the tokens. Never two: each plans a direction of its own, and stacked, the second throws the first away.
-- The impeccable detector and `design:design-critique` check each mockup first, so the owner reviews the design, not its slips.
+- One skill sets the visual direction, picked by the surface: `impeccable:impeccable` for app screens, `frontend-design` for pages. Never two: each plans a direction of its own, and stacked, the second throws the first away. `taste-skill` deals directions only when you ask for them.
+- A different skill reviews each mockup first, so the owner reviews the design, not its slips: `taste-skill`'s critique for impeccable's app screens, the impeccable detector and `design:design-critique` for frontend-design's pages.
 - `design:ux-copy` writes and checks the words: buttons that say what they do, empty states that say how to start, errors that say how to fix. The implementer copies the mockup's words, so this is where they are decided.
 - `dataviz` designs the charts.
 
-**The mockup recipe.** The principal doesn't draw mockups. It writes one brief (goal, the facts the page may state, brand traps, budget) and leaves the creative direction open. A builder subagent with one direction skill builds until a neutral inspection (wrapped headlines, tiny text, overflow, covered text, contrast) reports 0 FAIL. A separate reviewer subagent checks the screenshots with the detector and the critique and returns at most 8 findings and a score. The builder fixes only those, in lite, with at most 3 look rounds before the owner sees it. Once you approve a mockup, it is written down as impeccable's DESIGN.md, so the implementer and the finish reviewer check the build against it. Steps in the [mockup recipe](../plugins/orchestra/skills/maestro/stages.md#mockup-recipe).
+**The mockup recipe.** The principal doesn't draw mockups. It writes one brief (goal, the facts the page may state, brand traps, budget) and leaves the creative direction open. A builder subagent with its surface's skill builds until a neutral inspection (wrapped headlines, tiny text, overflow, covered text, contrast) reports 0 FAIL. A separate reviewer subagent checks the screenshots with another skill's eyes and returns at most 8 findings and a score. The builder fixes only those, in lite, with at most 3 look rounds before the owner sees it. Once you approve a mockup, it is written down as impeccable's DESIGN.md, so the implementer and the finish reviewer check the build against it. Steps in the [mockup recipe](../plugins/orchestra/skills/maestro/stages.md#mockup-recipe).
 
-**Why one direction skill.** In a blind comparison of design-skill setups on a landing page and an app screen, `frontend-design` followed by `taste-skill` made the weakest first builds (6.0 out of 10), below `frontend-design` alone (7.5) and impeccable alone (8.0). The review and fix round added 1.0 to 1.5 points for under 1M tokens. Each skill's own checker enforces its house style (taste-skill fails hairlines and monospace; impeccable flags fonts taste-skill deals), so the gate keeps only the checks that point at real defects.
+**Why one skill per surface, reviewed by another.** Two rounds of blind comparison on a landing page and an app screen found:
+
+- `frontend-design` followed by `taste-skill` made the weakest first builds (6.0 out of 10): the second skill threw the first one's direction away.
+- On the app screen, impeccable building, a taste-skill review and an impeccable fix scored best (9.0). On the page, `frontend-design` with a review and a fix scored best (8.5), for under half the tokens.
+- Every setup where taste-skill set the direction placed in the bottom half, even with impeccable building it. As a reviewer it found what impeccable's own review missed.
+- The review and fix round added 0.5 to 1.5 points for about 1M tokens.
+
+Each skill's own checker enforces its house style (taste-skill fails hairlines and monospace; impeccable flags fonts taste-skill deals), so the gate keeps only the checks that point at real defects.
 
 **Redesign from scratch.** When you ask for screens as if built from scratch, specs that describe layouts would bring the current app back in a new skin. The recipe then swaps the specs for a list of each role's jobs and data, bans the current app's recognisable patterns, and gives each direction its own structural idea ("the plan as a timeline", "as a decision queue"). When you pick parts of several directions, the builder takes one as the base and carries the others' parts into it.
 
@@ -141,9 +148,9 @@ orchestra only decides where each skill enters the flow. The skills, and the cre
 | --- | --- | --- | --- |
 | [superpowers](https://github.com/obra/superpowers) | Jesse Vincent (obra) | MIT | Brainstorm, plan, build (subagent-driven development, TDD, verification, debugging), reviews, close-out |
 | [ponytail](https://github.com/DietrichGebert/ponytail) | Dietrich Gebert | MIT | The modes; `ponytail-review` in reviews and close-out; `ponytail-debt` in the PR; `ponytail-audit` between releases |
-| [impeccable](https://github.com/pbakaus/impeccable) | Paul Bakaus | Apache-2.0 | A direction option and the detector on mockups; DESIGN.md from the approved mockup; Operate mode in UI work; the finish reviewer; the audit between releases |
-| [taste-skill](https://github.com/Leonxlnx/taste-skill) | leonxlnx | MIT | Art direction for pages with no brand; its inspector as the mockups' check |
-| [frontend-design](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/frontend-design) | Anthropic | Apache-2.0 | The default visual direction for mockups |
+| [impeccable](https://github.com/pbakaus/impeccable) | Paul Bakaus | Apache-2.0 | The builder for app-screen mockups and the detector on page mockups; DESIGN.md from the approved mockup; Operate mode in UI work; the finish reviewer; the audit between releases |
+| [taste-skill](https://github.com/Leonxlnx/taste-skill) | leonxlnx | MIT | The reviewer of app-screen mockups; its inspector as the mockups' check; directions on request |
+| [frontend-design](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/frontend-design) | Anthropic | Apache-2.0 | The builder for page mockups |
 | [design](https://github.com/anthropics/knowledge-work-plugins/tree/main/design) | Anthropic (knowledge-work plugins) | Apache-2.0 | `design-critique` and `ux-copy` on mockups; `accessibility-review` and `ux-copy` in the finish review |
 | [security-audit](https://github.com/cloudflare/security-audit-skill) | Cloudflare | MIT | Sensitive specs, `sensitive` reviews, PRs that touch access, credentials, public pages or email |
 | [playwright-cli](https://github.com/microsoft/playwright-cli) | Microsoft | Apache-2.0 | Browser checks and the screenshotter's captures |
