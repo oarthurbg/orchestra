@@ -43,12 +43,14 @@ type Ctx = {
   seen: Map<string, number>
   // Parsed reports by file name, with the mtime they were read at.
   reports: Map<string, { mtimeMs: number; file: SessionFile }>
+  // The reset each limit last woke the maestro for, by kind: one wake per limit window.
+  alerted: Record<string, string>
 }
 
 const fresh = (): Ctx => ({
   main: null, root: '', id: '', role: 'maestro', workstream: null, branch: '', title: '', link: '', turn: false, question: '', options: [], waitingSince: null,
   context: { tokens: null, window: 0 }, limits: [], lastRequestAt: 0, pings: 0, lastPing: null, misses: 0, missed: false, toasted: false,
-  seen: new Map(), reports: new Map(),
+  seen: new Map(), reports: new Map(), alerted: {},
 })
 const ctx: Ctx = fresh()
 
@@ -143,8 +145,21 @@ async function refresh($: EngineInterface) {
     plan = null
   }
   const next = buildView({ inProject: ctx.main !== null, role: ctx.role, self: ctx.id, files, registry, now: await $.clock.now(), liveview, ownLimits: ctx.limits, pings: ctx.pings, plan })
+  if (ctx.main !== null && ctx.role === 'maestro') alertLimits($, next)
   // Unchanged views keep their value, so a quiet tick redraws nothing.
   await update($, view, prev => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next))
+}
+
+// Wakes the maestro once per limit window when a limit reaches limitAlertAt. The band reads the limits
+// for free, so this replaces a polling cron, whose every tick re-reads the maestro's whole context.
+function alertLimits($: EngineInterface, v: BandView) {
+  for (const [kind, label, l] of [['five_hour', '5-hour', v.fiveHour], ['seven_day', 'weekly', v.week]] as const) {
+    if (!l || l.pct < alertAt || ctx.alerted[kind] === String(l.resetsAt)) continue
+    ctx.alerted[kind] = String(l.resetsAt)
+    const resets = l.resetsAt === null ? '' : `, resetting at ${time(l.resetsAt)}`
+    // Not awaited: the prompt runs as its own turn once the session is idle.
+    void $.prompt.submit({ text: `orchestra band: the ${label} limit is at ${l.pct}%${resets}. Follow "The token limits" in the maestro skill: open nothing new, pause the lowest-priority workstreams at their next natural stop, and tell the owner.` }).catch(() => {})
+  }
 }
 
 async function measure($: EngineInterface) {
@@ -258,7 +273,10 @@ async function checkUpdate($: EngineInterface) {
   await update($, offer, o => (o.state === 'none' || o.state === 'offered' ? { state: 'offered', version: latest } : o))
 }
 
+let alertAt = 90
+
 export const register: Register = (on, options) => {
+  alertAt = positive(options.limitAlertAt, 90)
   // session.start's locate, which classic.SessionStart waits for so its watch paths know the main checkout.
   let located: Promise<void> = Promise.resolve()
   on('session.start', async ($, e, next) => {

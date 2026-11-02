@@ -24,6 +24,12 @@
       "description": "Stop keeping the cache warm for a subagent that has run this long.",
       "default": 2
     },
+    "limitAlertAt": {
+      "type": "number",
+      "title": "Limit alert (percent)",
+      "description": "When the 5-hour or weekly limit reaches this share, the band wakes the maestro once, so it can pause work. Above 100 turns it off.",
+      "default": 90
+    },
     "liveviewTailnet": {
       "type": "boolean",
       "title": "Liveview on your Tailscale network",

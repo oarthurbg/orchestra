@@ -1129,3 +1129,38 @@ test('with liveviewTailnet on, the band starts the liveview for the tailnet too'
   for (let i = 0; i < 20 && !runs.some(r => r.includes('server.mjs')); i++) await new Promise(r => setTimeout(r, 10))
   expect(runs.find(r => r.includes('liveview/server.mjs'))).toContain('"--tailnet"')
 })
+
+test('a limit at limitAlertAt wakes the maestro once per limit window', async ($, on) => {
+  const later = (h: number) => new Date(Date.now() + h * 3_600_000).toISOString()
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY,
+    [`${ROOT}/.orchestra/sessions/s3.json`]: report('s3', { workstream: 'auth', limits: [{ kind: 'seven_day', percentUsed: 93, resetsAt: later(30) }] }),
+  }
+  const { touch } = disk(on, files)
+  const sent: string[] = []
+  on('prompt.submit', ($, e) => { sent.push(e.text); return { text: e.text } })
+  const clock = session(on, ROOT, 'o')
+  await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
+  await clock.advance(3 * REFRESH_MS)
+  expect(sent.length).toBe(1)
+  expect(sent[0]).toMatch(/weekly limit is at 93%/)
+  // A new window crosses again: one more wake.
+  files[`${ROOT}/.orchestra/sessions/s3.json`] = report('s3', { workstream: 'auth', limits: [{ kind: 'seven_day', percentUsed: 95, resetsAt: later(200) }] })
+  touch(`${ROOT}/.orchestra/sessions/s3.json`)
+  await clock.advance(3 * REFRESH_MS)
+  expect(sent.length).toBe(2)
+})
+
+test('a limitAlertAt above 100 turns the limit alert off', { options: { limitAlertAt: 101 } }, async ($, on) => {
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY,
+    [`${ROOT}/.orchestra/sessions/s3.json`]: report('s3', { workstream: 'auth', limits: [{ kind: 'five_hour', percentUsed: 100 }] }),
+  }
+  disk(on, files)
+  const sent: string[] = []
+  on('prompt.submit', ($, e) => { sent.push(e.text); return { text: e.text } })
+  const clock = session(on, ROOT, 'o')
+  await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
+  await clock.advance(3 * REFRESH_MS)
+  expect(sent).toEqual([])
+})
