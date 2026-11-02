@@ -6,8 +6,9 @@ import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-// Relative weight per token, close to API pricing: a cache read costs a tenth of plain input, a cache write 1.25x, output 5x.
-export const WEIGHTS = { input: 1, cacheWrite: 1.25, cacheRead: 0.1, output: 5 }
+// Relative weight per token, close to API pricing: a cache read costs a tenth of plain input, a 5-minute cache write 1.25x,
+// a 1-hour one 2x, output 5x.
+export const WEIGHTS = { input: 1, cacheWrite5m: 1.25, cacheWrite1h: 2, cacheRead: 0.1, output: 5 }
 
 // Claude Code names a project's transcript folder after its path, every character but a letter or digit turned into '-'.
 export const folderName = p => p.replace(/[^A-Za-z0-9]/g, '-').toLowerCase()
@@ -48,10 +49,12 @@ export function collect({ projectsDir, main, days = 0, now = Date.now() }) {
   const sessions = new Map()
   for (const { o, u } of messages.values()) {
     const t = { input: u.input_tokens ?? 0, cacheWrite: u.cache_creation_input_tokens ?? 0, cacheRead: u.cache_read_input_tokens ?? 0, output: u.output_tokens ?? 0 }
-    const w = t.input * WEIGHTS.input + t.cacheWrite * WEIGHTS.cacheWrite + t.cacheRead * WEIGHTS.cacheRead + t.output * WEIGHTS.output
+    // Without the 5-minute and 1-hour split, a write counts as 5-minute.
+    const hour = Math.min(u.cache_creation?.ephemeral_1h_input_tokens ?? 0, t.cacheWrite)
+    const w = t.input * WEIGHTS.input + (t.cacheWrite - hour) * WEIGHTS.cacheWrite5m + hour * WEIGHTS.cacheWrite1h + t.cacheRead * WEIGHTS.cacheRead + t.output * WEIGHTS.output
     const branch = o.gitBranch || '(none)'
     if (!branches.has(branch)) branches.set(branch, { branch, ...zero() })
-    if (!sessions.has(o.sessionId)) sessions.set(o.sessionId, { session: o.sessionId, folder: '', last: '', byBranch: {}, ...zero() })
+    if (!sessions.has(o.sessionId)) sessions.set(o.sessionId, { session: o.sessionId ?? '(none)', folder: '', last: '', byBranch: {}, ...zero() })
     const s = sessions.get(o.sessionId)
     for (const row of [total, branches.get(branch), s]) {
       for (const k of Object.keys(t)) row[k] += t[k]
@@ -75,7 +78,7 @@ const pct = n => `${Math.round(n * 100)}%`
 
 export function render(r, top = 15) {
   const out = [`Token spend for ${r.main}, ${r.days > 0 ? `last ${r.days} days` : 'all time'}: ${r.messages} model requests from ${r.folders} transcript folders.`,
-    `Weighted units are relative cost, not dollars: input 1, cache write 1.25, cache read 0.1, output 5 per token. Total ${M(r.total.weighted)}M.`, '',
+    `Weighted units are relative cost, not dollars: input 1, cache write 1.25 (5-minute) or 2 (1-hour), cache read 0.1, output 5 per token. Total ${M(r.total.weighted)}M.`, '',
     '| Branch | Share | Weighted (M) | Output (M) | Cache write (M) | Cache read (M) |', '| --- | --- | --- | --- | --- | --- |',
     ...r.branches.slice(0, top).map(b => `| \`${b.branch}\` | ${pct(b.share)} | ${M(b.weighted)} | ${M(b.output)} | ${M(b.cacheWrite)} | ${M(b.cacheRead)} |`), '',
     '| Session | Folder | Main branch | Share | Weighted (M) | Last active |', '| --- | --- | --- | --- | --- | --- |',
@@ -84,13 +87,19 @@ export function render(r, top = 15) {
   return out.join('\n') + '\n'
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+// realpath: run through a linked folder, argv[1] and the module's own path differ.
+if (process.argv[1] && fs.realpathSync(process.argv[1]) === fs.realpathSync(fileURLToPath(import.meta.url))) {
   const args = process.argv.slice(2)
   const opt = name => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined }
   try {
     const root = path.resolve(opt('--root') ?? '.')
     // The main checkout is the first worktree git lists, so a worktree session counts the whole project.
-    const main = execFileSync('git', ['-C', root, 'worktree', 'list', '--porcelain'], { encoding: 'utf8' }).split('\n')[0].replace(/^worktree /, '')
+    let main
+    try {
+      main = execFileSync('git', ['-C', root, 'worktree', 'list', '--porcelain'], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).split('\n')[0].replace(/^worktree /, '')
+    } catch {
+      throw new Error(`not a git repository: ${root}`)
+    }
     const projectsDir = opt('--projects') ?? path.join(process.env.CLAUDE_CONFIG_DIR ?? path.join(os.homedir(), '.claude'), 'projects')
     process.stdout.write(render(collect({ projectsDir, main, days: Number(opt('--days') ?? 0) }), Number(opt('--top') ?? 15)))
   } catch (e) {

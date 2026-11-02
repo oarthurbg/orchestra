@@ -91,7 +91,7 @@ The map does not refresh itself. The raw facts stay in `.orchestra/codemap.json`
 
 Shows where the project's tokens went, from Claude Code's own transcripts on this computer: one table per branch and one per session, for all time or the last few days. It covers the main checkout and every worktree beside or under it, subagents included, and counts each model request once.
 
-The numbers are weighted by what each kind of token costs (input 1, cache write 1.25, cache read 0.1, output 5), so they compare sessions but are not dollars. A long-lived maestro often tops the list without writing any code: every wake re-reads its whole context, which is why it clears at the end of each wave.
+The numbers are weighted by what each kind of token costs (input 1, cache write 1.25 for 5 minutes or 2 for an hour, cache read 0.1, output 5), so they compare sessions but are not dollars. A long-lived maestro often tops the list without writing any code: every wake re-reads its whole context, which is why it clears at the end of each wave.
 
 ## `/orchestra:close-wave`
 

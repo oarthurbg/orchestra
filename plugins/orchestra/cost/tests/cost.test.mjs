@@ -31,7 +31,10 @@ function projects() {
   // A subagent's transcript: it counts toward its parent session.
   put('D--Code-app/s1/subagents/agent-a.jsonl', [msg('m2', 's1', 'main', { input_tokens: 0, cache_read_input_tokens: 10_000, output_tokens: 0 }, { isSidechain: true })])
   // A worktree beside the main checkout.
-  put('D--Code-app-reports/s2.jsonl', [msg('m3', 's2', 'reports', { input_tokens: 0, cache_creation_input_tokens: 800, output_tokens: 200 }, { cwd: 'D:\\Code\\app-reports' })])
+  // 800 written: 400 for 5 minutes (x 1.25), 400 for an hour (x 2).
+  put('D--Code-app-reports/s2.jsonl', [msg('m3', 's2', 'reports', {
+    input_tokens: 0, cache_creation_input_tokens: 800, cache_creation: { ephemeral_5m_input_tokens: 400, ephemeral_1h_input_tokens: 400 }, output_tokens: 200,
+  }, { cwd: 'D:\\Code\\app-reports' })])
   // Another project: not counted.
   put('D--Code-other/s3.jsonl', [msg('m4', 's3', 'main', { input_tokens: 5_000_000, output_tokens: 0 })])
   return dir
@@ -46,15 +49,23 @@ test('sums one project and its worktrees per branch and session, once per messag
   const r = collect({ projectsDir: projects(), main: 'D:/Code/app', days: 7, now: NOW })
   assert.equal(r.folders, 2)
   assert.equal(r.messages, 3)
-  // main: 1000 input + 10000 cache read x 0.1 = 2000; reports: 800 x 1.25 + 200 x 5 = 2000.
-  assert.deepEqual(r.branches.map(b => [b.branch, b.weighted, b.share]), [['main', 2000, 0.5], ['reports', 2000, 0.5]])
-  assert.equal(r.total.weighted, 4000)
+  // main: 1000 input + 10000 cache read x 0.1 = 2000; reports: 400 x 1.25 + 400 x 2 + 200 x 5 = 2300.
+  assert.deepEqual(r.branches.map(b => [b.branch, b.weighted]), [['reports', 2300], ['main', 2000]])
+  assert.equal(r.total.weighted, 4300)
   const s1 = r.sessions.find(s => s.session === 's1')
   assert.equal(s1.folder, 'app')
   assert.equal(s1.branch, 'main')
   assert.equal(r.sessions.find(s => s.session === 's2').folder, 'app-reports')
   // All time takes the old message in.
-  assert.equal(collect({ projectsDir: projects(), main: 'D:/Code/app', now: NOW }).total.weighted, 103_000)
+  assert.equal(collect({ projectsDir: projects(), main: 'D:/Code/app', now: NOW }).total.weighted, 103_300)
+})
+
+test('the CLI outside a git repository fails with one line', () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cost-none-'))
+  const r = spawnSync(process.execPath, [fileURLToPath(new URL('../cost.mjs', import.meta.url)), '--root', dir, '--projects', dir], { encoding: 'utf8' })
+  assert.equal(r.status, 2)
+  assert.equal(r.stderr.trim().split('\n').length, 1)
+  assert.match(r.stderr, /^cost: not a git repository/)
 })
 
 test('the CLI prints both tables for the project the git root belongs to', () => {

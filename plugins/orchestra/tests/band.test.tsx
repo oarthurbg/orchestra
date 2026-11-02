@@ -1130,25 +1130,63 @@ test('with liveviewTailnet on, the band starts the liveview for the tailnet too'
   expect(runs.find(r => r.includes('liveview/server.mjs'))).toContain('"--tailnet"')
 })
 
-test('a limit at limitAlertAt wakes the maestro once per limit window', async ($, on) => {
+test('a limit at limitAlertAt wakes the maestro once per limit window, across restarts', async ($, on) => {
   const later = (h: number) => new Date(Date.now() + h * 3_600_000).toISOString()
   const files: Record<string, string> = {
     [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY,
-    [`${ROOT}/.orchestra/sessions/s3.json`]: report('s3', { workstream: 'auth', limits: [{ kind: 'seven_day', percentUsed: 93, resetsAt: later(30) }] }),
+    [`${ROOT}/.orchestra/sessions/s3.json`]: report('s3', { workstream: 'auth', limits: [{ kind: 'seven_day', percentUsed: 93, resetsAt: later(30) }, { kind: 'five_hour', percentUsed: 95, resetsAt: later(2) }] }),
   }
   const { touch } = disk(on, files)
+  mock.store(on)
   const sent: string[] = []
   on('prompt.submit', ($, e) => { sent.push(e.text); return { text: e.text } })
   const clock = session(on, ROOT, 'o')
   await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
   await clock.advance(3 * REFRESH_MS)
+  // Both limits crossed: one message, not two wakes.
   expect(sent.length).toBe(1)
-  expect(sent[0]).toMatch(/weekly limit is at 93%/)
-  // A new window crosses again: one more wake.
-  files[`${ROOT}/.orchestra/sessions/s3.json`] = report('s3', { workstream: 'auth', limits: [{ kind: 'seven_day', percentUsed: 95, resetsAt: later(200) }] })
+  expect(sent[0]).toMatch(/5-hour limit is at 95%.*weekly limit is at 93%/)
+  // A clear or restart in the same window stays quiet.
+  await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
+  await clock.advance(3 * REFRESH_MS)
+  expect(sent.length).toBe(1)
+  // A new window crosses again: one more wake. The report is dated after the maestro's own, which the restart wrote on the test's clock.
+  files[`${ROOT}/.orchestra/sessions/s3.json`] = report('s3', { workstream: 'auth', limits: [{ kind: 'seven_day', percentUsed: 95, resetsAt: later(200) }], updatedAt: later(1) })
   touch(`${ROOT}/.orchestra/sessions/s3.json`)
   await clock.advance(3 * REFRESH_MS)
   expect(sent.length).toBe(2)
+})
+
+test('the limit alert never wakes a principal', async ($, on) => {
+  const WT = `${ROOT}/.worktrees/reports`
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY,
+    [`${WT}/.git`]: `gitdir: ${ROOT}/.git/worktrees/reports`,
+    [`${ROOT}/.orchestra/sessions/s3.json`]: report('s3', { workstream: 'auth', limits: [{ kind: 'five_hour', percentUsed: 100 }] }),
+  }
+  disk(on, files)
+  mock.store(on)
+  const sent: string[] = []
+  on('prompt.submit', ($, e) => { sent.push(e.text); return { text: e.text } })
+  const clock = session(on, WT, 'w')
+  await $.session.start({ cwd: WT, surface: 'desktop', isInteractive: true })
+  await clock.advance(3 * REFRESH_MS)
+  expect(sent).toEqual([])
+})
+
+test('a headless maestro run is not woken by the limit alert', async ($, on) => {
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY,
+    [`${ROOT}/.orchestra/sessions/s3.json`]: report('s3', { workstream: 'auth', limits: [{ kind: 'five_hour', percentUsed: 100 }] }),
+  }
+  disk(on, files)
+  mock.store(on)
+  const sent: string[] = []
+  on('prompt.submit', ($, e) => { sent.push(e.text); return { text: e.text } })
+  const clock = session(on, ROOT, 'o')
+  await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: false })
+  await clock.advance(3 * REFRESH_MS)
+  expect(sent).toEqual([])
 })
 
 test('a limitAlertAt above 100 turns the limit alert off', { options: { limitAlertAt: 101 } }, async ($, on) => {
@@ -1157,6 +1195,7 @@ test('a limitAlertAt above 100 turns the limit alert off', { options: { limitAle
     [`${ROOT}/.orchestra/sessions/s3.json`]: report('s3', { workstream: 'auth', limits: [{ kind: 'five_hour', percentUsed: 100 }] }),
   }
   disk(on, files)
+  mock.store(on)
   const sent: string[] = []
   on('prompt.submit', ($, e) => { sent.push(e.text); return { text: e.text } })
   const clock = session(on, ROOT, 'o')
