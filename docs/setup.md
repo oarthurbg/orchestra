@@ -142,7 +142,7 @@ orchestra never changes these for you. Apply them yourself.
 
   If the maestro compacts anyway, orchestra's `SessionStart` hook lists what still waits on it: unanswered messages from other sessions (last 24 hours), sessions waiting in their band reports, and handoff notes waiting on someone. The maestro then answers each one still open.
 
-- **Auto-archive on PR close: off** (desktop app setting). Archiving kills a session and its background agents, and unarchiving does not bring them back. Principals keep working after their spec and plan PRs merge. The maestro archives finished sessions itself.
+- **Auto-archive on PR close: off; auto-archive of inactive sessions: 1 day** (desktop app settings). PR-close archiving fires on any PR a session is bound to, so it archives a principal minutes after its spec PR merges, mid-workstream, and turns its Remote Control off. The inactivity archive costs no tokens and skips sessions that are running or have background work. The maestro unarchives a session before messaging it, since an archived session refuses messages.
 
 - **Session models.** Subagents set their own model (see [Agents](agents.md)). For the sessions:
   - **maestro:** Opus at medium effort. Its turns are short.
