@@ -2,6 +2,11 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.8.1
+
+- Mockups get one review round, then the owner. In a third blind comparison, a second review and fix cost about 4M tokens and lost a point on the app screen: its fixes undid the first round's choices. What is left after one round are judgement calls only the owner can settle.
+- The mockup reviewer checks 768 as its own width. A hero diagram cut off at 768 got past every reviewer in the comparison, and every juror saw it.
+
 ## 1.8.0
 
 - Mockups pick their builder by surface, and a different skill reviews each one. A second blind comparison tried taste-skill and impeccable together:
