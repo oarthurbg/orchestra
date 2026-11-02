@@ -66,7 +66,7 @@ A status round. Run it in the maestro whenever you want to know how things are g
 | Workstream | State | Context | Stage and task | PR and CI | Waiting on owner | Next |
 | --- | --- | --- | --- | --- | --- | --- |
 
-Then two lists: **Needs you** (decisions and approvals, most urgent first, with the session to answer in) and **I'll do next** (with each action's authorization level). It also nudges stalled sessions, proposes clearing any session at 250k tokens or more, and runs the merge checklist on a ready PR. The table is also saved to `.orchestra/status.md`, which is not committed.
+Then two lists: **Needs you** (decisions and approvals, most urgent first, with the session to answer in) and **I'll do next** (with each action's authorization level). It also nudges stalled sessions, proposes clearing any session at 250k tokens or more (the maestro itself at 200k or at the end of a wave), and runs the merge checklist on a ready PR. The table is also saved to `.orchestra/status.md`, which is not committed.
 
 ## `/orchestra:codemap`
 

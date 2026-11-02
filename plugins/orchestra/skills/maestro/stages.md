@@ -26,16 +26,16 @@ orchestra's nine agents set their own model and effort. Every other agent (the m
 - building out an approved direction, screen by screen: Opus, high;
 - searches, copies, screenshots and mechanical edits: Sonnet or Haiku, low.
 
-Max everywhere costs much more for little gain in the bulk stages. Agents never inherit the session's effort: a principal raised to max still dispatches each agent at the level its call or definition sets. A resumed agent keeps the effort it started with; to change it, dispatch a new one. Say each agent's model and effort in your reports to the maestro.
+Max everywhere costs much more for little gain in the bulk stages. Agents never inherit the session's effort: a principal raised to max still dispatches each agent at the level its call or definition sets. A resumed agent keeps the effort it started with; to change it, dispatch a new one. Say each agent's model and effort in your wave-end and PR-ready reports to the maestro.
 
 ## Mockup recipe
 
 After the brainstorm, the principal runs each UI mockup through four steps instead of drawing it itself. In a blind test this scored within 0.4 of a max-effort build (7.3 and 7.4 against 7.7 out of 10), with better accuracy, for about a third of the tokens.
 
 1. **Brief.** One file: the goal, the facts the page may state (from the README and the spec, never invented), the brand traps (ground colour, fonts that must load, what each shape means, no overflow at 1440, 768 and 390) and the budget below. Keep the creative direction open: a brief that names the idea makes every build look alike.
-2. **Builder** (`general-purpose`, Opus, effort from "Model and effort", ponytail off): `frontend-design`, then `taste-skill` with three directions dealt, and `design:ux-copy` for buttons, empty states, errors and confirmations (keep `frontend-design`'s voice: the interface speaks, never apologizes). It fixes from the `inspect.mjs` text output first and opens screenshots only at the end of a round, one per width. It stops at the first build with 0 FAIL.
-3. **Reviewer** (a separate subagent, Opus, effort from "Model and effort"): looks at the screenshots, runs the impeccable detector and `design:design-critique`, checks the words with `design:ux-copy` (each copy finding gives the current and the proposed text), checks every claim against the facts, and returns at most 8 one-line findings and a score. The builder never holds the reviewer's screenshots.
-4. **Fix round** (the same builder, resumed, ponytail lite): fixes only those findings. At most 3 look rounds in all; then the owner sees it.
+2. **Builder** (`general-purpose`, Opus, effort max, since it sets the direction; ponytail off): `frontend-design`, then `taste-skill` with three directions dealt, and `design:ux-copy` for buttons, empty states, errors and confirmations (keep `frontend-design`'s voice: the interface speaks, never apologizes). It fixes from the `inspect.mjs` text output first and opens screenshots only at the end of a round, one per width. It stops at the first build with 0 FAIL.
+3. **Reviewer** (a separate subagent, Opus, effort max): looks at the screenshots, runs the impeccable detector and `design:design-critique`, checks the words with `design:ux-copy` (each copy finding gives the current and the proposed text), checks every claim against the facts, and returns at most 8 one-line findings and a score. The builder never holds the reviewer's screenshots.
+4. **Fix round** (the same builder, resumed, so still at max; ponytail lite): fixes only those findings. At most 3 look rounds in all; then the owner sees it.
 
 Max runs inside the recipe's caps: one build until 0 FAIL, at most 3 look rounds. Run without a cap, max cost 8.5 times a medium build, mostly from screenshots re-read on every request.
 

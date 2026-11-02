@@ -95,7 +95,7 @@ If a ping finds the cache already gone, it is not counted, pings pause until the
 
 ## Limit alert
 
-In the maestro's session, the band wakes the maestro once when the 5-hour or weekly limit reaches `limitAlertAt` (90% by default), then not again until that limit resets. The maestro then opens nothing new and pauses the lowest-priority work at its next natural stop. The band reads the limits every few seconds at no token cost, so no cron has to wake the maestro to check them, at the price of a full read of its context on every tick. Set `limitAlertAt` above 100 to turn it off.
+In the maestro's session, the band wakes the maestro once when the 5-hour or weekly limit reaches `limitAlertAt` (90% by default), then not again until that limit resets. The maestro then opens nothing new and pauses the lowest-priority work at its next natural stop. The band reads the limits every few seconds at no token cost. A cron that wakes the maestro to check them would pay for a full read of its context on every tick. Set `limitAlertAt` above 100 to turn it off.
 
 ## Requirements
 
