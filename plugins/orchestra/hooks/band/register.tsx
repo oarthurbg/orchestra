@@ -2,7 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import { CHANGELOG_URL, REFRESH_MS, buildView, claudeArgv, isNewer, isSafeTarget, mainCheckout, norm, openerArgv, parseRegistry, parseSessionFile, parseStatus, pingDue, roleOf } from './logic'
-import type { BandRow, BandView, Limit, Mark, Role, RowsShown, SessionFile, UpdateOffer } from './types'
+import type { BandRow, BandView, Limit, LimitView, Mark, Role, RowsShown, SessionFile, UpdateOffer } from './types'
 
 // The desktop app's session server, as Task 1 of the plan found it.
 const APP_SESSION_SERVER = 'ccd_session_mgmt'
@@ -43,12 +43,16 @@ type Ctx = {
   seen: Map<string, number>
   // Parsed reports by file name, with the mtime they were read at.
   reports: Map<string, { mtimeMs: number; file: SessionFile }>
+  // The window each limit last woke the maestro for, by kind; the store keeps it across clears and sessions.
+  alerted: Record<string, string>
+  // False for claude -p and SDK runs, which have nobody to pause work for.
+  interactive: boolean
 }
 
 const fresh = (): Ctx => ({
   main: null, root: '', id: '', role: 'maestro', workstream: null, branch: '', title: '', link: '', turn: false, question: '', options: [], waitingSince: null,
   context: { tokens: null, window: 0 }, limits: [], lastRequestAt: 0, pings: 0, lastPing: null, misses: 0, missed: false, toasted: false,
-  seen: new Map(), reports: new Map(),
+  seen: new Map(), reports: new Map(), alerted: {}, interactive: false,
 })
 const ctx: Ctx = fresh()
 
@@ -63,9 +67,14 @@ async function locate($: EngineInterface) {
   const gitdir = gitFile === null ? `${ctx.root}/.git` : norm(/^gitdir:\s*(.+)$/m.exec(gitFile)?.[1] ?? '')
   const head = (await read$($, `${gitdir}/HEAD`)) ?? ''
   ctx.branch = /ref: refs\/heads\/(.+)/.exec(head)?.[1]?.trim() ?? ''
-  ctx.main = (await $.fs.exists(`${main}/.orchestra`).catch(() => false)) ? main : null
-  if (ctx.main === null) return
-  const who = roleOf(ctx.root, ctx.main, parseRegistry((await read$($, `${ctx.main}/.orchestra/workstreams.md`)) ?? ''))
+  const orchestra = (await $.fs.exists(`${main}/.orchestra`).catch(() => false)) ? main : null
+  if (orchestra === null) {
+    ctx.main = null
+    return
+  }
+  // Set together, so a refresh in between never sees a principal with the maestro's default role.
+  const who = roleOf(ctx.root, orchestra, parseRegistry((await read$($, `${orchestra}/.orchestra/workstreams.md`)) ?? ''))
+  ctx.main = orchestra
   ctx.role = who.role
   ctx.workstream = who.workstream
   await readTitle($)
@@ -143,8 +152,32 @@ async function refresh($: EngineInterface) {
     plan = null
   }
   const next = buildView({ inProject: ctx.main !== null, role: ctx.role, self: ctx.id, files, registry, now: await $.clock.now(), liveview, ownLimits: ctx.limits, pings: ctx.pings, plan })
+  if (ctx.main !== null && ctx.role === 'maestro' && ctx.interactive) await alertLimits($, next).catch(() => {})
   // Unchanged views keep their value, so a quiet tick redraws nothing.
   await update($, view, prev => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next))
+}
+
+// Wakes the maestro once per limit window when a limit reaches limitAlertAt. The band reads the limits
+// for free, so this replaces a polling cron, whose every tick re-reads the maestro's whole context.
+async function alertLimits($: EngineInterface, v: BandView) {
+  const today = new Date(await $.clock.now()).toISOString().slice(0, 10)
+  // A limit with no reset time alerts at most once a day.
+  const windowOf = (l: LimitView) => (l.resetsAt === null ? `day ${today}` : String(l.resetsAt))
+  const limits = [['five_hour', '5-hour', v.fiveHour], ['seven_day', 'weekly', v.week]] as const
+  const due = limits.flatMap(([kind, label, l]) => (l && l.pct >= alertAt && ctx.alerted[kind] !== windowOf(l) ? [{ kind, label, l }] : []))
+  if (due.length === 0) return
+  // Marked before the first await, so an overlapping refresh does not alert twice.
+  for (const d of due) ctx.alerted[d.kind] = windowOf(d.l)
+  const stored = ((await $.store.get('limitAlerts').catch(() => undefined)) ?? {}) as Record<string, string>
+  const fresh = due.filter(d => stored[d.kind] !== windowOf(d.l))
+  if (fresh.length === 0) return
+  await $.store.set('limitAlerts', { ...stored, ...Object.fromEntries(fresh.map(d => [d.kind, windowOf(d.l)])) }).catch(() => {})
+  const parts = fresh.map(d => `the ${d.label} limit is at ${d.l.pct}%${d.l.resetsAt === null ? '' : `, resetting ${d.kind === 'seven_day' ? dayTime(d.l.resetsAt) : `at ${time(d.l.resetsAt)}`}`}`)
+  // Not awaited: the prompt runs as its own turn once the session is idle. A failed submit is tried again on the next refresh.
+  void $.prompt.submit({ text: `orchestra band: ${parts.join(', and ')}. Follow "The token limits" in the maestro skill: open nothing new, pause the lowest-priority workstreams at their next natural stop, and tell the owner.` }).catch(() => {
+    for (const d of fresh) delete ctx.alerted[d.kind]
+    void $.store.set('limitAlerts', stored).catch(() => {})
+  })
 }
 
 async function measure($: EngineInterface) {
@@ -258,7 +291,10 @@ async function checkUpdate($: EngineInterface) {
   await update($, offer, o => (o.state === 'none' || o.state === 'offered' ? { state: 'offered', version: latest } : o))
 }
 
+let alertAt = 90
+
 export const register: Register = (on, options) => {
+  alertAt = positive(options.limitAlertAt, 90)
   // session.start's locate, which classic.SessionStart waits for so its watch paths know the main checkout.
   let located: Promise<void> = Promise.resolve()
   on('session.start', async ($, e, next) => {
@@ -268,6 +304,7 @@ export const register: Register = (on, options) => {
     void checkUpdate($).catch(() => {})
     $.clock.every(UPDATE_CHECK_MS, () => void checkUpdate($).catch(() => {}))
     Object.assign(ctx, fresh())
+    ctx.interactive = e.isInteractive !== false
     const stored = await $.store.get('rows').catch(() => undefined)
     // Before the collapsed band the choice was a boolean under 'detailed'.
     const shownBefore: RowsShown = ROWS_SHOWN.includes(stored as RowsShown) ? (stored as RowsShown)

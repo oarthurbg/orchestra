@@ -36,7 +36,7 @@ The plugin has one set of agents, shared by both roles. You use three:
 
 - `explorer`: searches and status lookups;
 - `mechanic`: docs updates after merges, through a docs PR;
-- `verifier`: post-merge checks on the integration branch.
+- `verifier`: post-merge checks on the integration branch, always in a fresh worktree, never the main checkout.
 
 The other six (planner, implementers, reviewers, screenshotter) are for principals.
 
@@ -69,6 +69,7 @@ Use `/orchestra:start-workstream`. In short:
 - Workstreams run in parallel only when they are independent. At most one workstream with a data schema change is open at a time; the next one rebases and regenerates its migration before merging.
 - How many workstreams run, and how many tasks each runs at once, is yours to size (see "Capacity"). Each briefing carries its workstream's task limit.
 - A hotfix branches from the production branch and gets merged back into the integration branch right after.
+- A session you start comes up at your own effort at most. To run a principal higher than you, start it, then raise it with `set_session_effort`; that applies from its next turn, so its first turn runs at the lower level.
 
 ## Capacity
 
@@ -76,7 +77,7 @@ No number is fixed. How much runs at once depends on the machine, the token limi
 
 - **Ready work.** A backlog item is ready when what it waits on has merged, or the part of it the item needs has (see "Clearing the way early"). Only ready, independent work can start.
 - **The machine.** Read it before opening a workstream and at each status round: cores and free memory (`node -e "const o=require('os');console.log(o.cpus().length+' cores, '+(o.freemem()/2**30).toFixed(1)+' of '+(o.totalmem()/2**30).toFixed(1)+' GB free')"`) and CPU load (`uptime` on macOS and Linux, `(Get-CimInstance Win32_Processor).LoadPercentage` in PowerShell on Windows). Count what already runs: sessions, dev servers, containers, test runs. Each workstream costs a session and its subagents, plus a dev server and its tests when the project has them.
-- **The token limits.** The band and the liveview project the 5-hour and weekly limits to their reset. More sessions spend a limit faster, and finish nothing sooner if they then sit waiting for the reset. When a limit would run out before its reset, open nothing new, and lower the task limits in new briefings or pause the lowest-priority workstream at its next natural stop. When both limits would end well short of full at the current pace, there is room for more.
+- **The token limits.** The band and the liveview project the 5-hour and weekly limits to their reset. More sessions spend a limit faster, and finish nothing sooner if they then sit waiting for the reset. When a limit would run out before its reset, open nothing new, and lower the task limits in new briefings or pause the lowest-priority workstream at its next natural stop. When both limits would end well short of full at the current pace, there is room for more. Never watch the limits with a cron: each tick wakes you for a full read of your context just to read a number. The band reads them every few seconds at no token cost and, in your session, sends you one message per limit window when the 5-hour or weekly limit reaches `limitAlertAt` (90% by default, in orchestra's settings). When the owner sets a stopping point, such as pausing at 98% of the week, ask them to set `limitAlertAt` to it instead of scheduling checks.
 - **Sizing.** Open the next ready item while the machine and both limits have room. Give each workstream a task limit, how many plan tasks it may run at once: higher for independent backend tasks on an idle machine, 1 for a workstream with a dev server and slow tests on a busy one. When tests start timing out, memory runs short or the machine swaps, lower the limits, tell the affected principals and tell the owner. Raise them only when the machine is clearly idle.
 - **Clearing the way early.** When queued items wait on part of an open workstream (a schema, an API, a shared component), ask its principal to land that part first, as its own PR. Once it merges, the waiting items are ready and can start before the whole feature finishes.
 
@@ -84,6 +85,7 @@ No number is fixed. How much runs at once depends on the machine, the token limi
 
 - The owner answers checkpoints, mockups and design choices directly in the principal (it saves your tokens). You keep priorities, the schema queue, conflicts between workstreams, merges, releases and rollout.
 - Steps marked 👤 need the owner: say so before, and wait for the go-ahead.
+- Every note from a principal wakes you, and each wake re-reads your whole context. A note that only reports progress (no decision, no question for the owner, no PR, no pause) gets a one-line answer with no tool calls, or none at all.
 - Run `/orchestra:status` every time the owner asks how things are going, when a principal closes a wave, before any merge, and at the start of each of your sessions. It produces one table of every workstream, a "Needs you" list and an "I'll do next" list, catches stalled sessions, and rewrites `.orchestra/status.md`, which is not versioned.
 - A notice that an agent or command "did not finish before the previous session ended" needs action right away: check the worktree and the output, then resume the same agent with `SendMessage` or dispatch a new one from the last commit.
 
@@ -102,6 +104,12 @@ No number is fixed. How much runs at once depends on the machine, the token limi
 ## Context and clearing
 
 - The auto-compact safety net sits at 600k tokens (`autoCompactWindow: 600000` in `~/.claude/settings.json`, at the top level and under `modelSettings` for the session's model, since a per-model value wins in the same file; it applies to new or restarted sessions). It is the net for when nobody checked in time, not the plan. In the desktop app every session on a model shares one window, yours included; only a CLI maestro can get a larger one (`claude --autocompact 800000`).
+- Each principal checks its own context (`get_usage` on itself) when it closes a wave of tasks. Above 250k tokens it stops dispatching, updates its handoff note (skill `orchestra:handoff-note`) and asks you to clear it. Below 250k clearing does not pay off, because the restart rereads the note, the HANDOFF, the spec and the plan.
+- You check every session's usage at each progress question from the owner and whenever a principal closes a wave. At a natural stop (PR merged, wave done, checkpoint, no agent or command running): ask the session to update its handoff note, clear it with `clear_session` (at its level in "Owner authorizations"), then send the briefing back. Use `/orchestra:close-wave`, which holds the briefing text.
+- Never clear a session in the middle of a task.
+- `clear_session` fails while the session has Remote Control on or live work (a background task, a queued message). Turn Remote Control off first (`set_remote_control`), or ask the session to finish its background tasks and clear itself. A briefing you send right after the clear survives it.
+- Your own context: clear yourself at the end of every wave and above 200k tokens, at a natural stop. Run `/orchestra:status`, write a resume block of at most 20 lines to `.orchestra/status.md` (what runs, what waits on whom, what you do next), then ask the owner to clear you, or `clear_session` on yourself at its level in "Owner authorizations". You live for days, and each wake re-reads everything you hold; your state is in the notes and the status file, so a clear costs little. Durable changes to `docs/HANDOFF.md` go through a PR like any other change.
+- Before a pause longer than the cache lifetime (an hour on a subscription), clear at a natural stop instead of sitting idle: the first message after the cache expires pays to write the whole context again.
 
 ## After a compact
 
@@ -112,14 +120,11 @@ When your context is compacted, orchestra's hook adds a list headed "orchestra: 
 3. Run `/orchestra:status`.
 
 Without the list (the hook did not run, or you are not sure the summary kept everything), rebuild it by hand: read `.orchestra/sessions/*.json` for `waiting` states and their `detail`, the status line of each registered workstream's handoff note, and ask the owner whether a principal is waiting on you.
-- Each principal checks its own context (`get_usage` on itself) when it closes a wave of tasks. Above 250k tokens it stops dispatching, updates its handoff note (skill `orchestra:handoff-note`) and asks you to clear it. Below 250k clearing does not pay off, because the restart rereads the note, the HANDOFF, the spec and the plan.
-- You check every session's usage at each progress question from the owner and whenever a principal closes a wave. At a natural stop (PR merged, wave done, checkpoint, no agent or command running): ask the session to update its handoff note, clear it with `clear_session` (at its level in "Owner authorizations"), then send the briefing back. Use `/orchestra:close-wave`, which holds the briefing text.
-- Never clear a session in the middle of a task.
-- Your own context follows the same rule: above 250k at a natural stop, run `/orchestra:status`, add a resume prompt to `.orchestra/status.md`, and ask the owner to clear you. Durable changes to `docs/HANDOFF.md` go through a PR like any other change.
 
 ## Archiving and reactivating
 
 - Archive a principal that has done its job (PR merged, no upcoming work), at its level in "Owner authorizations", after checking that no agent is running in it: archiving kills the session's process and its background agents, and unarchiving does not bring them back.
+- At the end of a wave, ask the owner once about every finished session together ("archive these 4?"), at its level in "Owner authorizations", instead of one at a time.
 - Keep the app's "archive when the PR closes" setting off while sessions open spec or plan PRs and keep working afterwards.
 - If work comes back close to an archived session's spec (next phase, a fix), reactivate that same session (`unarchive_session`) when it is cheaper than a new one: its context still helps and is below 250k. Otherwise start a new session with a briefing.
 

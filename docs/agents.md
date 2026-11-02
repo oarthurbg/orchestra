@@ -92,4 +92,4 @@ Runs the app from the workstream's integration worktree and captures the screens
 
 ## verifier
 
-Runs the full verification in order (code generation, typecheck, lint, unit tests, integration tests on isolated test data, tests in other languages, build) and reports pass or fail with the output that matters. It fixes nothing and suggests no fixes. A principal runs it before every PR, so "it passes" comes with real output; the maestro runs it after a merge.
+Runs the full verification in order (code generation, typecheck, lint, unit tests, integration tests on isolated test data, tests in other languages, build) and reports pass or fail with the output that matters. It fixes nothing and suggests no fixes. A principal runs it before every PR, so "it passes" comes with real output; the maestro runs it after a merge. It runs only in a clean worktree, never the main checkout, where stray build output and broken links make test runners fail tests that pass.

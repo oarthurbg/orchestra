@@ -93,6 +93,10 @@ How to change them: [orchestra's settings](setup.md#orchestras-settings).
 
 If a ping finds the cache already gone, it is not counted, pings pause until the main thread's next request, and the band says once: `orchestra band: keep-warm missed the cache; set cacheMinutes lower (5 for API keys and overage)`.
 
+## Limit alert
+
+In the maestro's session, the band wakes the maestro once when the 5-hour or weekly limit reaches `limitAlertAt` (90% by default), then not again until that limit resets. The maestro then opens nothing new and pauses the lowest-priority work at its next natural stop. The band reads the limits every few seconds at no token cost. A cron that wakes the maestro to check them would pay for a full read of its context on every tick. Set `limitAlertAt` above 100 to turn it off.
+
 ## Requirements
 
 Claude Code 2.1.309 or newer (older versions were not tested). The desktop app draws shapes, bars and clickable rows. The terminal draws glyphs (`■`, `□`) with no bars, and rows don't open sessions.

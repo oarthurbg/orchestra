@@ -13,7 +13,7 @@ Run them in order and stop at the first item that fails. Before each merge, chec
 7. Any lesson the workstream sent is in `docs/lessons.md` or queued for the next docs PR, so it is not lost when the workstream closes.
 8. Merge it (`gh pr merge <number>`) with the method the project uses for workstream PRs; the workstream branch may be deleted after merge, the permanent branches never.
 9. After merging:
-   - dispatch `verifier` on the integration branch (the full suite, including the tests reviewers skipped without test data);
+   - dispatch `verifier` on the integration branch in a fresh worktree (`git worktree add --detach <path> origin/<integration branch>`, removed after), never the main checkout: stray files there (old build output, a broken link) get picked up by test runners and fail tests that pass. It runs the full suite, including the tests reviewers skipped without test data;
    - drop the workstream's test data ("Test data" in "Project settings");
    - remove its row from `.orchestra/workstreams.md` and record it in "Where we are" (HANDOFF) through the next docs PR;
    - delete its report in `.orchestra/sessions/` (the file whose `workstream` is this one), so the band stops showing it;
@@ -24,9 +24,9 @@ Run them in order and stop at the first item that fails. Before each merge, chec
 
 When both settings name the same branch, there is no release PR: a release is steps 1, 2 and 5 only.
 
-1. Everything meant for this release is merged, and no workstream PR is half-merged.
-2. `verifier` passes in a fresh worktree on the latest integration branch, and the release PR's CI is green.
-3. The release PR description says: what goes in, migrations, 👤 steps, and how to roll back.
+1. Everything meant for this release is merged, and no workstream PR is half-merged. Merge the last workstream PR before you open the release PR, so the tree that was verified is the one that ships.
+2. `verifier` passes in a fresh worktree on the latest integration branch, with the commands in "Project settings" (never a guessed test runner). Or the last principal's `verifier` passed on a branch that contained the integration branch tip, and nothing else merged since: say so in the release PR. Either way, the release PR's CI is green.
+3. The release PR description says: what goes in, migrations, 👤 steps, and how to roll back. Write the 👤 server steps from the deploy scripts at the release commit (where each command runs, the conditions that skip a step), never from the last release's PR.
 4. Merge with a merge commit (`gh pr merge <number> --merge`): never squash or rebase, never `--delete-branch`.
 5. The deploy that follows is covered by the "Release" level in "Owner authorizations". Run the project's own read-only health check after it, and report it in the next status round.
 

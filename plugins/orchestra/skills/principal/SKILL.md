@@ -15,18 +15,18 @@ All nine, shared with the maestro: `explorer`, `planner`, `implementer`, `implem
 
 ## How a workstream runs
 
-1. **Brainstorm and mockups** (ponytail off): `superpowers:brainstorming` with the owner. An adopted workstream (its briefing says so) skips this stage: write the spec from the work already on the branch instead, and brainstorm only what that spec leaves unclear. For UI, mockups follow the mockup recipe in the maestro's `stages.md`: a brief, a builder subagent (`frontend-design`, `taste-skill`), a separate reviewer (the impeccable detector, `design:design-critique`) and one fix round, before the owner sees them.
+1. **Brainstorm and mockups** (ponytail off): `superpowers:brainstorming` with the owner. An adopted workstream (its briefing says so) skips this stage: write the spec from the work already on the branch instead, and brainstorm only what that spec leaves unclear. For UI, mockups follow the mockup recipe in the maestro's `stages.md`: a brief, a builder subagent (`frontend-design`, `taste-skill`), a separate reviewer (the impeccable detector, `design:design-critique`, `design:ux-copy`) and one fix round, before the owner sees them. When the owner asks for a redesign from scratch, add the recipe's "Redesign from scratch" rules.
 2. **Spec** (ponytail lite): write it in `docs/superpowers/specs/`. Sensitive specs get `security-audit` early. Any detail the brainstorm left open that you decide in the spec goes to the owner as a short list, and the plan starts only after their yes.
 3. **Plan:** dispatch `planner` (it runs in ultra). Each task comes back tagged with an agent and a risk.
 4. **Implementation:** `superpowers:subagent-driven-development`, one subagent at a time, visible in the conversation. Backend, database and integrations: `implementer` or `implementer-advanced` in full. UI: `implementer` in lite with `impeccable:impeccable`. Infrastructure: ultra. Mechanical: `mechanic`.
-5. **Reviews** per task, proportional to its risk (table in `stages.md`). UI tasks get the third review: `screenshotter` (web UI with a dev server), then `impeccable:impeccable-finish-reviewer` against the approved mockup, with `design:accessibility-review`. Handle findings with `superpowers:receiving-code-review`.
+5. **Reviews** per task, proportional to its risk (table in `stages.md`). UI tasks get the third review: `screenshotter` (web UI with a dev server), then `impeccable:impeccable-finish-reviewer` against the approved mockup, with `design:accessibility-review` and `design:ux-copy`. Handle findings with `superpowers:receiving-code-review`.
 6. **Close-out:** `verifier` for the full verification; `superpowers:requesting-code-review` dispatches a whole-branch reviewer using `ponytail:ponytail-review`; `ponytail:ponytail-debt` lists the `shortcut:` comments in the PR description; `security-audit` before a PR that touches access, credentials, public pages or email; `superpowers:finishing-a-development-branch`. Open the PR into the integration branch, listing in its description the reviews each task's risk required with their verdicts, and the `shortcut:` list; the maestro's merge checklist looks for both. Delete your handoff note in the last commit before merge (its summary goes to the HANDOFF and the decisions log).
 
 ## Rules
 
 - **Spec first.** If you or a subagent find the spec wrong or incomplete, stop: fix the spec (and record it in the decisions log), then the plan, then the code.
 - **Tick the plan.** When a task passes its reviews, tick its checkboxes in the plan file in that task's last commit. The liveview reads progress from the ticks and learns task durations from the commits that made them.
-- **Modes:** switch your own ponytail mode per stage (`ponytail:ponytail` with `lite` or `ultra`, or "stop ponytail") and state the mode, model and skills in every subagent briefing.
+- **Modes:** switch your own ponytail mode per stage (`ponytail:ponytail` with `lite` or `ultra`, or "stop ponytail") and state the mode, model, effort and skills in every subagent briefing. Pass `model` and `effort` on the Agent call for every agent without its own (the mockup builder, reviewer and fixer, any `general-purpose` agent), from "Model and effort" in `stages.md`. Agents never inherit your effort.
 - **Parallelism:** run at most as many tasks at once as your briefing's task limit, 1 when it names none; the maestro sizes it to the machine and the token limits and may change it. Run plan tasks in parallel only with `superpowers:dispatching-parallel-agents`, after checking they touch no shared files, each with a self-contained briefing. If tests start timing out or the machine slows, drop to 1 and tell the maestro. When the maestro asks you to land a part other workstreams wait on, do it first, as its own PR. Use it too for 2 or more independent failures. Flaky or "unstable" failures get `superpowers:systematic-debugging`.
 - **Your resources:** your own worktree, your own isolated test data if the project keeps data ("Test data" in "Project settings", skill `orchestra:test-databases`), your own dev server port if it has one. Tests never touch real or dev data. Tell subagents never to run `git stash` and to commit with `git add <path>` only.
 - **Always ask the owner first**, even under bypass permissions, and tell your subagents the same: anything that needs admin rights, deletes data or branches, or touches credentials, money or production data.
@@ -38,8 +38,10 @@ All nine, shared with the maestro: `explorer`, `planner`, `implementer`, `implem
 Send one line (in the desktop app, `SendMessage` to the maestro session; without it, the status line of your handoff note) when:
 - a decision affects another workstream;
 - you open or change a schema migration;
-- you close a wave of tasks or get close to 250k tokens, with your context size (`get_usage` on yourself; without the desktop app, see `/orchestra:close-wave` step 2);
+- you close a wave of tasks or get close to 250k tokens, with your context size and the model and effort each agent ran at (`get_usage` on yourself; without the desktop app, see `/orchestra:close-wave` step 2);
 - the PR is ready to check and merge.
+
+Nothing else. Progress between these (an agent finished, a review is running) goes in your handoff note's status line: every message wakes the maestro, and each wake re-reads its whole context. When the maestro started your session, the app also passes it the start of your last message at every turn end, so end each turn with where things stand in one line.
 
 When you wait on the maestro's answer, also write it in your status line (`waiting on: maestro, <what>`), so the maestro still finds it after its context is compacted.
 

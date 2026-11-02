@@ -2,6 +2,19 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.6.0
+
+Changes from running orchestra on a real project for a week, where the maestro turned out to be the largest cost.
+
+- The maestro wakes less and clears sooner. Principals message it only at milestones and keep progress in their handoff notes; it answers a progress note in one line, and clears itself at the end of every wave and above 200k tokens.
+- The band wakes the maestro once when the 5-hour or weekly limit reaches a set share (`limitAlertAt`, 90% by default), so no cron has to wake it to check. See [Limit alert](docs/band.md#limit-alert).
+- `/orchestra:cost` shows where the project's tokens went, per branch and per session.
+- Agents don't inherit the session's effort, so principals now set model and effort on every agent orchestra doesn't define, from a map in the stages guide.
+- The mockup recipe has a "redesign from scratch" variant that keeps the current app out of the new directions, and a rule for mixing directions. `design:ux-copy` checks the words in the finish review too.
+- Small UI changes get lighter reviews, and screenshots cover only what a task changes.
+- The verifier runs only in a clean worktree. Releases can rely on the last principal's verification when nothing merged since, and their server steps come from the deploy scripts at the release commit.
+- Notes for clearing a session with Remote Control on, raising a new session's effort, and archiving finished sessions together.
+
 ## 1.5.2
 
 - Mockups now get their words checked: the builder writes buttons, empty states, errors and confirmations with `design:ux-copy`, and the reviewer checks them. It comes in the `design` plugin orchestra already installs.
