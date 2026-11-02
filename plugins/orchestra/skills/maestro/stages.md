@@ -4,11 +4,11 @@ Every session starts in ponytail full. The principal switches its own mode as it
 
 | Stage | Who | Ponytail | Skills |
 | --- | --- | --- | --- |
-| Brainstorm and mockups | Principal, with the owner; mockups by a builder and a reviewer subagent (see Mockup recipe) | off; the fix round lite | `superpowers:brainstorming`, `frontend-design`, `taste-skill`, the impeccable detector before showing a mockup, `design:design-critique` before showing a mockup, `design:ux-copy` for the mockup's words, `dataviz` for charts |
+| Brainstorm and mockups | Principal, with the owner; mockups by a builder and a reviewer subagent (see Mockup recipe) | off; the fix round lite | `superpowers:brainstorming`, one direction skill (`frontend-design` by default, or `taste-skill` or `impeccable:impeccable`, never two), the impeccable detector before showing a mockup, `design:design-critique` before showing a mockup, `design:ux-copy` for the mockup's words, `dataviz` for charts |
 | Spec | Principal | lite | `security-audit` early on sensitive specs (access, credentials, public pages, email) |
 | Plan | `planner` (Opus, high) | ultra: cuts what the spec does not ask for, never what it does | `superpowers:writing-plans` |
 | Backend, database and integration work | `implementer` (Sonnet, medium) or `implementer-advanced` (Opus, high) | full | Principal: `superpowers:subagent-driven-development`, `superpowers:dispatching-parallel-agents`. Subagent: `test-driven-development`, `verification-before-completion`, `systematic-debugging` |
-| UI implementation and polish | `implementer` | lite | `impeccable:impeccable` (Operate mode, craft floor before any UI edit), `test-driven-development`, `verification-before-completion`, `dataviz`. `frontend-design` and `taste-skill` stay in the mockups |
+| UI implementation and polish | `implementer` | lite | `impeccable:impeccable` (Operate mode, craft floor before any UI edit, the approved mockup's DESIGN.md as its contract), `test-driven-development`, `verification-before-completion`, `dataviz`. `frontend-design` and `taste-skill` stay in the mockups |
 | Infrastructure (servers, CI, scripts, dependencies) | `implementer-advanced` | ultra | as for backend |
 | Mechanical work (docs, renames, formatting) | `mechanic` (Haiku, low) | full | none |
 | Searches and summaries | `explorer` (Haiku, low) | full | none |
@@ -30,12 +30,20 @@ Max everywhere costs much more for little gain in the bulk stages. Agents never 
 
 ## Mockup recipe
 
-After the brainstorm, the principal runs each UI mockup through four steps instead of drawing it itself. In a blind test this scored within 0.4 of a max-effort build (7.3 and 7.4 against 7.7 out of 10), with better accuracy, for about a third of the tokens.
+After the brainstorm, the principal runs each UI mockup through five steps instead of drawing it itself.
+
+One skill owns the direction. `frontend-design`, `taste-skill` and `impeccable:impeccable` each plan a direction of their own, so stacking two makes the second throw the first away: in a blind comparison, `frontend-design` then `taste-skill` made the weakest first builds (6.0 out of 10, against 7.5 for `frontend-design` alone and 8.0 for impeccable alone). The other layers mix safely: one skill plans, others check, judge or write the words.
 
 1. **Brief.** One file: the goal, the facts the page may state (from the README and the spec, never invented), the brand traps (ground colour, fonts that must load, what each shape means, no overflow at 1440, 768 and 390) and the budget below. Keep the creative direction open: a brief that names the idea makes every build look alike.
-2. **Builder** (`general-purpose`, Opus, effort max, since it sets the direction; ponytail off): `frontend-design`, then `taste-skill` with three directions dealt, and `design:ux-copy` for buttons, empty states, errors and confirmations (keep `frontend-design`'s voice: the interface speaks, never apologizes). It fixes from the `inspect.mjs` text output first and opens screenshots only at the end of a round, one per width. It stops at the first build with 0 FAIL.
-3. **Reviewer** (a separate subagent, Opus, effort max): looks at the screenshots, runs the impeccable detector and `design:design-critique`, checks the words with `design:ux-copy` (each copy finding gives the current and the proposed text), checks every claim against the facts, and returns at most 8 one-line findings and a score. The builder never holds the reviewer's screenshots.
-4. **Fix round** (the same builder, resumed, so still at max; ponytail lite): fixes only those findings. At most 3 look rounds in all; then the owner sees it.
+2. **Builder** (`general-purpose`, Opus, effort max, since it sets the direction; ponytail off) with one direction skill, named in its prompt:
+   - `frontend-design` by default: second best in the comparison at the lowest cost.
+   - `taste-skill` for a page with no brand yet, where its library of directions matters most. It deals three and picks one.
+   - `impeccable:impeccable` when the owner wants the strongest app screen and accepts about twice the tokens. It won the app screen (8.5) and runs its own finish review and fixes, so skip steps 3 and 4 for it.
+
+   Plus `design:ux-copy` for buttons, empty states, errors and confirmations (the interface speaks, never apologizes). It checks each round with taste-skill's `inspect.mjs` (`--app` for an app screen) as a neutral gate: with any other direction skill, pass `--allow hairline,outlined-box,mono,few-pictures,still-page`, since those are taste-skill's house style, not defects. What counts is wrapped headlines, tiny text, overflow, covered text and contrast. It fixes from the text output first, opens screenshots only at the end of a round, one per width, and stops at the first build with 0 FAIL.
+3. **Reviewer** (a separate subagent, Opus, effort max): looks at the screenshots, runs the impeccable detector and `design:design-critique`, checks the words with `design:ux-copy` (each copy finding gives the current and the proposed text), checks every claim against the facts, and returns at most 8 one-line findings and a score. The builder never holds the reviewer's screenshots. In the comparison this review found 11 of the jurors' 13 defects for under 1M tokens.
+4. **Fix round** (the same builder, resumed, so still at max; ponytail lite): fixes only those findings. At most 3 look rounds in all; then the owner sees it. The review and fix round added 1.0 to 1.5 points.
+5. **Hand-off** (after the owner approves a mockup; a subagent, Opus, high): `impeccable:impeccable` with its `document` command writes DESIGN.md at the repository root from the approved mockup: its colours, type, spacing, components and do's and don'ts. When the project has one, it adds what the mockup brings; a redesign from scratch replaces it. If PRODUCT.md is missing, it writes one with `init`, answering from the spec and the brief, not the owner. A build made with impeccable wrote them already: check they match the approved mockup. Commit both with the spec. The implementer's impeccable and the finish reviewer read them, so they check the build against the approved direction instead of guessing it.
 
 Max runs inside the recipe's caps: one build until 0 FAIL, at most 3 look rounds. Run without a cap, max cost 8.5 times a medium build, mostly from screenshots re-read on every request.
 
@@ -47,7 +55,7 @@ When the owner asks for screens "as if built from scratch", the current UI must 
 
 1. **A jobs-and-data inventory** in place of the specs: per role, the question they bring, the decision they make, the data that exists, the actions and the rules. Strip every layout, section name, block order and component. Which screens exist stays open too.
 2. **Banned patterns:** the brief lists the current app's recognisable compositions, and the reviewer fails any direction that resembles them.
-3. **One structural premise per direction**, set by the principal ("the plan as a live spreadsheet", "as a month timeline", "as a decision queue"), with the visual left to the style draw. Without premises, the directions drift together.
+3. **One structural premise per direction**, set by the principal ("the plan as a live spreadsheet", "as a month timeline", "as a decision queue"), with the visual left to the builder. Without premises, the directions drift together.
 
 ## Risk-proportional review
 
