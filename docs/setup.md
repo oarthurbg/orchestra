@@ -99,6 +99,7 @@ Savings and limits are in [Benchmarks](benchmarks.md).
 | --- | --- | --- |
 | `cacheMinutes` | 60 | Your prompt cache lifetime, for the band's [keep-warm](band.md#keep-warm). Use 5 for API keys and overage. |
 | `warmMaxHours` | 2 | Stop keeping the cache warm for a subagent that has run this long. |
+| `limitAlertAt` | 90 | The share of the 5-hour or weekly limit at which the band wakes the maestro, once per limit window. Above 100 turns it off. See [Limit alert](band.md#limit-alert). |
 | `liveviewTailnet` | off | Open the liveview to your own devices on Tailscale, such as your phone. See [The liveview](liveview.md#on-your-phone). |
 
 Show or change them with [`/orchestra:settings`](commands.md#orchestrasettings), in any Claude Code window:

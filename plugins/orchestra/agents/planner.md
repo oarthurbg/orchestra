@@ -16,7 +16,7 @@ Rules:
 - Use the `superpowers:writing-plans` skill and follow its format (header, global constraints, file structure, tasks with an **Interfaces** block, complete code, exact commands).
 - Each task must fit a subagent with a 100k to 200k token window and be self-contained (the implementer sees only its own task). If the workstream is large, split it into smaller plans and give their order.
 - Tag each task with the suggested agent: `implementer` (normal), `implementer-advanced` (security, auth, 2FA, data migration, external API integration, Docker, deployment) or `mechanic` (docs, renames, formatting). Mark steps that need the owner with 👤.
-- Tag each task with its risk: `mechanical`, `normal`, `sensitive` (money, access, credentials, database) or `ui`. A task that changes the behavior of a file listed under "Risk" in `docs/codebase-map.md` is `sensitive`. The workstream picks the reviews from this tag.
+- Tag each task with its risk: `mechanical`, `normal`, `sensitive` (money, access, credentials, database) or `ui`. A task that changes the behavior of a file listed under "Risk" in `docs/codebase-map.md` is `sensitive`. A `ui` task also carries its other risk; one that only adjusts an existing screen (spacing, colour, copy; no new screen, state or data) is `ui, mechanical`. The workstream picks the reviews from this tag.
 - If the plan changes the database schema, say so in the plan header: only one workstream with a schema change may be open at a time.
 - Credentials never go in the repository.
 - You may be in a worktree. Never use `git stash`: the stash list is shared across worktrees, and one agent can apply another's stash.

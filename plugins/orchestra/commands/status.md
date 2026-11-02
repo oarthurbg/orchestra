@@ -32,6 +32,7 @@ Then two short lists:
 
 - **Stalled session:** tell it to resume (`SendMessage` to its session; without the desktop app, ask the owner to type it there), or check its worktree and output first if an agent died with the session.
 - **250k or more at a natural stop:** propose the clear (`/orchestra:close-wave <name>`).
+- **Your own context** at 200k or more, or a wave just ended: clear yourself at this natural stop, as "Context and clearing" in the maestro skill says.
 - **PR ready:** run the merge checklist in `${CLAUDE_PLUGIN_ROOT}/skills/maestro/checklists.md`.
 - **Registry:** set each row's Stage in `.orchestra/workstreams.md` to the stage in its status line, so the registry never lags behind the note.
 

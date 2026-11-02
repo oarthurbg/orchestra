@@ -44,7 +44,7 @@ flowchart LR
 | [Infrastructure](#infrastructure) | `implementer-advanced` | ultra | as for backend |
 | Mechanical work, at any stage | [`mechanic`](agents.md#mechanic) | full | none |
 | Searches, at any stage | [`explorer`](agents.md#explorer) | full | none |
-| [Reviews](#reviews) | `spec-reviewer`, `quality-reviewer`, `impeccable:impeccable-finish-reviewer` | off | `verification-before-completion`, `ponytail:ponytail-review`, `design:accessibility-review`, `superpowers:receiving-code-review` |
+| [Reviews](#reviews) | `spec-reviewer`, `quality-reviewer`, `impeccable:impeccable-finish-reviewer` | off | `verification-before-completion`, `ponytail:ponytail-review`, `design:accessibility-review`, `design:ux-copy`, `superpowers:receiving-code-review` |
 | [Close-out and PR](#close-out-and-pr) | Principal; `verifier` | full | `superpowers:requesting-code-review`, `ponytail:ponytail-debt`, `security-audit`, `superpowers:finishing-a-development-branch` |
 | [Between releases](#between-releases) | Maestro | full | `ponytail:ponytail-audit`, the impeccable audit |
 
@@ -61,6 +61,10 @@ flowchart LR
 - `dataviz` designs the charts.
 
 **The mockup recipe.** The principal doesn't draw mockups. It writes one brief (goal, the facts the page may state, brand traps, budget) and leaves the creative direction open. A builder subagent builds until its inspection reports 0 FAIL. A separate reviewer subagent checks the screenshots with the detector and the critique and returns at most 8 findings and a score. The builder fixes only those, in lite, with at most 3 look rounds before the owner sees it. In a blind test this scored within 0.4 of a max-effort build for about a third of the tokens. Steps in the [mockup recipe](../plugins/orchestra/skills/maestro/stages.md#mockup-recipe).
+
+**Redesign from scratch.** When you ask for screens as if built from scratch, specs that describe layouts would bring the current app back in a new skin. The recipe then swaps the specs for a list of each role's jobs and data, bans the current app's recognisable patterns, and gives each direction its own structural idea ("the plan as a timeline", "as a decision queue"). When you pick parts of several directions, the builder takes one as the base and carries the others' parts into it.
+
+**Model and effort.** Agents don't inherit the session's effort. The principal sets model and effort on every agent orchestra doesn't define: max for setting a direction, reviews and UX fixes, high for building out an approved direction, low on Sonnet or Haiku for searches and screenshots. [The full map](../plugins/orchestra/skills/maestro/stages.md#model-and-effort).
 
 ## Spec
 
@@ -103,9 +107,11 @@ The planner's risk tag picks the reviews:
 | `mechanical` (docs, renames, text) | [`spec-reviewer`](agents.md#spec-reviewer) only |
 | `normal` | `spec-reviewer`, then [`quality-reviewer`](agents.md#quality-reviewer) |
 | `sensitive` (money, access, credentials, database) | `spec-reviewer`, `quality-reviewer`, then `security-audit`, in sequence |
-| `ui` | the reviews of its other risk, plus a finish review: [`screenshotter`](agents.md#screenshotter) captures, then `impeccable:impeccable-finish-reviewer` compares with the approved mockup, with `design:accessibility-review` |
+| `ui` | the reviews of its other risk, plus a finish review: [`screenshotter`](agents.md#screenshotter) captures, then `impeccable:impeccable-finish-reviewer` compares with the approved mockup, with `design:accessibility-review` and `design:ux-copy` |
 
 Spec and quality reviews run in parallel only on low-risk tasks; on risky tasks they run in sequence, so the quality reviewer sees code that already matches the spec. The finish review needs a web UI with a dev server and browser checks; without them, `ui` tasks get only the reviews of their other risk. Before the PR, one more reviewer checks the whole branch (see [Close-out](#close-out-and-pr)).
+
+Small changes stay light: a `ui` task that only adjusts an existing screen (spacing, colour, copy) gets `spec-reviewer` alone before the finish review, and screenshots cover only the widths and states it changes.
 
 Skills: every reviewer uses `verification-before-completion` (run the command before asserting anything about it), and `quality-reviewer` uses the `ponytail:ponytail-review` method without the mode. The principal reads the findings with `superpowers:receiving-code-review`, checking each one before acting on it.
 
@@ -136,7 +142,7 @@ orchestra only decides where each skill enters the flow. The skills, and the cre
 | [impeccable](https://github.com/pbakaus/impeccable) | Paul Bakaus | Apache-2.0 | The detector on mockups; Operate mode in UI work; the finish reviewer; the audit between releases |
 | [taste-skill](https://github.com/Leonxlnx/taste-skill) | leonxlnx | MIT | Art direction for mockups |
 | [frontend-design](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/frontend-design) | Anthropic | Apache-2.0 | Visual direction for mockups |
-| [design](https://github.com/anthropics/knowledge-work-plugins/tree/main/design) | Anthropic (knowledge-work plugins) | Apache-2.0 | `design-critique` and `ux-copy` on mockups; `accessibility-review` in the finish review |
+| [design](https://github.com/anthropics/knowledge-work-plugins/tree/main/design) | Anthropic (knowledge-work plugins) | Apache-2.0 | `design-critique` and `ux-copy` on mockups; `accessibility-review` and `ux-copy` in the finish review |
 | [security-audit](https://github.com/cloudflare/security-audit-skill) | Cloudflare | MIT | Sensitive specs, `sensitive` reviews, PRs that touch access, credentials, public pages or email |
 | [playwright-cli](https://github.com/microsoft/playwright-cli) | Microsoft | Apache-2.0 | Browser checks and the screenshotter's captures |
 | `dataviz` | Anthropic | ships with Claude Code | Charts in mockups and UI work |

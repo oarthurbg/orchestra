@@ -1,5 +1,5 @@
 ---
-description: Show or change orchestra's settings (keep-warm cache, liveview on Tailscale) from any Claude Code window
+description: Show or change orchestra's settings (keep-warm cache, limit alert, liveview on Tailscale) from any Claude Code window
 argument-hint: "[<setting> <value> | tailscale on|off]"
 ---
 
