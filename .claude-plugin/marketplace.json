@@ -52,7 +52,7 @@
     {
       "name": "design",
       "source": { "source": "git-subdir", "url": "https://github.com/anthropics/knowledge-work-plugins.git", "path": "design" },
-      "description": "Upstream: Anthropic (knowledge-work-plugins). Design critique and accessibility review.",
+      "description": "Upstream: Anthropic (knowledge-work-plugins). Design critique, UX copy and accessibility review.",
       "homepage": "https://github.com/anthropics/knowledge-work-plugins/tree/main/design",
       "category": "design"
     },
