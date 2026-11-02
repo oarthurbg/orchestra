@@ -103,7 +103,7 @@ The numbers are weighted by what each kind of token costs (input 1, cache write 
 Closes a wave of tasks, so a long session can be cleared without losing its place.
 
 - **In a principal,** no argument: waits for running agents, checks the context size, commits the updated handoff note and reports to the maestro. Below 250k tokens it carries on; above, it waits for the maestro.
-- **In the maestro,** with the workstream's name: above 250k tokens and at a natural stop, it confirms the handoff note is current, clears the session and briefs it to resume. Below 250k it does nothing. If the PR is merged and no work remains, it archives the session instead.
+- **In the maestro,** with the workstream's name: above 250k tokens and at a natural stop, it confirms the handoff note is current, clears the session and briefs it to resume. Below 250k it does nothing. If the PR is merged and no work remains, it leaves the session idle for the app to archive after a day.
 
 ## `/orchestra:liveview`
 

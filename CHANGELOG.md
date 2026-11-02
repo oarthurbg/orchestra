@@ -2,6 +2,11 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.6.1
+
+- Archiving is left to the desktop app's inactivity archive (1 day): it costs no tokens and skips sessions that are running or have background work. The maestro archives by hand only when the owner asks. In a test, the app's archive-on-PR-close archived a principal minutes after its spec PR merged, so it stays off.
+- An archived session refuses messages, so the maestro checks for that and unarchives a session before messaging it.
+
 ## 1.6.0
 
 Changes from running orchestra on a real project for a week, where the maestro turned out to be the largest cost.

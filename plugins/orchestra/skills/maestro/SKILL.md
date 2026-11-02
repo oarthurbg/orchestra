@@ -44,7 +44,7 @@ The other six (planner, implementers, reviewers, screenshotter) are for principa
 
 1. If `docs/HANDOFF.md` does not exist, run `/orchestra:init`.
 2. Confirm "Project settings" and "Owner authorizations" in `CLAUDE.md` with the owner.
-3. Check the recommended settings (orchestra's `docs/setup.md`): bypass permissions for this project, this session on Opus at medium effort, `autoCompactWindow: 600000` at the top level and under `modelSettings` for Opus, auto-archive on PR close off, the branch guard from `/orchestra:init` installed, and branch protection on GitHub for the integration and production branches.
+3. Check the recommended settings (orchestra's `docs/setup.md`): bypass permissions for this project, this session on Opus at medium effort, `autoCompactWindow: 600000` at the top level and under `modelSettings` for Opus, auto-archive on PR close off and auto-archive of inactive sessions at 1 day, the branch guard from `/orchestra:init` installed, and branch protection on GitHub for the integration and production branches.
 4. **Take stock of work already under way** (skip it in a new project with nothing open). Read, without changing anything: open PRs (`gh pr list --state open`), branches with work not yet in the integration branch (`git fetch origin` then `git branch -r --no-merged origin/<integration branch>`), worktrees (`git worktree list`), open issues (`gh issue list --state open --limit 50`), and any roadmap or TODO file. Show the owner one table, one row per item:
 
    | Item | What it is | Last activity | Suggested action |
@@ -123,9 +123,9 @@ Without the list (the hook did not run, or you are not sure the summary kept eve
 
 ## Archiving and reactivating
 
-- Archive a principal that has done its job (PR merged, no upcoming work), at its level in "Owner authorizations", after checking that no agent is running in it: archiving kills the session's process and its background agents, and unarchiving does not bring them back.
-- At the end of a wave, ask the owner once about every finished session together ("archive these 4?"), at its level in "Owner authorizations", instead of one at a time.
-- Keep the app's "archive when the PR closes" setting off while sessions open spec or plan PRs and keep working afterwards.
+- Leave archiving to the app: its inactivity archive (1 day) costs no tokens and skips sessions that are running or have background work. Archive by hand (`archive_session`, at its level in "Owner authorizations", after checking no agent is running: archiving kills the session's background agents) only when the owner asks.
+- Keep the app's "archive when the PR closes" setting off. It archives a principal minutes after its spec PR merges, mid-workstream, and turns its Remote Control off.
+- An archived session refuses `SendMessage`. Before messaging a session that may be idle for a day or more, check `get_session`; if `isArchived`, run `unarchive_session` (no owner question: it only brings the session back to the sidebar), then send. It resumes with its conversation.
 - If work comes back close to an archived session's spec (next phase, a fix), reactivate that same session (`unarchive_session`) when it is cheaper than a new one: its context still helps and is below 250k. Otherwise start a new session with a briefing.
 
 ## Without the desktop app

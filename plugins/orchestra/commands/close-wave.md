@@ -19,4 +19,4 @@ Close a wave of tasks. First decide which role this session has: a principal (sk
 2. Below 250k tokens, do nothing: clearing does not pay off.
 3. Above 250k: confirm the handoff note is committed and current, then clear at its level in "Owner authorizations" (`CLAUDE.md`) with `clear_session`. If it fails, the session has Remote Control on or live work: turn Remote Control off (`set_remote_control`) or ask it to finish its background tasks and clear itself, as "Context and clearing" in the maestro skill says.
 4. Send the briefing back: "Load the `orchestra:principal` skill. Read `docs/workstreams/<name>.md` and follow its clean-session checklist. Continue from task <N> of `<plan path>`."
-5. If the workstream's PR is merged and no work is coming, archive the session instead (with the other finished sessions, in one question to the owner), at its level in "Owner authorizations" (`archive_session`, after checking no agent is running).
+5. If the workstream's PR is merged and no work is coming, neither clear nor brief it: leave it idle, and the app archives it after a day of inactivity.
