@@ -2,6 +2,13 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.8.0
+
+- Mockups pick their builder by surface, and a different skill reviews each one. A second blind comparison tried taste-skill and impeccable together:
+  - App screens: impeccable builds, taste-skill's critique reviews, impeccable fixes. It scored 9.0 out of 10, against 8.0 for impeccable alone.
+  - Pages: `frontend-design` builds, the impeccable detector and `design:design-critique` review, then a fix round. It scored 8.5, the best page, for under half the tokens of the next.
+- taste-skill moves from direction to review. Every setup where it set the direction placed in the bottom half, even with impeccable building it, while its review found what impeccable's own finish review missed. It still deals directions when the owner asks.
+
 ## 1.7.0
 
 - Mockups use one direction skill, not two stacked. In a blind comparison of design-skill setups, `frontend-design` followed by `taste-skill` made the weakest first builds (6.0 out of 10, against 7.5 for `frontend-design` alone and 8.0 for impeccable alone): each plans a direction of its own, and the second threw the first away. `frontend-design` is the default; `taste-skill` fits a page with no brand yet, and impeccable the strongest app screen at about twice the tokens.
