@@ -2,6 +2,12 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.7.0
+
+- Mockups use one direction skill, not two stacked. In a blind comparison of design-skill setups, `frontend-design` followed by `taste-skill` made the weakest first builds (6.0 out of 10, against 7.5 for `frontend-design` alone and 8.0 for impeccable alone): each plans a direction of its own, and the second threw the first away. `frontend-design` is the default; `taste-skill` fits a page with no brand yet, and impeccable the strongest app screen at about twice the tokens.
+- The builder's check keeps only what points at real defects (wrapped headlines, tiny text, overflow, covered text, contrast) and allows taste-skill's house style (hairlines, outlined boxes, monospace, picture and motion counts) when another skill set the direction.
+- The approved mockup is written down as impeccable's DESIGN.md before the spec, so the implementer and the finish reviewer check the build against it instead of guessing the direction.
+
 ## 1.6.1
 
 - Archiving is left to the desktop app's inactivity archive (1 day): it costs no tokens and skips sessions that are running or have background work. The maestro archives by hand only when the owner asks. In a test, the app's archive-on-PR-close archived a principal minutes after its spec PR merged, so it stays off.
