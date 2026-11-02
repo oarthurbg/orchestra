@@ -36,7 +36,7 @@ flowchart LR
 
 | Stage | Who | Ponytail | Skills |
 | --- | --- | --- | --- |
-| [Brainstorm and mockups](#brainstorm-and-mockups) | Principal with the owner; a builder and a reviewer subagent | off; fix round lite | `superpowers:brainstorming`, `frontend-design`, `taste-skill`, the impeccable detector, `design:design-critique`, `dataviz` |
+| [Brainstorm and mockups](#brainstorm-and-mockups) | Principal with the owner; a builder and a reviewer subagent | off; fix round lite | `superpowers:brainstorming`, `frontend-design`, `taste-skill`, the impeccable detector, `design:design-critique`, `design:ux-copy`, `dataviz` |
 | [Spec](#spec) | Principal | lite | `security-audit` on sensitive specs |
 | [Plan](#plan) | `planner` | ultra | `superpowers:writing-plans` |
 | [Backend, database and integrations](#backend-database-and-integrations) | `implementer` or `implementer-advanced` | full | `superpowers:subagent-driven-development`, `superpowers:dispatching-parallel-agents`, `test-driven-development`, `verification-before-completion`, `systematic-debugging` |
@@ -57,6 +57,7 @@ flowchart LR
 - `superpowers:brainstorming` runs the conversation: one question at a time, two or three approaches with a recommendation, and a design the owner approves before anything is built.
 - `frontend-design` and `taste-skill` set the visual direction. `taste-skill` deals three directions so the builder doesn't settle on the first idea.
 - The impeccable detector and `design:design-critique` check each mockup first, so the owner reviews the design, not its slips.
+- `design:ux-copy` writes and checks the words: buttons that say what they do, empty states that say how to start, errors that say how to fix. The implementer copies the mockup's words, so this is where they are decided.
 - `dataviz` designs the charts.
 
 **The mockup recipe.** The principal doesn't draw mockups. It writes one brief (goal, the facts the page may state, brand traps, budget) and leaves the creative direction open. A builder subagent builds until its inspection reports 0 FAIL. A separate reviewer subagent checks the screenshots with the detector and the critique and returns at most 8 findings and a score. The builder fixes only those, in lite, with at most 3 look rounds before the owner sees it. In a blind test this scored within 0.4 of a max-effort build for about a third of the tokens. Steps in the [mockup recipe](../plugins/orchestra/skills/maestro/stages.md#mockup-recipe).
@@ -135,7 +136,7 @@ orchestra only decides where each skill enters the flow. The skills, and the cre
 | [impeccable](https://github.com/pbakaus/impeccable) | Paul Bakaus | Apache-2.0 | The detector on mockups; Operate mode in UI work; the finish reviewer; the audit between releases |
 | [taste-skill](https://github.com/Leonxlnx/taste-skill) | leonxlnx | MIT | Art direction for mockups |
 | [frontend-design](https://github.com/anthropics/claude-plugins-official/tree/main/plugins/frontend-design) | Anthropic | Apache-2.0 | Visual direction for mockups |
-| [design](https://github.com/anthropics/knowledge-work-plugins/tree/main/design) | Anthropic (knowledge-work plugins) | Apache-2.0 | `design-critique` on mockups; `accessibility-review` in the finish review |
+| [design](https://github.com/anthropics/knowledge-work-plugins/tree/main/design) | Anthropic (knowledge-work plugins) | Apache-2.0 | `design-critique` and `ux-copy` on mockups; `accessibility-review` in the finish review |
 | [security-audit](https://github.com/cloudflare/security-audit-skill) | Cloudflare | MIT | Sensitive specs, `sensitive` reviews, PRs that touch access, credentials, public pages or email |
 | [playwright-cli](https://github.com/microsoft/playwright-cli) | Microsoft | Apache-2.0 | Browser checks and the screenshotter's captures |
 | `dataviz` | Anthropic | ships with Claude Code | Charts in mockups and UI work |

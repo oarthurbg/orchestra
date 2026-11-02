@@ -2,6 +2,10 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.5.2
+
+- Mockups now get their words checked: the builder writes buttons, empty states, errors and confirmations with `design:ux-copy`, and the reviewer checks them. It comes in the `design` plugin orchestra already installs.
+
 ## 1.5.1
 
 - `/orchestra:codemap` now maps C# and .NET projects: it follows `using` lines to the folder that declares each namespace, finds `Program.cs` entry points, counts solutions and projects, and pairs a separate tests tree with the code it tests.
