@@ -1,0 +1,29 @@
+# Runs the plugin's Node tests on every pull request and on main, on Linux and Windows.
+# The band's tests import claude-code/testing, which only Claude Code's own runner provides, so they are not run here.
+name: Test
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # codemap and liveview read git history.
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      # The lsp tests skip without these. --prefix keeps npm from installing into the repository root's package.
+      - run: npm install --no-save --prefix plugins/orchestra/lsp/tests/fixtures/ts typescript@5
+      - run: npm install -g pyright
+      - run: node --test plugins/orchestra/tests/*.test.mjs plugins/orchestra/codemap/tests/*.test.mjs plugins/orchestra/cost/tests/*.test.mjs plugins/orchestra/lsp/tests/*.test.mjs plugins/orchestra/liveview/tests/*.test.mjs
+        shell: bash

@@ -18,7 +18,7 @@ function project(files) {
 }
 
 // Only node's own folder on PATH, so no language server is found. Windows may spell the key Path.
-const noServer = { ...Object.fromEntries(Object.entries(process.env).filter(([k]) => k.toUpperCase() !== 'PATH')), PATH: path.dirname(process.execPath) }
+const noServer = { ...Object.fromEntries(Object.entries(process.env).filter(([k]) => k.toUpperCase() !== 'PATH')), PATH: fs.mkdtempSync(path.join(os.tmpdir(), 'lsp-nopath-')) }
 
 const run = (cwd, args, env = process.env) => {
   const r = spawnSync(process.execPath, [LSP, ...args], { cwd, env, encoding: 'utf8' })

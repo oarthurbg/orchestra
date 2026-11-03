@@ -72,8 +72,8 @@ test('the CLI prints both tables for the project the git root belongs to', () =>
   const dir = projects()
   const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'cost-repo-'))
   assert.equal(spawnSync('git', ['init', '-q', repo]).status, 0)
-  // Name a transcript folder after this repo so the CLI finds it.
-  fs.cpSync(path.join(dir, 'D--Code-app'), path.join(dir, path.resolve(repo).replace(/[^A-Za-z0-9]/g, '-')), { recursive: true })
+  // Name a transcript folder after this repo so the CLI finds it; the long path, as git reports it, not Windows' 8.3 short name.
+  fs.cpSync(path.join(dir, 'D--Code-app'), path.join(dir, fs.realpathSync.native(repo).replace(/[^A-Za-z0-9]/g, '-')), { recursive: true })
   const cli = fileURLToPath(new URL('../cost.mjs', import.meta.url))
   const r = spawnSync(process.execPath, [cli, '--root', repo, '--projects', dir], { encoding: 'utf8' })
   assert.equal(r.status, 0, r.stderr)
