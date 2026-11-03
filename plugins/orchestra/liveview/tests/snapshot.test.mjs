@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 
 import {
   DAY, HOUR, MIN, afterPauses, attention, buildSnapshot, calendarWindow, cappedMinutes, estimate, freshestReading, limitPauses, median, modelWeight,
-  parseBranches, parsePlan, parseQueued, parseRegistry, placeQueued, planPace, planPathFromNote, projection, timedTasks,
+  joinVersions, parseBranches, parsePlan, parseQueued, parseRegistry, placeQueued, planPace, planPathFromNote, planStem, projection, timedTasks,
   typicalWorkstream, usageEvent, weighted,
 } from '../snapshot.mjs'
 
@@ -46,6 +46,19 @@ test('planPathFromNote reads the Plan line', () => {
   assert.equal(planPathFromNote('# Handoff\n\nPlan: `docs/superpowers/plans/2026-10-01-billing.md`, task 2: x. State: in progress.'), 'docs/superpowers/plans/2026-10-01-billing.md')
   assert.equal(planPathFromNote('no plan here'), null)
   assert.equal(planPathFromNote(null), null)
+})
+
+test('planPathFromNote reads the plan line in any language, else the first plan path', () => {
+  assert.equal(planPathFromNote('Plano: `docs/superpowers/plans/2026-11-03-recargas-impl.md`. T0 feita.'), 'docs/superpowers/plans/2026-11-03-recargas-impl.md')
+  assert.equal(planPathFromNote('**Plan de trabajo:** `docs/superpowers/plans/a.md`'), 'docs/superpowers/plans/a.md')
+  assert.equal(planPathFromNote('PR 1, plano `docs/superpowers/plans/2026-11-03-papeis-pr1.md` (T1 a T8) e `-parte2.md`.'), 'docs/superpowers/plans/2026-11-03-papeis-pr1.md')
+  assert.equal(planPathFromNote('Specs: `docs/superpowers/specs/x.md`'), null)
+})
+
+test('planStem joins the parts of a split plan, and joinVersions their histories', () => {
+  assert.deepEqual(['a.md', 'a-part-2.md', 'a-parte2.md', 'a-PARTE-B.md', 'a-A2.md'].map(planStem), ['a', 'a', 'a', 'a', 'a-A2'])
+  const v = joinVersions([[{ at: 1, md: 'one', sha: 'x' }, { at: 3, md: 'ONE', sha: 'z' }], [{ at: 2, md: 'two', sha: 'y' }]])
+  assert.deepEqual(v.map(x => x.md), ['one\n', 'one\ntwo', 'ONE\ntwo'])
 })
 
 test('parsePlan reads tasks, agent, risk and ticks, and stops at the next ## section', () => {

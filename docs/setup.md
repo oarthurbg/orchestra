@@ -65,6 +65,10 @@ orchestra works on a project already under way, not only on new ones.
 - The maestro then maps the code with [`/orchestra:codemap`](commands.md#orchestracodemap): how it is built, its conventions, and the files that break most often. Planners and principals read that map before they plan, and changes to the risky files get the stricter reviews.
 - An adopted branch becomes a workstream with [`/orchestra:start-workstream --adopt`](commands.md#orchestrastart-workstream). Its principal writes a spec of what is built and what is left, you confirm it, and the normal plan and reviews take over from there.
 
+### Docs in another language
+
+Specs, plans, handoff notes and the HANDOFF can be in any language: set it in "Language for code, commits and docs" in `CLAUDE.md`. A few names stay in English, because the status round, the compact hook and the liveview read them: the file and folder paths, the `Integration branch` and `Production branch` lines, the note's `Status:`, `waiting on:` and `Plan:` labels, plan tasks as `### Task N:` with `**Agent:**` and `**Risk:**`, the HANDOFF's `## Where we are` and `## Next workstreams`, and a split plan's `-part-2.md`. The full list is in the `CLAUDE.md` template. With a translated heading, the liveview shows why it cannot read the plan, such as `no "### Task N:" headings`, instead of an estimate.
+
 ## Updating
 
 Claude Code installs a new version only when the version number changes, and every release bumps it. Auto-update is off by default for marketplaces you add yourself. Pick one:

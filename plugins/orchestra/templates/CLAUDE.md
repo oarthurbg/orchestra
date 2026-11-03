@@ -34,7 +34,12 @@ The orchestra agents read this section for every project-specific value. Keep it
 - Browser checks: `none` | `no login` | <how agents sign in: a test user plus a saved session file outside the repository>. Only for apps with a web UI and a dev server.
 - Confidential paths agents must never read or copy: `none` | <paths>
 - Commit trailer: `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`
-- Language for code, commits and docs: English
+- Language for code, commits and docs: English. In any language, orchestra's names stay as the templates write them, since its tools read them:
+  - file and folder paths: `docs/HANDOFF.md`, `docs/workstreams/<name>.md`, `docs/superpowers/specs/`, `docs/superpowers/plans/<plan>.md`, `docs/decisions.md`, `docs/lessons.md`, `docs/codebase-map.md`, `.orchestra/`. A plan split in parts is `<plan>.md`, then `<plan>-part-2.md`, `<plan>-part-3.md`;
+  - the labels and headings: the `Integration branch` and `Production branch` lines above, the note's `Status:` line with its `waiting on:`, its `Plan:` line, plan tasks as `### Task N: <title>` with `**Agent:**` and `**Risk:**`, and the HANDOFF's `## Where we are` and `## Next workstreams`;
+  - a workstream's name, the same in the registry, its branch, its note and its plan.
+
+  Everything else (titles, prose, task text) is in the docs' language. Agents rename files and headings that break this when they next touch them.
 
 ## Owner authorizations
 

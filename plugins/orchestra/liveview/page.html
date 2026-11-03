@@ -519,7 +519,7 @@ function grid(snap) {
       $('span', { class: 'meta' }, r.pr || (r.plan ? 'none' : '')),
       r.total
         ? $('span', { class: 'cell-eta' }, $('button', { class: 'disclose', 'data-focus': `eta:${r.key}`, 'aria-expanded': String(isOpen), 'aria-controls': isOpen ? tid(r.key) : null, 'aria-label': `${etaText}, ${r.name}${r.etaCalibrated ? '' : ', uncalibrated estimate'}`, onclick: toggle }, etaText))
-        : $('span', { class: 'meta' }, r.plan === null && r.workstream ? 'no plan' : ''),
+        : $('span', { class: 'meta' }, r.plan === null && r.workstream ? (r.planWhy || 'no plan') : ''),
       $('div', { class: 'track' }, nowLine(), segs),
     ))
     if (isOpen) {

@@ -27,9 +27,22 @@ export function parseRegistry(md) {
   return rows
 }
 
-// The handoff note's "Plan: `docs/superpowers/plans/<plan>.md`, task N" line.
+// The plan a handoff note names, in any language: its "Plan: `docs/superpowers/plans/<plan>.md`" line, a line led by
+// another label ("Plano:"), else the first plan path it mentions.
+const PLAN_PATH = '`((?:\\./)?docs/superpowers/plans/[^`]+\\.md)`'
 export function planPathFromNote(note) {
-  return /^Plan:\s*`([^`]+)`/m.exec(note ?? '')?.[1] ?? null
+  const at = re => re.exec(note ?? '')?.[1] ?? null
+  return at(/^Plan:\s*`([^`]+)`/m) ?? at(new RegExp(`^[*_]*[\\p{L} ]+[*_]*:[*_]*\\s*${PLAN_PATH}`, 'mu')) ?? at(new RegExp(PLAN_PATH))
+}
+
+// A plan split in parts (x.md, x-part-2.md; x-parte2.md in older plans) is one plan: the name its parts share.
+export const planStem = file => file.replace(/\.md$/i, '').replace(/-(part|parte)-?[a-z0-9]{1,3}$/i, '')
+
+// The joined text of a split plan at each moment one of its parts changed, from each part's versions (oldest first).
+export function joinVersions(perPart) {
+  const latest = perPart.map(() => '')
+  const events = perPart.flatMap((vs, i) => vs.map(v => ({ ...v, i }))).sort((a, b) => a.at - b.at)
+  return events.map(e => { latest[e.i] = e.md; return { at: e.at, md: latest.join('\n'), sha: e.sha } })
 }
 
 // Plan tasks: `### Task N: title`, the `**Agent:** x. **Risk:** y.` line and the step checkboxes.
@@ -339,7 +352,10 @@ export function buildSnapshot(input) {
       row.etaCalibrated = open.every(t => t.calibrated)
       row.start = w.versions?.[0]?.at ?? row.tasks.find(t => t.start)?.start ?? now
       row.end = cursor
-    } else if (!w.worktreeMissing) row.detail = row.detail || 'no plan'
+    } else if (!w.worktreeMissing) {
+      row.detail = row.detail || 'no plan'
+      row.planWhy = w.planWhy ?? 'no plan'
+    }
     rows.push(row)
   }
   for (const s of sessions.filter(s => !listed.has(s.session) && s.role === 'unregistered' && now - Date.parse(s.updatedAt) <= STALE_MS)) rows.push(sessionRow(s, now))

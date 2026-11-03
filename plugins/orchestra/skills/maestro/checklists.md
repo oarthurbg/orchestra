@@ -15,7 +15,7 @@ Run them in order and stop at the first item that fails. Before each merge, chec
 9. After merging:
    - dispatch `verifier` on the integration branch in a fresh worktree (`git worktree add --detach <path> origin/<integration branch>`, removed after), never the main checkout: stray files there (old build output, a broken link) get picked up by test runners and fail tests that pass. It runs the full suite, including the tests reviewers skipped without test data;
    - drop the workstream's test data ("Test data" in "Project settings");
-   - remove its row from `.orchestra/workstreams.md` and record it in "Where we are" (HANDOFF) through the next docs PR;
+   - remove its row from `.orchestra/workstreams.md` and record it in "Where we are" (HANDOFF) through the next docs PR, which drops the merges older than the last 5;
    - delete its report in `.orchestra/sessions/` (the file whose `workstream` is this one), so the band stops showing it;
    - tell the next workstream in the schema queue it can rebase;
    - leave the session idle: the app archives it after a day of inactivity.
