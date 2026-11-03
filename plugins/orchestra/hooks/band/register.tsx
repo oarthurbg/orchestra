@@ -438,9 +438,9 @@ export const register: Register = (on, options) => {
     const setLevel = async (level: string) => {
       await update($, ponytail, p => ({ ...p, level }))
       // The same command a person types, so ponytail's own skill stays the only logic.
-      await $.command.run({ command: 'ponytail:ponytail', args: level }).catch(() => {})
+      // Not awaited: the command waits for the session to go idle, which can be past a press's 10 s.
       // The flag ponytail wrote is the truth: a command that failed puts the switch back.
-      await readPonytail($, true).catch(() => {})
+      void $.command.run({ command: 'ponytail:ponytail', args: level }).catch(() => {}).then(() => readPonytail($, true)).catch(() => {})
     }
 
     const limit = (label: string, l: { pct: number } | null, tail: string, alarm: boolean) => (
@@ -601,10 +601,14 @@ export const register: Register = (on, options) => {
       await $.store.set('updateLater', up.version).catch(() => {})
       await update($, offer, o => ({ ...o, state: 'none' }))
     }
-    const install = async () => {
+    const install = () => {
       // A second press before the redraw finds the update already started; checked before any await.
       if (installing) return
       installing = true
+      // Not awaited: the commands can take minutes and a press has 10 s.
+      void runUpdate()
+    }
+    const runUpdate = async () => {
       let done = false
       try {
         await update($, offer, o => ({ ...o, state: 'updating' }))

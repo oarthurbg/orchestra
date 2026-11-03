@@ -738,6 +738,36 @@ test('the ponytail switch shows only while ponytail hides its own band, and runs
   await ui.unmount()
 })
 
+test('a ponytail press returns while its command waits for the session to go idle', async ($, on) => {
+  const CFG = '/home/u/.claude'
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY,
+    [`${CFG}/plugins/installed_plugins.json`]: '{"plugins": {"ponytail@ponytail": []}}',
+    [`${CFG}/.ponytail-active`]: 'full\n',
+    [`${CFG}/.ponytail-band`]: 'off',
+  }
+  disk(on, files)
+  const clock = session(on, ROOT, 'o')
+  mock.env(on, { CLAUDE_CONFIG_DIR: CFG })
+  // A turn runs for a minute before the queued command does; then ponytail writes its flag.
+  on('command.run', async ($, e) => { await clock.sleep(60_000); files[`${CFG}/.ponytail-active`] = e.args; return { text: '' } })
+  on('classic.FileChanged', () => ({}))
+  await start($)
+  const lite = async () => {
+    const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+    const variant = (await ui.find({ key: 'orchestra-ponytail-lite' }))?.props.variant
+    await ui.unmount()
+    return variant
+  }
+  let ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  await ui.press({ key: 'orchestra-ponytail-lite' })
+  await ui.unmount()
+  expect(await lite()).toBe('secondary')
+  await clock.advance(60_000)
+  expect(files[`${CFG}/.ponytail-active`]).toBe('lite')
+  expect(await lite()).toBe('secondary')
+})
+
 test('the ponytail switch follows this session: its own switches move it, a flag another session wrote does not', async ($, on) => {
   const CFG = '/home/u/.claude'
   const files: Record<string, string> = {
@@ -1028,6 +1058,34 @@ test('a newer orchestra gets its own line; Update installs it and says how to lo
   await ui.unmount()
   ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
   expect(await ui.find({ type: 'Text', text: /Updated to|is out/ })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('an Update press returns before a slow update ends, and the band follows the update', async ($, on) => {
+  const files: Record<string, string> = { [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY }
+  installed(PLUGIN, files)
+  disk(on, files)
+  const clock = session(on, ROOT, 'o')
+  mock.store(on)
+  mock.env(on, { CLAUDE_PLUGIN_ROOT: PLUGIN })
+  releases(on, { version: '1.3.2', ok: true })
+  // Each claude command takes a minute of the mocked clock, far past a press's 10 s budget.
+  on('process.run', async ($, e) => {
+    if (e.argv[0] === 'claude') await clock.sleep(60_000)
+    return { value: { exitCode: 0, stdout: '', stderr: '' } } as never
+  })
+  await start($)
+  await settle()
+  let ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  await ui.press({ key: 'orchestra-update' })
+  await ui.unmount()
+  ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /^Updating orchestra to 1\.3\.2\.\.\.$/ })).toBeDefined()
+  await ui.unmount()
+  await clock.advance(60_000)
+  await clock.advance(60_000)
+  ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ type: 'Text', text: /^Updated to 1\.3\.2\. Run \/reload-plugins to load it\.$/ })).toBeDefined()
   await ui.unmount()
 })
 
