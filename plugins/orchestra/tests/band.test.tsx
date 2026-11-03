@@ -1203,3 +1203,24 @@ test('a limitAlertAt above 100 turns the limit alert off', { options: { limitAle
   await clock.advance(3 * REFRESH_MS)
   expect(sent).toEqual([])
 })
+
+test('a session open before /orchestra:init finds the project on a tick, starts the liveview and shows its rows', async ($, on) => {
+  const files: Record<string, string> = {}
+  disk(on, files)
+  const clock = session(on, ROOT, 'o')
+  const runs: string[] = []
+  on('process.run', ($, e) => { runs.push(JSON.stringify(e)); return { value: { stdout: '', stderr: '', exitCode: 0 } } as never })
+  on('env.get', ($, e) => ({ value: JSON.stringify(e).includes('CLAUDE_PLUGIN_ROOT') ? '/plug/orchestra' : undefined }) as never)
+  await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
+  expect(Object.keys(files)).toEqual([])
+  files[`${ROOT}/.orchestra/workstreams.md`] = REGISTRY
+  files[`${ROOT}/.orchestra/sessions/s2.json`] = report('s2', { workstream: 'reports', state: 'waiting', detail: 'asks: pick chart library', link: 'claude://claude.ai/epitaxy/local_s2', title: 'Reports' })
+  files[`${ROOT}/.orchestra/liveview.json`] = JSON.stringify({ url: 'http://localhost:4123/' })
+  await clock.advance(2 * REFRESH_MS)
+  expect(JSON.parse(files[`${ROOT}/.orchestra/sessions/o.json`]!).role).toBe('maestro')
+  expect(runs.filter(r => r.includes('liveview/server.mjs')).length).toBe(1)
+  const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  expect(await ui.find({ key: 's2-name' })).toBeDefined()
+  expect(await ui.find({ key: 'liveview' })).toBeDefined()
+  await ui.unmount()
+})
