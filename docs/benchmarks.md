@@ -1,6 +1,6 @@
 # Benchmarks
 
-[README](../README.md) · [Setup](setup.md) · [Commands](commands.md) · [Agents](agents.md) · [Stages, modes and skills](stages.md) · [The band](band.md) · [The liveview](liveview.md) · **Benchmarks**
+[README](../README.md) · [Setup](setup.md) · [Commands](commands.md) · [Agents](agents.md) · [Stages, modes and skills](stages.md) · [Memory and handoff](memory.md) · [The band](band.md) · [The liveview](liveview.md) · **Benchmarks**
 
 Every number below comes from a script in `bench/`, run on 2026-10-31 (UTC) on the machine described here. The token table is copied from an earlier measurement note. Raw results are in `bench/results/`.
 

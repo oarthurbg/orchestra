@@ -22,7 +22,7 @@ First step: confirm what a mod can read directly (with the plugin-authoring skil
 
 ### 2. A localhost dashboard
 
-Designed: [`docs/superpowers/specs/2026-10-30-liveview-design.md`](superpowers/specs/2026-10-30-liveview-design.md).
+Built: see [The liveview](liveview.md) and the spec at [`docs/superpowers/specs/2026-10-30-liveview-design.md`](superpowers/specs/2026-10-30-liveview-design.md).
 
 A plain local process that uses zero LLM tokens to stay live. Shows:
 - active sessions;
@@ -35,13 +35,13 @@ Everything comes from files on disk: the band's session files carry the plan-lim
 
 ### 3. A single decision inbox
 
-Designed: [`docs/superpowers/specs/2026-10-30-inbox-design.md`](superpowers/specs/2026-10-30-inbox-design.md).
+Built as the liveview's `Inbox` view: see [The liveview](liveview.md#the-inbox) and the spec at [`docs/superpowers/specs/2026-10-30-inbox-design.md`](superpowers/specs/2026-10-30-inbox-design.md).
 
 - Pending questions from every session, read from the band's reports.
 - Links to the files each workstream produced: mockups, screenshots, PDFs, PRs, specs.
 - An "open session" deep link per item.
 
-To investigate: whether the mod can answer inside the app. App sessions are never resumed from the CLI.
+`Answer in` opens the session, where the owner answers; answering from the inbox itself is still open (Phase 3). App sessions are never resumed from the CLI.
 
 ### 4. The maestro decides when to build a code graph
 
@@ -61,11 +61,11 @@ Built in 0.6.0: see "Code navigation" in [Setup](setup.md#code-navigation) and t
 
 Two measured trials. A command that prints references with their source line and callers as function names (a thin wrapper around Pyright or the TypeScript language service) cut explorer work tokens about 30% on networkx, the Python standard library and a public TypeScript app, and 65% (75% fewer tool calls) on a 1,960-file public app. The real Claude Code `LSP` tool, whose output is bare positions, saved nothing on that app. With Opus (high effort) as the explorer the saving shrinks to about 16%, but grep alone missed 2 of 8 callers on the trace question in every run and the language server did not. See [`docs/superpowers/specs/2026-10-30-lsp-measurement.md`](superpowers/specs/2026-10-30-lsp-measurement.md).
 
-Idea, to be brainstormed and specced:
+What shipped:
 - Explorer and planner use a language-server command (references with source lines, callers as function names) when one is available, and fall back to grep otherwise. Either orchestra ships the thin command or the plugin's tool output improves.
 - No build step and no update after merges: the server reads the working tree, so it also sees a worktree's own branch.
 
-Still open: a planner task on Opus, Python through `pyright-lsp`, whether subagents get the `LSP` tool, and the shape of the command orchestra would ship. Setup note: Anthropic's `typescript-lsp` plugin returns same-file references until `initializationOptions: {"tsserver": {"useSyntaxServer": "never"}}` is set; details in the measurement doc.
+Still open: a planner task on Opus, and whether subagents get the `LSP` tool. Setup note: Anthropic's `typescript-lsp` plugin returns same-file references until `initializationOptions: {"tsserver": {"useSyntaxServer": "never"}}` is set; details in the measurement doc.
 
 ## Phase 3: more of orchestra as mods (idea)
 
@@ -74,5 +74,5 @@ Claude Code mods can add panes, hook every tool call, add system-prompt sections
 Candidates, to be brainstormed with mockups first:
 - an inbox pane where the owner answers, and the answer reaches the session that asked (the gap item 3 leaves open);
 - the maestro and principal rules as system-prompt sections instead of a skill to load;
-- tool-call hooks that enforce the branch guard and the owner authorizations instead of asking the model to;
+- tool-call hooks that enforce the owner authorizations instead of asking the model to. The first one shipped in 1.9.0: the delete guard, which refuses deletes outside the session's folder under bypass permissions ([Setup](setup.md#recommended-settings));
 - live workstream state the band and the liveview read without polling files.

@@ -2,7 +2,7 @@
 
 What each orchestra command does and when to run it. In Claude Code, `/orchestra:help` lists them and `/orchestra:help <command>` explains one.
 
-[README](../README.md) · [Setup](setup.md) · **Commands** · [Agents](agents.md) · [Stages, modes and skills](stages.md) · [The band](band.md) · [The liveview](liveview.md) · [Benchmarks](benchmarks.md)
+[README](../README.md) · [Setup](setup.md) · **Commands** · [Agents](agents.md) · [Stages, modes and skills](stages.md) · [Memory and handoff](memory.md) · [The band](band.md) · [The liveview](liveview.md) · [Benchmarks](benchmarks.md)
 
 | Command | Run it in | Use |
 | --- | --- | --- |
@@ -28,7 +28,7 @@ Sets up orchestra in the current project. Run it once in your main session, then
 
 It reads the project first (scripts, test runner, branches, dev server, data store) and proposes values. Then it adds:
 
-- **`CLAUDE.md`:** "How we work", "Project settings" and "Owner authorizations". Every authorization starts at `ask`.
+- **`CLAUDE.md`:** "How we work", "Project settings", "Owner authorizations" and "Rules from lessons". Every authorization starts at `ask`. If your docs are in another language, it records that and lists any file or heading that breaks the names orchestra's tools read (a translated `## Next workstreams`, `### Tarefa N:`), renaming them only on your yes. See [Docs in another language](setup.md#docs-in-another-language).
 - **`docs/HANDOFF.md`**, **`docs/workstreams/`**, **`docs/decisions.md`**, **`docs/lessons.md`** and **`docs/superpowers/specs/`**, when missing.
 - **`.orchestra/`** in `.gitignore`, for the live files the band and status rounds write.
 - **Test data commands** for your data store, or `none`.
@@ -103,7 +103,7 @@ The numbers are weighted by what each kind of token costs (input 1, cache write 
 Closes a wave of tasks, so a long session can be cleared without losing its place.
 
 - **In a principal,** no argument: waits for running agents, checks the context size, commits the updated handoff note and reports to the maestro. Below 250k tokens it carries on; above, it waits for the maestro.
-- **In the maestro,** with the workstream's name: above 250k tokens and at a natural stop, it confirms the handoff note is current, clears the session and briefs it to resume. Below 250k it does nothing. If the PR is merged and no work remains, it leaves the session idle for the app to archive after a day.
+- **In the maestro,** with the workstream's name: above 250k tokens and at a natural stop, it confirms the handoff note is current, clears the session and briefs it to resume. Below 250k it does nothing. If the PR is merged and no work remains, it leaves the session idle for the app to archive after a day. Each time, it also checks the size of `docs/HANDOFF.md` on the integration branch: above 12 KB, the next docs PR trims it (see [Memory and handoff](memory.md#the-handoff)).
 
 ## `/orchestra:liveview`
 

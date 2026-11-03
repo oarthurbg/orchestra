@@ -2,7 +2,7 @@
 
 Every workstream goes through the same stages, from brainstorm to PR. At each stage orchestra sets who does the work, which ponytail mode they use and which skills they load. The short version the sessions read is [`stages.md`](../plugins/orchestra/skills/maestro/stages.md) in the maestro skill.
 
-[README](../README.md) · [Setup](setup.md) · [Commands](commands.md) · [Agents](agents.md) · **Stages, modes and skills** · [The band](band.md) · [The liveview](liveview.md) · [Benchmarks](benchmarks.md)
+[README](../README.md) · [Setup](setup.md) · [Commands](commands.md) · [Agents](agents.md) · **Stages, modes and skills** · [Memory and handoff](memory.md) · [The band](band.md) · [The liveview](liveview.md) · [Benchmarks](benchmarks.md)
 
 ## The four modes
 
