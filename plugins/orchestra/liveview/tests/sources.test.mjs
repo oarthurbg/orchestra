@@ -6,7 +6,7 @@ import os from 'node:os'
 import path from 'node:path'
 
 import { TranscriptReader, appendHistory, branchFiles, findPlan, firstParent, gather, planVersions, readHistory, readSessions, readWorkstream, seedHistory } from '../sources.mjs'
-import { timedTasks } from '../snapshot.mjs'
+import { parsePlan, timedTasks } from '../snapshot.mjs'
 
 const tmp = () => fs.mkdtempSync(path.join(os.tmpdir(), 'liveview-'))
 const line = (id, at, input) => JSON.stringify({ type: 'assistant', timestamp: new Date(at).toISOString(), message: { id, model: 'claude-haiku-5-5', usage: { input_tokens: input } } })
@@ -75,10 +75,10 @@ test('planVersions and findPlan read a real git repository', () => {
   const v = planVersions(repo, 'HEAD', p)
   assert.equal(v.length, 2)
   assert.match(v[1].md, /\[x\]/)
-  assert.equal(findPlan(repo, 'billing', 'develop'), p)
+  assert.deepEqual(findPlan(repo, 'billing', 'develop'), { plan: p })
   fs.mkdirSync(path.join(repo, 'docs', 'workstreams'))
   fs.writeFileSync(path.join(repo, 'docs', 'workstreams', 'billing.md'), 'Plan: `docs/superpowers/plans/other.md`, task 1')
-  assert.equal(findPlan(repo, 'billing', 'develop'), 'docs/superpowers/plans/other.md')
+  assert.deepEqual(findPlan(repo, 'billing', 'develop'), { plan: 'docs/superpowers/plans/other.md' })
 })
 
 test('a note plan path outside the worktree is not read', () => {
@@ -88,8 +88,8 @@ test('a note plan path outside the worktree is not read', () => {
   fs.writeFileSync(path.join(base, 'outside.md'), '### Task 1: A\n\n- [ ] step\n')
   for (const p of ['../outside.md', path.join(base, 'outside.md')]) {
     fs.writeFileSync(path.join(repo, 'docs', 'workstreams', 'billing.md'), `Plan: \`${p}\``)
-    assert.equal(findPlan(repo, 'billing', null), null)
-    assert.deepEqual(readWorkstream({ name: 'billing', worktree: repo }, null), {})
+    assert.deepEqual(findPlan(repo, 'billing', null), { why: 'no integration branch' })
+    assert.deepEqual(readWorkstream({ name: 'billing', worktree: repo }, null), { planWhy: 'no integration branch' })
   }
 })
 
@@ -246,11 +246,11 @@ test('a plan that is a symlink leaving the worktree is not followed, from the no
   }
   g('add', p)
   g('commit', '-q', '-m', 'plan')
-  assert.equal(findPlan(repo, 'feat', 'develop'), null)
+  assert.deepEqual(findPlan(repo, 'feat', 'develop'), { why: 'no plan' })
   fs.mkdirSync(path.join(repo, 'docs', 'workstreams'), { recursive: true })
   fs.writeFileSync(path.join(repo, 'docs', 'workstreams', 'feat.md'), `Plan: \`${p}\``)
-  assert.equal(findPlan(repo, 'feat', 'develop'), null)
-  assert.deepEqual(readWorkstream({ name: 'feat', worktree: repo }, 'develop'), {})
+  assert.deepEqual(findPlan(repo, 'feat', 'develop'), { why: 'no plan' })
+  assert.deepEqual(readWorkstream({ name: 'feat', worktree: repo }, 'develop'), { planWhy: 'no plan' })
 })
 
 test('a registry row naming a folder that is not a git worktree of main is reported missing and not read', () => {
@@ -328,4 +328,39 @@ test('gather reuses the plan a branch adds until its HEAD or the integration bra
   // A second plan moves HEAD, and two added plans name none.
   plan('docs/superpowers/plans/other.md')
   assert.equal(planPath(), undefined)
+})
+
+test('a workstream in another language: branches from the guard config, a split plan read as one, and why a plan is not shown', () => {
+  const { repo: main, g } = initRepo('desenvolvimento')
+  // CLAUDE.md in Portuguese, as in a real project: only the guard config names the branches.
+  fs.writeFileSync(path.join(main, 'CLAUDE.md'), 'Branch de integração: `desenvolvimento`\n')
+  g('add', 'CLAUDE.md')
+  g('commit', '-q', '-m', 'base')
+  g('config', 'orchestra.protectedBranches', 'desenvolvimento master')
+  g('worktree', 'add', '-q', '-b', 'papeis', '.worktrees/papeis')
+  const wt = path.join(main, '.worktrees', 'papeis')
+  const w = repoAt(wt)
+  const dir = path.join(wt, 'docs/superpowers/plans')
+  fs.mkdirSync(dir, { recursive: true })
+  fs.writeFileSync(path.join(dir, 'papeis-pr1.md'), '### Task 1: A\n\n- [x] step\n')
+  fs.writeFileSync(path.join(dir, 'papeis-pr1-parte2.md'), '### Task 2: B\n\n- [ ] step\n')
+  w('add', '.')
+  w('commit', '-q', '-m', 'plan')
+  fs.mkdirSync(path.join(main, '.orchestra'))
+  fs.writeFileSync(path.join(main, '.orchestra', 'workstreams.md'), '| Workstream | Session | Branch and worktree | Test data | Port | Schema change | Stage |\n| --- | --- | --- | --- | --- | --- | --- |\n| papeis | s1 | `papeis` at `.worktrees/papeis` | none | none | no | build |\n')
+  const ws = () => gather(main, Date.now(), emptyReader(), []).workstreams.papeis
+  assert.equal(ws().planPath, 'docs/superpowers/plans/papeis-pr1.md')
+  assert.deepEqual(parsePlan(ws().planMd).map(t => [t.n, t.done]), [[1, true], [2, false]])
+  assert.equal(ws().versions.length, 2)
+  // The note's "Plano:" line names the plan; its headings must stay "### Task N:".
+  fs.mkdirSync(path.join(wt, 'docs', 'workstreams'))
+  fs.writeFileSync(path.join(wt, 'docs', 'workstreams', 'papeis.md'), '# papeis\n\nPlano: `docs/superpowers/plans/papeis-pr1.md`, tarefa 2.\n')
+  fs.writeFileSync(path.join(dir, 'papeis-pr1-parte2.md'), '### Tarefa 2: B\n\n- [ ] step\n')
+  fs.writeFileSync(path.join(dir, 'papeis-pr1.md'), '### Tarefa 1: A\n\n- [x] step\n')
+  assert.equal(ws().planWhy, 'no "### Task N:" headings')
+  fs.rmSync(path.join(wt, 'docs', 'workstreams', 'papeis.md'))
+  fs.writeFileSync(path.join(dir, 'other.md'), '### Task 1: A\n')
+  w('add', '.')
+  w('commit', '-q', '-m', 'other')
+  assert.equal(ws().planWhy, '3 plans added')
 })

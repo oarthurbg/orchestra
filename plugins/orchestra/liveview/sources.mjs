@@ -6,7 +6,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { StringDecoder } from 'node:string_decoder'
 
-import { DAY, parseBranches, parsePlan, parseQueued, parseRegistry, planPathFromNote, timedTasks, usageEvent } from './snapshot.mjs'
+import { DAY, joinVersions, parseBranches, parsePlan, parseQueued, parseRegistry, planPathFromNote, planStem, timedTasks, usageEvent } from './snapshot.mjs'
 
 const PLANS = 'docs/superpowers/plans'
 const SPECS = 'docs/superpowers/specs'
@@ -113,28 +113,43 @@ function safePlan(worktree, p) {
 // The integration branch as git knows it, origin first as in findPlan, or null.
 const integrationRef = (cwd, b) => (b ? [`origin/${b}`, b].find(r => git(cwd, ['rev-parse', '--verify', '--quiet', `${r}^{commit}`]) !== null) ?? null : null)
 
-// The one plan file a branch adds: null when it adds none or several, undefined when git cannot tell.
+// The one plan a branch adds, its parts counting as one: { file }, or { why } there is none; undefined when git cannot tell.
 function addedPlan(worktree, integration) {
-  for (const base of integration ? [`origin/${integration}`, integration] : []) {
+  if (!integration) return { why: 'no integration branch' }
+  for (const base of [`origin/${integration}`, integration]) {
     const added = git(worktree, ['diff', '--name-only', '--diff-filter=A', `${base}...HEAD`, '--', PLANS])
     if (added === null) continue
     const files = added.trim().split('\n').filter(f => f.endsWith('.md'))
-    return files.length === 1 ? files[0] : null
+    if (files.length === 0) return { why: 'no plan' }
+    return new Set(files.map(planStem)).size === 1 ? { file: files.sort((a, b) => a.length - b.length)[0] } : { why: `${files.length} plans added` }
   }
   return undefined
 }
 
-// Which plan a workstream follows: its note's Plan line, else the one plan file its branch adds.
+// Which plan a workstream follows, { plan } or { why } it has none: its note's plan line, else the one plan its branch adds.
 // at names HEAD and the integration tips; while it holds, the branch diff is reused.
 const addedCache = new Map()
 export function findPlan(worktree, name, integration, at = '') {
   const fromNote = safePlan(worktree, planPathFromNote(readText(path.join(worktree, 'docs', 'workstreams', `${name}.md`))))
-  if (fromNote) return fromNote
+  if (fromNote) return { plan: fromNote }
   const key = `${worktree}|${integration}`
   const hit = at ? addedCache.get(key) : undefined
-  const file = hit?.at === at ? hit.file : addedPlan(worktree, integration)
-  if (at && file !== undefined) addedCache.set(key, { at, file })
-  return safePlan(worktree, file)
+  const found = hit?.at === at ? hit.found : addedPlan(worktree, integration)
+  if (at && found !== undefined) addedCache.set(key, { at, found })
+  const plan = safePlan(worktree, found?.file)
+  return plan ? { plan } : { why: found?.why ?? 'no plan' }
+}
+
+// A plan's parts in order (x.md, then x-part-2.md, x-part-3.md), each inside the worktree.
+function planParts(worktree, plan) {
+  const dir = path.posix.dirname(plan)
+  const stem = path.posix.basename(planStem(plan))
+  let names
+  try { names = fs.readdirSync(path.join(worktree, dir)) } catch { return [plan] }
+  const parts = names.filter(n => n.toLowerCase().endsWith('.md') && planStem(n) === stem && n !== `${stem}.md`)
+    .sort((a, b) => a.localeCompare(b, 'en', { numeric: true }))
+  const files = [...(names.includes(`${stem}.md`) ? [`${stem}.md`] : []), ...parts].map(n => safePlan(worktree, `${dir}/${n}`)).filter(Boolean)
+  return files.length ? files : [plan]
 }
 
 // Per-worktree git results, reused while HEAD does not move. gather passes HEAD and the integration tips it reads once per tick.
@@ -142,13 +157,17 @@ const wsCache = new Map()
 export function readWorkstream(row, integration, head, tips) {
   if (!row.worktree || !fs.existsSync(row.worktree)) return { worktreeMissing: true }
   head ??= git(row.worktree, ['rev-parse', 'HEAD'])?.trim() ?? ''
-  const planPath = findPlan(row.worktree, row.name, integration, head && tips !== undefined ? `${head} ${tips}` : '')
-  const planMd = planPath ? readText(path.join(row.worktree, planPath)) : null
-  if (!planPath || planMd === null || parsePlan(planMd).length === 0) return {}
-  const key = `${row.worktree}|${planPath}|${integration}`
+  const { plan: planPath, why } = findPlan(row.worktree, row.name, integration, head && tips !== undefined ? `${head} ${tips}` : '')
+  if (!planPath) return { planWhy: why }
+  const parts = planParts(row.worktree, planPath)
+  const texts = parts.map(p => readText(path.join(row.worktree, p)))
+  if (texts.every(t => t === null)) return { planWhy: 'plan file missing' }
+  const planMd = texts.map(t => t ?? '').join('\n')
+  if (parsePlan(planMd).length === 0) return { planWhy: 'no "### Task N:" headings' }
+  const key = `${row.worktree}|${parts.join('|')}|${integration}`
   const cached = wsCache.get(key)
   if (cached && cached.head === head && head) return { planPath, planMd, versions: cached.versions, commits: cached.commits }
-  const versions = planVersions(row.worktree, 'HEAD', planPath)
+  const versions = parts.length === 1 ? planVersions(row.worktree, 'HEAD', planPath) : joinVersions(parts.map(p => planVersions(row.worktree, 'HEAD', p)))
   const since = versions[0]?.at ?? Date.now() - 30 * DAY
   // Integration commits a merge or rebase brings in would split the task gaps.
   const base = integrationRef(row.worktree, integration)
@@ -293,10 +312,16 @@ function registeredWorktrees(main) {
   return heads
 }
 
+// The integration and production branches: the branch guard's config, which init sets whatever the docs' language, else CLAUDE.md.
+function branches(main) {
+  const guarded = git(main, ['config', '--get', 'orchestra.protectedBranches'])?.trim().split(/\s+/).filter(b => b && !b.startsWith('-')) ?? []
+  return guarded.length ? { integration: guarded[0], production: guarded.at(-1) } : parseBranches(readText(path.join(main, 'CLAUDE.md')))
+}
+
 // Everything buildSnapshot needs, read fresh.
 export function gather(main, now, reader, history) {
   const registry = parseRegistry(readText(path.join(main, '.orchestra', 'workstreams.md')) ?? '').map(r => ({ ...r, worktree: path.resolve(main, r.worktree) }))
-  const { integration, production } = parseBranches(readText(path.join(main, 'CLAUDE.md')))
+  const { integration, production } = branches(main)
   const known = registeredWorktrees(main)
   // Refs are shared by every worktree, so the integration tips are read once here, not per workstream.
   const tips = integration ? [`origin/${integration}`, integration].map(r => git(main, ['rev-parse', '--verify', '--quiet', `${r}^{commit}`])?.trim() ?? '').join(' ') : ''

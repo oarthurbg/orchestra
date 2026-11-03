@@ -6,6 +6,8 @@ The single entry point for every session. Read "Where we are", then your role be
 
 Durable summary: what is merged and released, open decisions, the schema queue. It changes through PRs (a workstream's last commit, or a docs PR). The live status table is not kept here: each `/orchestra:status` round writes it to `.orchestra/status.md`, which is not versioned.
 
+Every session reads this file, so it stays under about 12 KB: here, the current state and the last 5 merges (older ones are in git and the PRs); in "Next workstreams", one line per item with a link to its spec or issue; in "How we work", only what this project adds to or changes in the rules below. Details go in the spec, the decisions log or the handoff note.
+
 - <YYYY-MM-DD>: <what is merged, what is released, what comes next>
 
 ## Workstreams
