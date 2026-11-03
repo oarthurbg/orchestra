@@ -2,6 +2,10 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.11.1
+
+- The mockup builder, its fix round and UX fixes run at high, not max. The blind test behind the mockup recipe found the capped recipe with the builder at high or medium scored 7.3 and 7.4 out of 10 against 7.7 for an uncapped max build, with better accuracy, for about a third of the tokens. Max came back later without a new test. High also gives the owner a faster loop between rounds.
+
 ## 1.11.0
 
 Four ideas from Akita's [ai-memory](https://github.com/akitaonrails/ai-memory) (MIT), as rules rather than a service:

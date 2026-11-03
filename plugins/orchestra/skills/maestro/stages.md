@@ -22,7 +22,7 @@ Every session starts in ponytail full. The principal switches its own mode as it
 
 orchestra's nine agents set their own model and effort. Every other agent (the mockup builder, reviewer and fixer, any `general-purpose` agent) gets both on the Agent call, from this map:
 
-- setting a direction and UX fixes: Opus, max;
+- setting a direction and UX fixes: Opus, high. In a blind test, the capped recipe with the builder at high or medium scored 7.3 and 7.4 out of 10 against 7.7 for an uncapped max build, with better accuracy, for about a third of the tokens;
 - reviews: Opus, xhigh. In a test of 10 reviewers on one correction, Opus xhigh found 12 of the 13 serious problems and max 10, in 2.5 times the time high took; Anthropic's effort benchmark also shows max far slower than high;
 - building out an approved direction, screen by screen: Opus, high;
 - searches, copies, screenshots and mechanical edits: Sonnet or Haiku, low.
@@ -40,7 +40,7 @@ One skill owns the direction, picked by the surface, and a different skill revie
 - Every setup where taste-skill set the direction placed in the bottom half (6.25 to 7.5), even with impeccable building it. Its review, on the other hand, found what impeccable's own finish review missed.
 
 1. **Brief.** One file: the goal, the facts the page may state (from the README and the spec, never invented), the brand traps (ground colour, fonts that must load, what each shape means, no overflow at 1440, 768 and 390) and the budget below. Keep the creative direction open: a brief that names the idea makes every build look alike.
-2. **Builder** (`general-purpose`, Opus, effort max, since it sets the direction; ponytail off) with the skill for its surface, named in its prompt:
+2. **Builder** (`general-purpose`, Opus, effort high; ponytail off) with the skill for its surface, named in its prompt:
    - An app screen (a view of an app, a dashboard, settings, an inbox): `impeccable:impeccable` in Operate mode, as new work, with its own direction step and finish review.
    - A page (a landing, marketing or docs page): `frontend-design`.
    - `taste-skill` deals directions only when the owner asks for them; the builder then builds the one the owner picks, with its surface's skill.
@@ -51,12 +51,12 @@ One skill owns the direction, picked by the surface, and a different skill revie
    - A page built with `frontend-design`: the impeccable detector and `design:design-critique`.
 
    Either way it checks the words with `design:ux-copy` (each copy finding gives the current and the proposed text), checks every claim against the facts, and returns at most 8 one-line findings (what, where and at which width, the fix, high, medium or low) and a score. The builder never holds the reviewer's screenshots. Each review cost about 1M tokens; the page review found 11 of the jurors' 13 defects.
-4. **Fix round** (the same builder, resumed, so still at max; ponytail lite): fixes only those findings, with its own skill. It may decline one that contradicts the brief or its DESIGN.md, saying why. At most 3 look rounds in all; then the owner sees it. The review and fix round added 0.5 to 1.5 points.
+4. **Fix round** (the same builder, resumed, so still at high; ponytail lite): fixes only those findings, with its own skill. It may decline one that contradicts the brief or its DESIGN.md, saying why. At most 3 look rounds in all; then the owner sees it. The review and fix round added 0.5 to 1.5 points.
 
    One review round, then the owner. A second review and fix cost about 4M tokens and lost a point on the app screen (within noise on the page): half its findings were problems the first fix caused, but its fixes undid the first round's choices. What is left after one round are judgement calls (more guidance or less text, the button before or after the evidence, large screenshots or a short page) that only the owner can settle.
 5. **Hand-off** (after the owner approves a mockup; a subagent, Opus, high): `impeccable:impeccable` with its `document` command writes DESIGN.md at the repository root from the approved mockup: its colours, type, spacing, components and do's and don'ts. When the project has one, it adds what the mockup brings; a redesign from scratch replaces it. If PRODUCT.md is missing, it writes one with `init`, answering from the spec and the brief, not the owner. A build made with impeccable wrote them already: check they match the approved mockup. Commit both with the spec. The implementer's impeccable and the finish reviewer read them, so they check the build against the approved direction instead of guessing it.
 
-Max runs inside the recipe's caps: one build until 0 FAIL, at most 3 look rounds. Run without a cap, max cost 8.5 times a medium build, mostly from screenshots re-read on every request.
+The builder runs inside the recipe's caps: one build until 0 FAIL, at most 3 look rounds. Max is not worth it here: run without a cap, it cost 8.5 times a medium build, mostly from screenshots re-read on every request, and scored within noise of the capped recipe at high.
 
 **Mixing directions.** When the owner picks parts of several directions ("the home of B, the plan of C"), take one visual base, carry the named parts over into it, and write why in the handoff note. Mixing two visual systems screen by screen gives an app with two faces.
 
