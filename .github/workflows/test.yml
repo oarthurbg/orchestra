@@ -22,9 +22,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      # The lsp tests skip without these.
-      - run: npm install --no-save typescript@5
-        working-directory: plugins/orchestra/lsp/tests/fixtures/ts
+      # The lsp tests skip without these. --prefix keeps npm from installing into the repository root's package.
+      - run: npm install --no-save --prefix plugins/orchestra/lsp/tests/fixtures/ts typescript@5
       - run: npm install -g pyright
       - run: node --test plugins/orchestra/tests/*.test.mjs plugins/orchestra/codemap/tests/*.test.mjs plugins/orchestra/cost/tests/*.test.mjs plugins/orchestra/lsp/tests/*.test.mjs plugins/orchestra/liveview/tests/*.test.mjs
         shell: bash
