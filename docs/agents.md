@@ -13,7 +13,7 @@ orchestra ships nine subagents. Each does one job, with its model, effort and po
 | [implementer](#implementer) | Sonnet, medium | full, lite on UI | yes | principal |
 | [implementer-advanced](#implementer-advanced) | Opus, high | full, ultra on infrastructure | yes | principal |
 | [mechanic](#mechanic) | Haiku, low | full | yes | maestro, principal |
-| [spec-reviewer](#spec-reviewer) | Sonnet, medium | off | no | principal |
+| [spec-reviewer](#spec-reviewer) | Opus, medium | off | no | principal |
 | [quality-reviewer](#quality-reviewer) | Opus, high | off | no | principal |
 | [screenshotter](#screenshotter) | Sonnet, low | full | no | principal |
 | [verifier](#verifier) | Sonnet, low | full | no | maestro, principal |
@@ -32,8 +32,8 @@ A **principal** leads one workstream from spec to PR and uses all nine.
 **Why these models.** The model follows how much judgment the job needs and how costly a mistake is:
 
 - **Haiku** for jobs with no decisions (`explorer`, `mechanic`). Both stop and report when a decision appears.
-- **Sonnet** for jobs that follow a clear script: one well-specified task, a check against the spec, running commands, taking screenshots.
-- **Opus** where a miss is expensive: the plan, security and migrations, and the bug hunt.
+- **Sonnet** for jobs that follow a clear script: one well-specified task, running commands, taking screenshots.
+- **Opus** where a miss is expensive: the plan, security and migrations, both reviews, and the bug hunt. In a test of 10 reviewers on one correction, Opus found more of the 13 serious problems than Sonnet at every effort from medium to xhigh (9 against 2 at medium); Akita's benchmark saw Sonnet 5.5 miss a planted bug that Opus caught.
 
 ## Shared rules
 

@@ -2,6 +2,11 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.9.1
+
+- `spec-reviewer` runs on Opus (medium), not Sonnet. In a test of 10 reviewers on one correction of a 12-screen prototype, Opus found more of the 13 serious problems than Sonnet at every effort from medium to xhigh (9 against 2 at medium, in about the same time). Akita's October benchmark saw Sonnet 5.5 miss a planted bug behind an `assert true` test.
+- Reviews by agents orchestra doesn't define, the mockup reviewer among them, run at xhigh, not max. In the same test, Opus xhigh found 12 of the 13 and max 10, in 2.5 times the time high took, and Anthropic's effort benchmark also shows max far slower than high. Setting a direction and UX fixes stay at max.
+
 ## 1.9.0
 
 - A delete guard for bypass permissions. When Claude Code runs shell commands without asking, orchestra refuses deletes that reach outside the session's folder and the temp folder, of the folder itself or its `.git`, or of a path it cannot read (an unset variable, `$(...)`), and the agent is told to ask the owner instead. It covers `rm`, `Remove-Item`, `rd`, `del`, `rimraf`, `find -delete`, `rsync --delete` and `robocopy /MIR`, in Bash, PowerShell and `cmd /c`. Agents running unattended have wiped home folders through a mis-expanded `$HOME`. In modes that ask before each command, it stays out of the way.
