@@ -2,6 +2,15 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.11.0
+
+Four ideas from Akita's [ai-memory](https://github.com/akitaonrails/ai-memory) (MIT), as rules rather than a service:
+
+- A session resuming a workstream checks the handoff note against `git log` and `git status` first: newer commits or uncommitted changes mean the session before stopped without updating it, often on a usage limit, and git wins. A new session takes over only once the old one has stopped. The merge checklist also catches notes left behind in `docs/workstreams/`.
+- Writing rules for handoff notes, the HANDOFF and the maestro's resume block: the latest state wins, running work is pending, exact text for errors, paths, commands and numbers, conditions kept word for word, nothing made up. In ai-memory's test, a model's summary dropped 8 of 15 planted facts.
+- Lessons: what goes in (a checkable do or never-do that can happen again) and what stays out, one line per lesson with its dates and source, and promotion to a new "Rules from lessons" section in `CLAUDE.md`, at most 15 rules, each approved by the owner. Rule files past about 200 lines are followed less.
+- Between releases, a read-only reviewer checks lessons, decisions, the HANDOFF and the promoted rules for contradictions, stale entries and duplicates.
+
 ## 1.10.0
 
 - Docs can be in any language. The `CLAUDE.md` template lists the names that stay in English because orchestra's tools read them: the file and folder paths, the branch lines, the note's `Status:`, `waiting on:` and `Plan:`, plan tasks as `### Task N:`, the HANDOFF's `## Where we are` and `## Next workstreams`. Init lists docs that break it, and agents rename them as they go. A plan split in parts is named `<plan>-part-2.md`. See [Docs in another language](docs/setup.md#docs-in-another-language).

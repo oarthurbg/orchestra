@@ -46,7 +46,7 @@ flowchart LR
 | Searches, at any stage | [`explorer`](agents.md#explorer) | full | none |
 | [Reviews](#reviews) | `spec-reviewer`, `quality-reviewer`, `impeccable:impeccable-finish-reviewer` | off | `verification-before-completion`, `ponytail:ponytail-review`, `design:accessibility-review`, `design:ux-copy`, `superpowers:receiving-code-review` |
 | [Close-out and PR](#close-out-and-pr) | Principal; `verifier` | full | `superpowers:requesting-code-review`, `ponytail:ponytail-debt`, `security-audit`, `superpowers:finishing-a-development-branch` |
-| [Between releases](#between-releases) | Maestro | full | `ponytail:ponytail-audit`, the impeccable audit |
+| [Between releases](#between-releases) | Maestro | full | `ponytail:ponytail-audit`, the impeccable audit, a contradiction check of lessons and decisions |
 
 ---
 
@@ -137,6 +137,8 @@ Skills: every reviewer uses `verification-before-completion` (run the command be
 ## Between releases
 
 **Full.** The maestro runs `ponytail:ponytail-audit` on the code and the impeccable audit on the screens. The findings become cleanup workstreams, each led by a principal. The maestro fixes nothing itself.
+
+A read-only reviewer also checks `docs/lessons.md`, the decisions log, the HANDOFF and the rules in `CLAUDE.md` for entries that contradict each other, went stale or repeat. The maestro fixes them in a docs PR, and asks the owner before changing a promoted rule.
 
 ---
 

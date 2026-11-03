@@ -34,17 +34,26 @@ Copy `${CLAUDE_PLUGIN_ROOT}/templates/handoff-note.md` and keep the status line 
 7. Pending items for the owner
 8. Subagent modes (model, effort and ponytail mode for each stage)
 
-Write facts, not history. A section with nothing in it says "none".
+Write facts, not history. A section with nothing in it says "none". The next session knows only what the note says, so:
+
+- The latest state wins. Drop what it replaced: earlier waves and commit lists are in git.
+- Work still running is pending, never done. Say what is left.
+- Copy exact text: error messages, paths, commands, ids and the last measured numbers, never rounded or reworded. A later session searches for those words.
+- An instruction with a condition ("run X when Y") stays word for word, condition included, in Next steps.
+- Owner decisions keep the owner's words and the date.
+- Nothing made up: write "unknown" rather than a guessed path, hash or date.
+- Section 1 opens with two or three sentences; details go in bullets under it.
 
 Write the note in the docs' language, but keep its file name (`docs/workstreams/<workstream>.md`, the workstream's name in the registry) and the labels orchestra's tools read: `Status:` and its `waiting on:`, and `Plan:` with the plan's path in backticks. The status round, the compact hook and the liveview look for them. The full list is under "Language" in "Project settings" in `CLAUDE.md`.
 
 ## Clean-session checklist
 
-A session that starts after a clear, or a new session taking over a workstream, does exactly this, in order:
+A session that starts after a clear, or a new session taking over a workstream, does exactly this, in order. A new session takes over only once the one before it has stopped: two sessions in one worktree overwrite each other's work.
 
 1. Read the handoff note.
-2. Read the workstream's section in `docs/HANDOFF.md`.
-3. Read the spec.
-4. Read only the plan task in progress, not the whole plan.
-5. Open the decisions log only by searching for the workstream's section, never whole.
-6. Continue from the task the note names.
+2. Check it is current: compare its last commit with `git log --oneline -5`, and run `git status`. Newer commits or uncommitted changes mean the session before stopped without updating the note, often on a usage limit. Read those commits and changes first and trust them over the note, then fix the note.
+3. Read the workstream's section in `docs/HANDOFF.md`.
+4. Read the spec.
+5. Read only the plan task in progress, not the whole plan.
+6. Open the decisions log only by searching for the workstream's section, never whole.
+7. Continue from the task the note names.
