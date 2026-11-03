@@ -136,7 +136,7 @@ footer{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padd
   <section aria-labelledby="t-pairs">
     <h2 id="t-pairs">How they complement each other</h2>
     <div class="pairs">
-      <div class="pair"><h3>Explore, then execute</h3><p><code>frontend-design</code> and <code>taste</code> open up directions in mockups; implementation loads only <code>impeccable</code>, which holds the finish in production code.</p></div>
+      <div class="pair"><h3>Explore, then execute</h3><p>One skill owns a mockup's direction (<code>impeccable</code> for app screens, <code>frontend-design</code> for pages) and a different one reviews it, so the second never throws the first away; implementation loads only <code>impeccable</code>, reading the approved DESIGN.md.</p></div>
       <div class="pair"><h3>Detector before, reviewer after</h3><p>The impeccable detector cleans a mockup before the owner sees it; <code>impeccable-finish-reviewer</code> compares the shipped screen, from real screenshots, against the approved mockup.</p></div>
       <div class="pair"><h3>Write the test, prove the result</h3><p><code>test-driven-development</code> makes the test fail first; <code>verification-before-completion</code> only allows "done" with the command run and its output in hand.</p></div>
       <div class="pair"><h3>One failure or many</h3><p><code>systematic-debugging</code> works one failure methodically; <code>dispatching-parallel-agents</code> opens one agent per unrelated failure, and checks that parallel tasks touch no shared files.</p></div>
@@ -152,6 +152,7 @@ footer{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padd
       <div class="rule"><div class="big">600k</div><p>Auto-compact safety net (<code>autoCompactWindow</code>), for when nobody checked in time.</p></div>
       <div class="rule"><div class="big">Sized</div><p>How many workstreams and tasks run at once. The maestro sizes it to the machine, the token limits and the ready work, and changes it as work moves.</p></div>
       <div class="rule"><div class="big">docs/workstreams/</div><p>Where each workstream keeps its handoff note, on its own branch, with a fixed template and a clean-session checklist.</p></div>
+      <div class="rule"><div class="big">12 KB</div><p>Size limit for <code>docs/HANDOFF.md</code>, which every session reads: the current state and the last 5 merges. Older detail stays in git and the PRs.</p></div>
       <div class="rule"><div class="big">Off</div><p>Auto-archive on PR close. Archiving a session kills its background agents; keep it off while sessions open spec PRs and keep working.</p></div>
       <div class="rule"><div class="big">0</div><p>Lines of code leaving the main session. It plans the app, manages the machine and the limits, merges and talks.</p></div>
     </div>
@@ -162,45 +163,48 @@ footer{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padd
 
 <script>
 const STAGES=[
- {n:"Brainstorm and mockups",who:"Principal, with the owner",agent:"the session itself",mode:"off",skills:["brainstorming","frontend-design","taste","impeccable detector","design-critique","dataviz"]},
+ {n:"Brainstorm and mockups",who:"Principal, with the owner; each mockup is built by one subagent and reviewed by another, with one skill owning the direction",agent:"builder · Opus high\nreviewer · Opus xhigh",mode:"off",skills:["superpowers:brainstorming","impeccable:impeccable","frontend-design","taste-skill","impeccable detector","design:design-critique","design:ux-copy","dataviz"]},
  {n:"Spec",who:"Principal",agent:"the session itself",mode:"lite",skills:["security-audit"]},
- {n:"Plan",who:"Subagent",agent:"planner · Opus",mode:"ultra",skills:["writing-plans"]},
- {n:"Backend implementation",who:"The principal dispatches one subagent per task (subagent-driven-development); the subagent uses the rest",agent:"implementer · Sonnet\nor advanced · Opus",mode:"full",skills:["subagent-driven-development","dispatching-parallel-agents","test-driven-development","verification-before-completion","systematic-debugging"]},
- {n:"UI implementation",who:"The principal dispatches one subagent per task (subagent-driven-development); the subagent uses the rest",agent:"implementer · Sonnet",mode:"lite",skills:["subagent-driven-development","dispatching-parallel-agents","impeccable","test-driven-development","verification-before-completion","dataviz"]},
- {n:"Reviews",who:"Read-only subagents",agent:"spec compliance · Sonnet\ncode quality · Opus\nfinish-reviewer",mode:"off",skills:["verification-before-completion","receiving-code-review","impeccable-finish-reviewer","accessibility-review","dispatching-parallel-agents"]},
- {n:"PR and wrap-up",who:"Workstream and maestro",agent:"maestro merges",mode:"full",skills:["requesting-code-review","security-audit","finishing-a-development-branch","dispatching-parallel-agents","systematic-debugging"]}
+ {n:"Plan",who:"Subagent",agent:"planner · Opus high",mode:"ultra",skills:["superpowers:writing-plans"]},
+ {n:"Backend implementation",who:"The principal dispatches one subagent per task (subagent-driven-development); the subagent uses the rest",agent:"implementer · Sonnet medium\nor advanced · Opus high",mode:"full",skills:["superpowers:subagent-driven-development","superpowers:dispatching-parallel-agents","superpowers:test-driven-development","superpowers:verification-before-completion","superpowers:systematic-debugging"]},
+ {n:"UI implementation",who:"The principal dispatches one subagent per task (subagent-driven-development); the subagent uses the rest",agent:"implementer · Sonnet medium",mode:"lite",skills:["superpowers:subagent-driven-development","superpowers:dispatching-parallel-agents","impeccable:impeccable","superpowers:test-driven-development","superpowers:verification-before-completion","dataviz"]},
+ {n:"Reviews",who:"Read-only subagents, as many as the task's risk asks for",agent:"spec-reviewer · Opus medium\nquality-reviewer · Opus high\n(xhigh on sensitive tasks)\nfinish-reviewer on UI",mode:"off",skills:["superpowers:verification-before-completion","ponytail:ponytail-review","superpowers:receiving-code-review","impeccable:impeccable-finish-reviewer","design:accessibility-review","design:ux-copy"]},
+ {n:"PR and wrap-up",who:"Workstream and maestro",agent:"verifier · Sonnet low\nmaestro merges",mode:"full",skills:["superpowers:requesting-code-review","ponytail:ponytail-debt","security-audit","superpowers:finishing-a-development-branch","superpowers:dispatching-parallel-agents","superpowers:systematic-debugging"]}
 ];
 const MODE={off:["m-off","off"],lite:["m-lite","lite"],full:["m-full","full"],ultra:["m-ultra","ultra"]};
 const GROUPS=[
  {t:"Superpowers",src:"superpowers",items:[
-  ["brainstorming","Guided conversation that turns a request into an approved design, before any spec.","Workstream, before the spec"],
-  ["writing-plans","Writes the plan as small, self-contained tasks, each with its test and definition of done.","Planner"],
-  ["subagent-driven-development","The principal runs the plan by dispatching one subagent per task, with review in between. The implementer does not load it: it is the dispatched subagent.","Principal, during implementation"],
-  ["test-driven-development","Forces seeing the test fail before implementing.","Implementers"],
-  ["verification-before-completion","Only allows claiming success with the command run and the output in hand.","Implementers and reviewers"],
-  ["systematic-debugging","Methodical investigation of failures with no clear cause, including flaky ones.","When something breaks"],
-  ["dispatching-parallel-agents","The principal checks that tasks are independent (no shared files) and gives each agent a self-contained briefing. As many at once as the maestro allows.","Parallel tasks and multiple unrelated failures"],
-  ["requesting-code-review","Asks for a review of the whole branch before opening the PR.","Before the workstream PR"],
-  ["receiving-code-review","Handles reviewer findings without blindly accepting or rejecting them.","When reviews come back"],
-  ["finishing-a-development-branch","Wrap-up checklist: tests, PR, worktree and branch cleanup.","Closing the workstream"]]},
- {t:"UI design",src:"frontend-design · taste-skill · impeccable",items:[
-  ["frontend-design","Visual direction with deliberate choices of type, color and layout.","Mockups"],
-  ["taste","Aesthetic judgment to stay clear of the generic AI look.","Mockups"],
-  ["impeccable","Implementation in app mode (Operate), reading its craft floor before any UI edit.","UI implementation"],
-  ["impeccable detector","Flags style problems on a page: overused fonts, contrast, spacing.","Mockup, before showing it"],
-  ["impeccable-finish-reviewer","Compares the finished screen against the approved mockup and lists what is missing in the finish.","Third review on UI tasks"]]},
+  ["superpowers:brainstorming","Guided conversation that turns a request into an approved design, before any spec.","Workstream, before the spec"],
+  ["superpowers:writing-plans","Writes the plan as small, self-contained tasks, each with its test and definition of done.","Planner"],
+  ["superpowers:subagent-driven-development","The principal runs the plan by dispatching one subagent per task, with review in between. The implementer does not load it: it is the dispatched subagent.","Principal, during implementation"],
+  ["superpowers:test-driven-development","Forces seeing the test fail before implementing.","Implementers"],
+  ["superpowers:verification-before-completion","Only allows claiming success with the command run and the output in hand.","Implementers and reviewers"],
+  ["superpowers:systematic-debugging","Methodical investigation of failures with no clear cause, including flaky ones.","When something breaks"],
+  ["superpowers:dispatching-parallel-agents","The principal checks that tasks are independent (no shared files) and gives each agent a self-contained briefing. As many at once as the maestro allows.","Parallel tasks and multiple unrelated failures"],
+  ["superpowers:requesting-code-review","Asks for a review of the whole branch before opening the PR.","Before the workstream PR"],
+  ["superpowers:receiving-code-review","Handles reviewer findings without blindly accepting or rejecting them.","When reviews come back"],
+  ["superpowers:finishing-a-development-branch","Wrap-up checklist: tests, PR, worktree and branch cleanup.","Closing the workstream"]]},
+ {t:"UI design",src:"impeccable · frontend-design · taste-skill",items:[
+  ["impeccable:impeccable","Builds app-screen mockups with its own direction step, then the UI in Operate mode, reading its craft floor and the approved DESIGN.md before any edit.","App-screen mockups and UI implementation"],
+  ["frontend-design","Visual direction with deliberate choices of type, color and layout.","Page mockups (landing, marketing, docs)"],
+  ["taste-skill","Reviews impeccable's app screens with its critique rubric. It sets no direction unless the owner asks for options.","Mockup review"],
+  ["impeccable detector","Flags style problems on a page: overused fonts, contrast, spacing.","Page mockup review"],
+  ["impeccable:impeccable-finish-reviewer","Compares the finished screen against the approved mockup and lists what is missing in the finish.","Third review on UI tasks"]]},
  {t:"Design (Anthropic)",src:"design",items:[
-  ["design-critique","Structured critique of hierarchy, spacing and consistency.","Before showing a mockup"],
-  ["accessibility-review","Focus, screen reader, contrast and keyboard.","Alongside the third UI review"]]},
+  ["design:design-critique","Structured critique of hierarchy, spacing and consistency.","Page mockup review"],
+  ["design:ux-copy","Buttons, empty states, errors and confirmations: the interface speaks, never apologizes.","Mockups and the third UI review"],
+  ["design:accessibility-review","Focus, screen reader, contrast and keyboard.","Alongside the third UI review"]]},
  {t:"Data, security and lean code",src:"dataviz · security-audit · ponytail",items:[
   ["dataviz","Chart type, color, axes, legend and badges that stay consistent in both themes.","Mockups and chart tasks"],
   ["security-audit","Targeted review of access, credentials, public pages and email handling.","Sensitive specs and before the PR"],
+  ["ponytail:ponytail-review","Flags only bugs it can back with a concrete failure scenario.","Quality review and the whole-branch review"],
+  ["ponytail:ponytail-debt","Lists the code's shortcut: comments in the PR description.","Before the PR"],
   ["ponytail","Keeps each stage the right size: off, lite, full or ultra.","Every stage"]]}
 ];
 const track=document.getElementById("track"),groups=document.getElementById("groups"),hint=document.getElementById("hint");
 let sel=null;
 const esc=s=>s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
-function chip(s){const b=document.createElement("button");b.type="button";b.className="chip";b.textContent=s;b.dataset.skill=s;b.addEventListener("click",()=>pick(s));return b}
+function chip(s){const b=document.createElement("button");b.type="button";b.className="chip";b.textContent=s.replace(":",":​");b.dataset.skill=s;b.addEventListener("click",()=>pick(s));return b}
 STAGES.forEach((st,i)=>{
  const d=document.createElement("article");d.className="stage";d.dataset.skills=st.skills.join("|");
  const [cls,lab]=MODE[st.mode];

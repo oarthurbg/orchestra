@@ -2,7 +2,7 @@
 
 orchestra draws a band above the prompt in every Claude Code session. In the maestro's session it shows what needs you: plan limits at the top, one row per workstream that needs attention, and a footer with the keep-warm count and the Liveview button. It uses no tokens.
 
-[README](../README.md) · [Setup](setup.md) · [Commands](commands.md) · [Agents](agents.md) · [Stages, modes and skills](stages.md) · **The band** · [The liveview](liveview.md) · [Benchmarks](benchmarks.md)
+[README](../README.md) · [Setup](setup.md) · [Commands](commands.md) · [Agents](agents.md) · [Stages, modes and skills](stages.md) · [Memory and handoff](memory.md) · **The band** · [The liveview](liveview.md) · [Benchmarks](benchmarks.md)
 
 <p align="center">
   <picture>

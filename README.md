@@ -83,9 +83,9 @@ Wherever orchestra draws a session, its shape tells you the role and its fill te
   <tr><td width="72"><img alt="" src="assets/readme/features/band.svg" width="40"></td><td><b>No surprises with your limits.</b> The band shows what is left, when the week runs out, and who needs you. <a href="docs/band.md">Read more</a></td></tr>
   <tr><td width="72"><picture><source media="(prefers-color-scheme: dark)" srcset="assets/readme/features/liveview-dark.svg"><img alt="" src="assets/readme/features/liveview-light.svg" width="40"></picture></td><td><b>See everything from anywhere.</b> Progress, ETAs and your questions, on your phone too. No tokens. <a href="docs/liveview.md">Read more</a></td></tr>
   <tr><td width="72"><img alt="" src="assets/readme/features/code-navigation.svg" width="40"></td><td><b>Fewer tokens to find code.</b> A language server instead of grep: up to 65% less, measured. <a href="docs/setup.md#code-navigation">Read more</a></td></tr>
-  <tr><td width="72"><img alt="" src="assets/readme/features/context.svg" width="40"></td><td><b>Long sessions stay sharp.</b> A handoff note and a clear past 250k tokens; nothing lost on a compact. <a href="docs/setup.md#recommended-settings">Read more</a></td></tr>
+  <tr><td width="72"><img alt="" src="assets/readme/features/context.svg" width="40"></td><td><b>Long sessions stay sharp.</b> A handoff note and a clear past 250k tokens, a HANDOFF kept under 12 KB, and lessons that become rules once they recur; nothing lost on a compact. <a href="docs/memory.md">Read more</a></td></tr>
   <tr><td width="72"><img alt="" src="assets/readme/features/keep-warm.svg" width="40"></td><td><b>Cheaper waits.</b> The prompt cache stays warm while subagents run. <a href="docs/band.md#keep-warm">Read more</a></td></tr>
-  <tr><td width="72"><img alt="" src="assets/readme/features/guardrails.svg" width="40"></td><td><b>Safe to leave running.</b> You set what sessions may do alone; a branch guard blocks direct pushes. <a href="docs/setup.md#recommended-settings">Read more</a></td></tr>
+  <tr><td width="72"><img alt="" src="assets/readme/features/guardrails.svg" width="40"></td><td><b>Safe to leave running.</b> You set what sessions may do alone; a branch guard blocks direct pushes, and a delete guard stops deletes outside the session's folder. <a href="docs/setup.md#recommended-settings">Read more</a></td></tr>
 </table>
 
 ## Does it help?
@@ -119,6 +119,7 @@ To install by hand, update, or change settings, see [Setup](docs/setup.md).
 - [Commands](docs/commands.md): how to use each command.
 - [Agents](docs/agents.md): the nine subagents, their models and their jobs.
 - [Stages, modes and skills](docs/stages.md): what runs at each stage, and why.
+- [Memory and handoff](docs/memory.md): what sessions keep between clears, and how lessons become rules.
 - [The band](docs/band.md) and [the liveview](docs/liveview.md).
 - [Benchmarks](docs/benchmarks.md): how every number above was measured.
 - [The whole stack on one page](https://oarthurbg.github.io/orchestra/).
