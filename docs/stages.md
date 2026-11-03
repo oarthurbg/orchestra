@@ -73,7 +73,7 @@ Each skill's own checker enforces its house style (taste-skill fails hairlines a
 
 **Redesign from scratch.** When you ask for screens as if built from scratch, specs that describe layouts would bring the current app back in a new skin. The recipe then swaps the specs for a list of each role's jobs and data, bans the current app's recognisable patterns, and gives each direction its own structural idea ("the plan as a timeline", "as a decision queue"). When you pick parts of several directions, the builder takes one as the base and carries the others' parts into it.
 
-**Model and effort.** Agents don't inherit the session's effort. The principal sets model and effort on every agent orchestra doesn't define: xhigh for reviews, high for setting a direction, UX fixes and building out an approved direction, low on Sonnet or Haiku for searches and screenshots. [The full map](../plugins/orchestra/skills/maestro/stages.md#model-and-effort).
+**Model and effort.** Agents don't inherit the session's effort. The principal sets model and effort on every agent orchestra doesn't define: xhigh for reviews, high for setting a direction, UX fixes and building out an approved direction, Sonnet low for applying a closed list of fixes to an approved direction, low on Sonnet or Haiku for searches and screenshots. [The full map](../plugins/orchestra/skills/maestro/stages.md#model-and-effort).
 
 ## Spec
 
