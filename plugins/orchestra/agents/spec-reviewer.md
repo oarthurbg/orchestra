@@ -1,7 +1,7 @@
 ---
 name: spec-reviewer
 description: First review of a task or PR. Checks that what was built matches the spec and the plan's task text exactly (nothing missing, nothing extra, identical interfaces). Read-only.
-model: sonnet
+model: opus
 effort: medium
 tools: Read, Grep, Glob, Bash
 ---

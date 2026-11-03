@@ -12,7 +12,7 @@ Every session starts in ponytail full. The principal switches its own mode as it
 | Infrastructure (servers, CI, scripts, dependencies) | `implementer-advanced` | ultra | as for backend |
 | Mechanical work (docs, renames, formatting) | `mechanic` (Haiku, low) | full | none |
 | Searches and summaries | `explorer` (Haiku, low) | full | none |
-| Reviews | `spec-reviewer` (Sonnet), `quality-reviewer` (Opus), `impeccable:impeccable-finish-reviewer` | off | `verification-before-completion`; `quality-reviewer` uses the `ponytail:ponytail-review` method; `design:accessibility-review` and `design:ux-copy` with the third UI review; the principal uses `superpowers:receiving-code-review` on the findings |
+| Reviews | `spec-reviewer` (Opus, medium), `quality-reviewer` (Opus, high), `impeccable:impeccable-finish-reviewer` | off | `verification-before-completion`; `quality-reviewer` uses the `ponytail:ponytail-review` method; `design:accessibility-review` and `design:ux-copy` with the third UI review; the principal uses `superpowers:receiving-code-review` on the findings |
 | Close-out and PR | Principal; `verifier` (Sonnet, low) | full | `superpowers:requesting-code-review` (dispatches a whole-branch reviewer using `ponytail:ponytail-review`), `ponytail:ponytail-debt` (lists the `shortcut:` comments in the PR description), `security-audit` before a PR that touches access, credentials, public pages or email, `superpowers:finishing-a-development-branch` |
 | Between releases | Maestro | full | `ponytail:ponytail-audit` on the code and the impeccable audit on the screens, to open cleanup workstreams |
 
@@ -22,7 +22,8 @@ Every session starts in ponytail full. The principal switches its own mode as it
 
 orchestra's nine agents set their own model and effort. Every other agent (the mockup builder, reviewer and fixer, any `general-purpose` agent) gets both on the Agent call, from this map:
 
-- setting a direction, reviews and UX fixes: Opus, max;
+- setting a direction and UX fixes: Opus, max;
+- reviews: Opus, xhigh. In a test of 10 reviewers on one correction, Opus xhigh found 12 of the 13 serious problems and max 10, in 2.5 times the time high took; Anthropic's effort benchmark also shows max far slower than high;
 - building out an approved direction, screen by screen: Opus, high;
 - searches, copies, screenshots and mechanical edits: Sonnet or Haiku, low.
 
@@ -45,7 +46,7 @@ One skill owns the direction, picked by the surface, and a different skill revie
    - `taste-skill` deals directions only when the owner asks for them; the builder then builds the one the owner picks, with its surface's skill.
 
    Plus `design:ux-copy` for buttons, empty states, errors and confirmations (the interface speaks, never apologizes). It checks each round with taste-skill's `inspect.mjs` (`--app` for an app screen) as a neutral gate: unless taste-skill dealt the direction, pass `--allow hairline,outlined-box,mono,few-pictures,still-page`, since those are taste-skill's house style, not defects. What counts is wrapped headlines, tiny text, overflow, covered text and contrast. It fixes from the text output first, opens screenshots only at the end of a round, one per width, and stops at the first build with 0 FAIL.
-3. **Reviewer** (a separate subagent, Opus, effort max), looking at the screenshots with a different skill's eyes than the builder's. It checks 1440, 768 and 390 one by one, 768 included: in the comparison a hero diagram cut off at 768 got past every reviewer and every juror saw it.
+3. **Reviewer** (a separate subagent, Opus, effort xhigh), looking at the screenshots with a different skill's eyes than the builder's. It checks 1440, 768 and 390 one by one, 768 included: in the comparison a hero diagram cut off at 768 got past every reviewer and every juror saw it.
    - An app screen built with impeccable: `taste-skill`'s critique rubric (`references/critique.md` and `references/app-screens.md`) and its inspector's findings, without the five house-style rules above.
    - A page built with `frontend-design`: the impeccable detector and `design:design-critique`.
 
