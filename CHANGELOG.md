@@ -2,6 +2,10 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.8.2
+
+- A session that was already open when `/orchestra:init` set up the project now finds it within 5 seconds: the band shows its workstreams and the arrow, and the maestro starts the liveview and shows its button. Before, the band looked for the project only when the session started, so it stayed empty until a restart.
+
 ## 1.8.1
 
 - Mockups get one review round, then the owner. In a third blind comparison, a second review and fix cost about 4M tokens and lost a point on the app screen: its fixes undid the first round's choices. What is left after one round are judgement calls only the owner can settle.

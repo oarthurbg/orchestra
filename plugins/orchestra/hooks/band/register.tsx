@@ -659,6 +659,12 @@ const MISS_TOAST = 'orchestra band: keep-warm missed the cache; set cacheMinutes
 
 // Every REFRESH_MS: keep the cache warm while one of this session's subagents runs, then redraw.
 async function tick($: EngineInterface, options: Readonly<Record<string, unknown>>) {
+  // A session open before /orchestra:init made .orchestra/ finds the project here, without a restart.
+  if (ctx.main === null && ctx.root !== '') {
+    await locate($).catch(() => {})
+    if (ctx.main !== null && ctx.role === 'maestro') void startLiveview($, String(options.liveviewTailnet) === 'true').catch(() => {})
+    await writeReport($)
+  }
   try {
     await keepWarm($, options)
   } finally {
