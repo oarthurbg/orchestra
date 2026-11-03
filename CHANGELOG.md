@@ -2,6 +2,15 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.11.0
+
+Four ideas from Akita's [ai-memory](https://github.com/akitaonrails/ai-memory) (MIT), as rules rather than a service:
+
+- A session resuming a workstream checks the handoff note against `git log` and `git status` first: newer commits or uncommitted changes mean the session before stopped without updating it, often on a usage limit, and git wins. A new session takes over only once the old one has stopped. The merge checklist also catches notes left behind in `docs/workstreams/`.
+- Writing rules for handoff notes, the HANDOFF and the maestro's resume block: the latest state wins, running work is pending, exact text for errors, paths, commands and numbers, conditions kept word for word, nothing made up. In ai-memory's test, a model's summary dropped 8 of 15 planted facts.
+- Lessons: what goes in (a checkable do or never-do that can happen again) and what stays out, one line per lesson with its dates and source, and promotion to a new "Rules from lessons" section in `CLAUDE.md`, at most 15 rules, each approved by the owner. Rule files past about 200 lines are followed less.
+- Between releases, a read-only reviewer checks lessons, decisions, the HANDOFF and the promoted rules for contradictions, stale entries and duplicates.
+
 ## 1.10.1
 
 - The band's buttons no longer run past the 10-second limit Claude Code gives a button press, which showed as "ui.press hook skipped: ran past its 10s budget". Update now shows "Updating orchestra..." at once and runs the two `claude plugin` commands in the background, then shows the result or the failure toast. A ponytail level button switches at once, even mid-turn, while its command waits for the session to go idle.

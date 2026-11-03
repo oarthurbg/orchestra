@@ -9,7 +9,7 @@ Run them in order and stop at the first item that fails. Before each merge, chec
 3. The close-out is done: the whole-branch review (`requesting-code-review` with `ponytail-review`) and the `shortcut:` list from `ponytail-debt` are in the description.
 4. CI is green (`gh pr checks <number>`). A red or pending check is never merged.
 5. Schema change: this workstream is first in the schema queue, rebased on the latest integration branch, and its migration was regenerated after the rebase.
-6. The handoff note was deleted in the last commit, and its lasting summary is in `docs/HANDOFF.md` and the decisions log.
+6. The handoff note was deleted in the last commit (`git ls-tree --name-only origin/<branch> docs/workstreams/` lists only `README.md`; any other note there is stale, so the PR deletes it too), and its lasting summary is in `docs/HANDOFF.md` and the decisions log.
 7. Any lesson the workstream sent is in `docs/lessons.md` or queued for the next docs PR, so it is not lost when the workstream closes.
 8. Merge it (`gh pr merge <number>`) with the method the project uses for workstream PRs; the workstream branch may be deleted after merge, the permanent branches never.
 9. After merging:

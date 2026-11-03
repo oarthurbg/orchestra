@@ -54,3 +54,9 @@ The maestro reads this before each action below and acts at its level: `ask` (wa
 - Server commands that need no admin rights and touch no production data (send files, read health and logs): `ask`
 
 Always `ask`, whatever is written above, for the maestro, principals and every subagent: anything that needs admin rights, deletes data or branches, or touches credentials, money or production data.
+
+## Rules from lessons
+
+Lessons from `docs/lessons.md` that apply to most tasks, promoted by the maestro with the owner's approval: at most 15, one or two lines each, each linking its lesson.
+
+- none yet
