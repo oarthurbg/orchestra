@@ -1224,3 +1224,19 @@ test('a session open before /orchestra:init finds the project on a tick, starts 
   expect(await ui.find({ key: 'liveview' })).toBeDefined()
   await ui.unmount()
 })
+
+test('a long workstream name is drawn whole and ends in an ellipsis, not over the mark, when it runs out of room', async ($, on) => {
+  const long = 'fechamento-comprovacoes'
+  const files: Record<string, string> = {
+    [`${ROOT}/.orchestra/workstreams.md`]: REGISTRY.replace('| reports | s2 |', `| ${long} | s2 |`),
+    [`${ROOT}/.orchestra/sessions/s2.json`]: report('s2', { workstream: long, state: 'waiting', detail: 'asks: how does the month close?', link: 'claude://claude.ai/epitaxy/local_s2' }),
+  }
+  disk(on, files)
+  session(on, ROOT, 'o')
+  await $.session.start({ cwd: ROOT, surface: 'desktop', isInteractive: true })
+  const ui = await $.ui.mount({ ...BAND, surface: 'desktop' })
+  const name = await ui.find({ type: 'Text', text: long })
+  expect(name).toBeDefined()
+  expect((name as unknown as { props: { wrap?: string } }).props.wrap).toBe('truncate-end')
+  await ui.unmount()
+})

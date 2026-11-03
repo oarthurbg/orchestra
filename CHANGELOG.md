@@ -2,6 +2,10 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.8.3
+
+- A long workstream name in the band keeps its column wide enough to show it whole, up to 32 characters and what the other columns leave. Past that it ends in an ellipsis. Before, a name wider than its column ran under the status mark.
+
 ## 1.8.2
 
 - A session that was already open when `/orchestra:init` set up the project now finds it within 5 seconds: the band shows its workstreams and the arrow, and the maestro starts the liveview and shows its button. Before, the band looked for the project only when the session started, so it stayed empty until a restart.
