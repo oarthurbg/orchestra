@@ -14,7 +14,7 @@ orchestra ships nine subagents. Each does one job, with its model, effort and po
 | [implementer-advanced](#implementer-advanced) | Opus, high | full, ultra on infrastructure | yes | principal |
 | [mechanic](#mechanic) | Haiku, low | full | yes | maestro, principal |
 | [spec-reviewer](#spec-reviewer) | Opus, medium | off | no | principal |
-| [quality-reviewer](#quality-reviewer) | Opus, high | off | no | principal |
+| [quality-reviewer](#quality-reviewer) | Opus, high (xhigh on sensitive tasks) | off | no | principal |
 | [screenshotter](#screenshotter) | Sonnet, low | full | no | principal |
 | [verifier](#verifier) | Sonnet, low | full | no | maestro, principal |
 

@@ -12,7 +12,7 @@ Every session starts in ponytail full. The principal switches its own mode as it
 | Infrastructure (servers, CI, scripts, dependencies) | `implementer-advanced` | ultra | as for backend |
 | Mechanical work (docs, renames, formatting) | `mechanic` (Haiku, low) | full | none |
 | Searches and summaries | `explorer` (Haiku, low) | full | none |
-| Reviews | `spec-reviewer` (Opus, medium), `quality-reviewer` (Opus, high), `impeccable:impeccable-finish-reviewer` | off | `verification-before-completion`; `quality-reviewer` uses the `ponytail:ponytail-review` method; `design:accessibility-review` and `design:ux-copy` with the third UI review; the principal uses `superpowers:receiving-code-review` on the findings |
+| Reviews | `spec-reviewer` (Opus, medium), `quality-reviewer` (Opus, high; xhigh on `sensitive` tasks), `impeccable:impeccable-finish-reviewer` | off | `verification-before-completion`; `quality-reviewer` uses the `ponytail:ponytail-review` method; `design:accessibility-review` and `design:ux-copy` with the third UI review; the principal uses `superpowers:receiving-code-review` on the findings |
 | Close-out and PR | Principal; `verifier` (Sonnet, low) | full | `superpowers:requesting-code-review` (dispatches a whole-branch reviewer using `ponytail:ponytail-review`), `ponytail:ponytail-debt` (lists the `shortcut:` comments in the PR description), `security-audit` before a PR that touches access, credentials, public pages or email, `superpowers:finishing-a-development-branch` |
 | Between releases | Maestro | full | `ponytail:ponytail-audit` on the code and the impeccable audit on the screens, to open cleanup workstreams; a reviewer checks lessons, decisions and the HANDOFF for contradictions (maestro skill, "Lessons") |
 
@@ -76,7 +76,7 @@ The planner tags every task with a risk. The principal picks the reviews from th
 | --- | --- |
 | `mechanical` (docs, renames, text) | `spec-reviewer` only |
 | `normal` | `spec-reviewer`, then `quality-reviewer` |
-| `sensitive` (money, access, credentials, database) | `spec-reviewer`, `quality-reviewer`, then `security-audit`, in sequence |
+| `sensitive` (money, access, credentials, database) | `spec-reviewer`, `quality-reviewer` at effort xhigh (set on the Agent call), then `security-audit`, in sequence |
 | `ui` | as for its other risk, plus a third review (web UI with a dev server and browser checks; otherwise `ui` tasks get only the reviews of their other risk): `screenshotter` captures, then `impeccable:impeccable-finish-reviewer` against the approved mockup, with `design:accessibility-review` and `design:ux-copy` |
 
 Spec and quality reviews run in parallel only on low-risk tasks. On risky tasks they run in sequence, so the quality reviewer sees code that already matches the spec.

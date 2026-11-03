@@ -5,6 +5,8 @@ What changed in each version of the orchestra plugin. The band's Changelog butto
 ## 1.11.1
 
 - The mockup builder, its fix round and UX fixes run at high, not max. The blind test behind the mockup recipe found the capped recipe with the builder at high or medium scored 7.3 and 7.4 out of 10 against 7.7 for an uncapped max build, with better accuracy, for about a third of the tokens. Max came back later without a new test. High also gives the owner a faster loop between rounds.
+- `quality-reviewer` runs at xhigh on `sensitive` tasks (money, access, credentials, database), where a missed bug costs most. In the test of 10 reviewers, Opus found 9 of 13 serious problems at medium and high and 12 at xhigh; that test reviewed a prototype, not code. Other tasks stay at high.
+- Trimming the HANDOFF and fixing what the contradiction check finds: the maestro decides each line, and the `mechanic` (Haiku, low) only applies that list. In 1.10.0 the mechanic trimmed on its own, which is a summary, and summaries drop facts.
 
 ## 1.11.0
 
