@@ -467,11 +467,15 @@ export const register: Register = (on, options) => {
     // about a cell of slack for the desktop's proportional type); the name and detail columns shrink instead.
     const statusMin = Math.max('Status'.length, ...v.rows.map(r => r.status.length)) + (desktop ? 3 : 2) + 2 * inset + inset
     const contextMin = Math.max('Context'.length, ...v.rows.map(r => r.context.length)) + 2 * inset + inset
+    // A name keeps its whole width (bold takes about two cells more on the desktop) up to 32 cells and what the other columns leave,
+    // then ends in an ellipsis instead of running over the mark.
+    const nameRoom = Math.max('Workstream'.length, Math.min(32, e.props.bodyColumns - statusMin - contextMin - 16))
+    const nameMin = Math.min(nameRoom, Math.max('Workstream'.length, ...v.rows.map(r => r.name.length)) + 2 * inset + 2)
     const row = (r: BandRow, n: number) => {
       const waiting = r.mark === 'waiting'
       return (
         <Box key={`row-${r.key}`} flexDirection="row" alignItems="center" paddingX={1} {...(desktop ? { paddingY: 'xs' as const } : {})} {...(n % 2 === 1 ? { backgroundColor: STRIPE } : {})} {...(r.link !== '' ? { hover: { backgroundColor: HOVER } } : {})}>
-          <Box width="24%">{cell(r, 'name', r.name, { bold: waiting, underline: r.link !== '' })}</Box>
+          <Box width="24%" minWidth={nameMin} flexShrink={0}>{cell(r, 'name', r.name, { bold: waiting, underline: r.link !== '', wrap: 'truncate-end' })}</Box>
           <Box width="18%" minWidth={statusMin} flexShrink={0} flexDirection="row" alignItems="center" gap={1}>
             {markOf(r)}
             {cell(r, 'status', r.status, { bold: waiting })}
@@ -483,7 +487,7 @@ export const register: Register = (on, options) => {
     }
     const heads = (
       <Box flexDirection="row" paddingX={1} {...(desktop ? { paddingY: 'xs' as const } : {})}>
-        <Box width="24%" paddingLeft={inset}><Text dimColor>Workstream</Text></Box>
+        <Box width="24%" minWidth={nameMin} flexShrink={0} paddingLeft={inset}><Text dimColor>Workstream</Text></Box>
         <Box width="18%" minWidth={statusMin} flexShrink={0} paddingLeft={desktop ? 3 + inset : 2}><Text dimColor>Status</Text></Box>
         <Box width="9%" minWidth={contextMin} flexShrink={0} justifyContent="flex-end" paddingRight={inset}><Text dimColor>Context</Text></Box>
         <Box width={0} flexGrow={1} paddingLeft={3 + inset}><Text dimColor>Detail</Text></Box>
