@@ -2,6 +2,17 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.9.2
+
+- The delete guard closes the holes an audit found. It now refuses:
+  - a wildcard delete in the session's own folder that can reach `.git`: `rm -rf .*`, or PowerShell's `Remove-Item * -Force`, whose `*` matches dot names;
+  - nested shells written the usual way: `bash -lc`, `powershell -NoProfile -Command`, Git Bash's `cmd //c`;
+  - subshells and groups, such as `(cd /etc && rm -rf ssh)`;
+  - prefixes such as `FOO=1`, `env`, `timeout 10` and `nice -n 5`;
+  - `Push-Location`, and the `-Path:<path>` form;
+  - deletes whose paths come from a pipe or `xargs`, such as `Get-ChildItem … | Remove-Item`. The agent is told to name the paths on the delete itself.
+- It no longer refuses deletes under `/tmp` on macOS, whose temp folder is under `/var/folders`, or `cmd /c del /f`, whose `/f` it read as drive F:.
+
 ## 1.9.1
 
 - `spec-reviewer` runs on Opus (medium), not Sonnet. In a test of 10 reviewers on one correction of a 12-screen prototype, Opus found more of the 13 serious problems than Sonnet at every effort from medium to xhigh (9 against 2 at medium, in about the same time). Akita's October benchmark saw Sonnet 5.5 miss a planted bug behind an `assert true` test.
