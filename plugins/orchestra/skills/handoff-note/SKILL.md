@@ -36,6 +36,8 @@ Copy `${CLAUDE_PLUGIN_ROOT}/templates/handoff-note.md` and keep the status line 
 
 Write facts, not history. A section with nothing in it says "none".
 
+Write the note in the docs' language, but keep its file name (`docs/workstreams/<workstream>.md`, the workstream's name in the registry) and the labels orchestra's tools read: `Status:` and its `waiting on:`, and `Plan:` with the plan's path in backticks. The status round, the compact hook and the liveview look for them. The full list is under "Language" in "Project settings" in `CLAUDE.md`.
+
 ## Clean-session checklist
 
 A session that starts after a clear, or a new session taking over a workstream, does exactly this, in order:

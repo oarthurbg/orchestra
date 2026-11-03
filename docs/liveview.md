@@ -44,7 +44,8 @@ Notes:
 ## What it shows
 
 - **Symbols**: each session uses the symbols in [`BRAND.md`](BRAND.md#symbols). The shape is the role, the way it is drawn is the state, and a context of 250k or more is a bold vermilion number.
-- **Progress** comes from the plan checkboxes.
+- **Progress** comes from the plan checkboxes. The plan is the one the handoff note names (its `Plan:` line, another label such as `Plano:`, or the first plan path it mentions), else the one the branch adds. A plan split in parts (`x.md`, `x-part-2.md`) counts as one. When it finds none, the row says why: `no integration branch`, `2 plans added`, `no "### Task N:" headings`.
+- **The integration branch** comes from `git config orchestra.protectedBranches`, which `/orchestra:init` sets, else from "Project settings" in `CLAUDE.md`.
 - **ETAs** come from how long past tasks took, measured from the commits that ticked them. It uses past tasks with the same agent and risk, else the same agent, else all tasks: the first group with at least 3 finished. Until then it uses a default length, marked `?`.
 - **The limit projection** reads token counts (never message content) from Claude Code's transcripts for every project on this computer, since plan limits are per account.
 - **The band's run-out time**: while the liveview runs, it tells the band when the planned work will use up the week.

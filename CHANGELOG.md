@@ -2,6 +2,16 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.10.0
+
+- Docs can be in any language. The `CLAUDE.md` template lists the names that stay in English because orchestra's tools read them: the file and folder paths, the branch lines, the note's `Status:`, `waiting on:` and `Plan:`, plan tasks as `### Task N:`, the HANDOFF's `## Where we are` and `## Next workstreams`. Init lists docs that break it, and agents rename them as they go. A plan split in parts is named `<plan>-part-2.md`. See [Docs in another language](docs/setup.md#docs-in-another-language).
+- The liveview finds the plan in more projects:
+  - the integration branch comes from the branch guard's config, so a `CLAUDE.md` in another language no longer hides it;
+  - a note's plan line counts in any language (`Plano:`), or its first plan path;
+  - a plan split in parts reads as one plan;
+  - a row without a plan says why, such as `2 plans added` or `no "### Task N:" headings`.
+- `docs/HANDOFF.md` stays under about 12 KB, since every session reads it: the current state and the last 5 merges, one line per backlog item with a link, and only the project's own workflow rules. `/orchestra:close-wave` checks its size in the maestro, and the next docs PR trims it.
+
 ## 1.9.2
 
 - The delete guard closes the holes an audit found. It now refuses:
