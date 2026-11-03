@@ -2,6 +2,13 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.11.1
+
+- The mockup builder, its fix round and UX fixes run at high, not max. The blind test behind the mockup recipe found the capped recipe with the builder at high or medium scored 7.3 and 7.4 out of 10 against 7.7 for an uncapped max build, with better accuracy, for about a third of the tokens. Max came back later without a new test. High also gives the owner a faster loop between rounds.
+- Fixes to an approved direction after a review go to a new agent on Sonnet, low, with a closed list the principal writes; findings that need a decision stay with the principal. It comes from the owner's rule on a real project and has not been compared with resuming the builder. The first mockup of a new direction still resumes its builder.
+- `quality-reviewer` runs at xhigh on `sensitive` tasks (money, access, credentials, database), where a missed bug costs most. In the test of 10 reviewers, Opus found 9 of 13 serious problems at medium and high and 12 at xhigh; that test reviewed a prototype, not code. Other tasks stay at high.
+- Trimming the HANDOFF and fixing what the contradiction check finds: the maestro decides each line, and the `mechanic` (Haiku, low) only applies that list. In 1.10.0 the mechanic trimmed on its own, which is a summary, and summaries drop facts.
+
 ## 1.11.0
 
 Four ideas from Akita's [ai-memory](https://github.com/akitaonrails/ai-memory) (MIT), as rules rather than a service:
