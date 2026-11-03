@@ -2,6 +2,10 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.10.1
+
+- The band's buttons no longer run past the 10-second limit Claude Code gives a button press, which showed as "ui.press hook skipped: ran past its 10s budget". Update now shows "Updating orchestra..." at once and runs the two `claude plugin` commands in the background, then shows the result or the failure toast. A ponytail level button switches at once, even mid-turn, while its command waits for the session to go idle.
+
 ## 1.10.0
 
 - Docs can be in any language. The `CLAUDE.md` template lists the names that stay in English because orchestra's tools read them: the file and folder paths, the branch lines, the note's `Status:`, `waiting on:` and `Plan:`, plan tasks as `### Task N:`, the HANDOFF's `## Where we are` and `## Next workstreams`. Init lists docs that break it, and agents rename them as they go. A plan split in parts is named `<plan>-part-2.md`. See [Docs in another language](docs/setup.md#docs-in-another-language).
