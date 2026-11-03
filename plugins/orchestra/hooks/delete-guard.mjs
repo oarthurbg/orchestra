@@ -10,7 +10,9 @@ import { pathToFileURL } from 'node:url'
 const ASKING = new Set(['default', 'plan', 'acceptEdits'])
 const PS_DELETE = new Set(['remove-item', 'ri', 'del', 'erase', 'rd', 'rmdir', 'rm'])
 const PS_VALUE = new Set(['-include', '-exclude', '-filter', '-credential', '-stream'])
-const WRAPPERS = new Set(['sudo', 'command', 'exec', 'npx', 'pnpx', 'bunx', 'nohup', 'time'])
+const WRAPPERS = new Set(['sudo', 'command', 'exec', 'npx', 'pnpx', 'bunx', 'nohup', 'time', 'env', 'timeout', 'nice', 'xargs'])
+// Stands for paths the delete gets from a pipe or from xargs, which the guard cannot read.
+const PIPED = '<from a pipe>'
 
 // Commands split on ; & | and newlines outside quotes, each a list of words, redirections dropped.
 // shortcut: backslash is kept literal (Windows paths), so a bash `\ ` escape splits a word; rare in agent commands.
@@ -77,16 +79,21 @@ function relation(target, dir, ctx) {
 
 // Why one delete target is refused, or null when it stays inside the session's folder or the temp folder.
 function refuse(word, base, ctx) {
+  if (word === PIPED) return 'its paths come from a pipe or xargs, which this guard cannot read; name the paths on the delete itself'
   const expanded = expand(word, ctx)
   if (expanded === null) return `${word}: its value is unknown here (a variable or $(...)); write the literal path`
   const glob = /[*?[]/.exec(expanded)
   const target = resolve(glob ? expanded.slice(0, glob.index) : expanded, base, ctx)
   if (target === null) return `${word}: relative to a folder that is unknown here; write the full path`
   const P = ctx.win ? path.win32 : path.posix
-  if (relation(target, ctx.tmp, ctx) === 'inside') return null
+  // macOS's temp folder is under /var/folders, but agents write to /tmp too.
+  const temps = ctx.win ? [ctx.tmp] : [ctx.tmp, '/tmp', '/private/tmp']
+  if (temps.some(t => relation(target, t, ctx) === 'inside')) return null
   const there = relation(target, ctx.root, ctx)
   if (there === 'inside' && relation(target, P.join(ctx.root, '.git'), ctx) === 'outside') return null
-  if (there === 'same' && glob) return null
+  // A wildcard in the folder itself spares .git only in Bash and only when it does not start with a dot:
+  // PowerShell's * matches dot names, and -Force takes hidden ones.
+  if (there === 'same' && glob && ctx.tool === 'Bash' && !P.basename(expanded).startsWith('.')) return null
   return there === 'outside' ? `${word} is ${target}, outside ${ctx.root}` : `${word} is this session's own folder or its .git`
 }
 
@@ -99,11 +106,15 @@ function targets(words, ctx) {
     const out = []
     for (let i = 0; i < args.length; i++) {
       const a = args[i].toLowerCase()
+      const joined = /^-(path|literalpath):(.+)$/i.exec(args[i])
       if (PS_VALUE.has(a)) i++
+      else if (joined) out.push(...joined[2].split(','))
       else if (a === '-path' || a === '-literalpath') out.push(...(args[++i] ?? '').split(','))
-      else if (plain(a) && !/^\/[sq]$/.test(a)) out.push(...args[i].split(','))
+      // /s, /q, /f and other one-letter switches, from cmd's del and rd.
+      else if (plain(a) && !/^\/[a-z]$/.test(a)) out.push(...args[i].split(','))
     }
-    return out.filter(Boolean)
+    // No path: it deletes what a pipe hands it.
+    return out.filter(Boolean).length ? out.filter(Boolean) : [PIPED]
   }
   if (name === 'rm' || name === 'rimraf' || name === 'unlink' || name === 'shred') return args.filter(plain)
   if (name === 'rmdir' || name === 'rd' || name === 'del' || name === 'erase') return args.filter(a => plain(a) && !/^\/[a-z]$/i.test(a))
@@ -118,28 +129,67 @@ function targets(words, ctx) {
 }
 
 // The reason to refuse this command line, or null to let it run.
+// A command's words split at ( and {, so subshells, groups and script blocks are checked as commands of their own.
+function pieces(words) {
+  const out = [[]]
+  for (let w of words) {
+    while (/^[({]/.test(w)) { out.push([]); w = w.slice(1) }
+    w = w.replace(/[)}]+$/, '')
+    if (w) out[out.length - 1].push(w)
+  }
+  return out.filter(p => p.length)
+}
+
+// The command after its wrappers (sudo, env, timeout 10, xargs -0) and FOO=1 prefixes. Under xargs, the paths come from the pipe.
+function unwrap(words) {
+  let piped = false
+  while (words.length > 1) {
+    const w = words[0].toLowerCase()
+    if (/^[A-Za-z_]\w*=/.test(words[0])) words = words.slice(1)
+    else if (WRAPPERS.has(w)) {
+      piped ||= w === 'xargs'
+      words = words.slice(1)
+      // Their options and a duration or priority, as in `timeout 10` or `nice -n 5`.
+      while (words.length > 1 && /^(-|\d)/.test(words[0])) words = words.slice(1)
+    } else break
+  }
+  return { words, piped }
+}
+
+// The command line a nested shell runs, and the rules to read it with, or null.
+function nested(name, rest) {
+  const at = re => rest.findIndex(a => re.test(a))
+  let i
+  if (/^(ba|z|da)?sh$/.test(name) && (i = at(/^-[a-z]*c[a-z]*$/i)) >= 0) return [rest[i + 1] ?? '', 'Bash']
+  if (/^(powershell|pwsh)$/.test(name) && (i = at(/^-(c|command)$/i)) >= 0) return [rest.slice(i + 1).join(' '), 'PowerShell']
+  // Git Bash spells /c as //c.
+  if (name === 'cmd' && (i = at(/^\/+[ck]$/i)) >= 0) return [rest.slice(i + 1).join(' '), 'PowerShell']
+  return null
+}
+
+// The reason to refuse this command line, or null to let it run.
 export function check(text, ctx, base = ctx.cwd, depth = 0) {
-  for (let words of commands(text)) {
-    while (words.length > 1 && WRAPPERS.has(words[0].toLowerCase())) words = words.slice(1)
+  for (const piece of commands(text).flatMap(pieces)) {
+    const { words, piped } = unwrap(piece)
     const name = path.basename(words[0]).toLowerCase().replace(/\.exe$/, '')
     const rest = words.slice(1)
     // A shell inside the command: check its own command line too.
-    const inner = /^(ba|z|da)?sh$/.test(name) && rest[0] === '-c' ? [rest[1] ?? '', 'Bash']
-      : /^(powershell|pwsh)$/.test(name) && /^-(c|command)$/i.test(rest[0] ?? '') ? [rest.slice(1).join(' '), 'PowerShell']
-      : name === 'cmd' && /^\/c$/i.test(rest[0] ?? '') ? [rest.slice(1).join(' '), 'PowerShell']
-      : null
+    const inner = nested(name, rest)
     if (inner && depth < 3) {
       const why = check(inner[0], { ...ctx, tool: inner[1] }, base, depth + 1)
       if (why) return why
       continue
     }
-    if (/^(cd|chdir|pushd|set-location|sl)$/.test(name)) {
+    if (/^(popd|pop-location)$/.test(name)) { base = null; continue }
+    if (/^(cd|chdir|pushd|set-location|sl|push-location)$/.test(name)) {
       const dir = rest.find(a => !a.startsWith('-')) ?? '~'
       const expanded = expand(dir, ctx)
       base = expanded === null ? null : resolve(expanded, base, ctx)
       continue
     }
-    for (const t of targets(words, ctx)) {
+    const found = targets(words, ctx)
+    const deletes = found.length || /^(rm|rimraf|unlink|shred|rmdir|rd|del|erase)$/.test(name)
+    for (const t of piped && deletes ? [PIPED] : found) {
       const why = refuse(t, base, ctx)
       if (why) return `\`${words.join(' ')}\`: ${why}`
     }
