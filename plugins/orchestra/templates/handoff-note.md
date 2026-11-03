@@ -43,4 +43,4 @@ Plan: `docs/superpowers/plans/<plan>.md`, task <N>: <title>. State: <not started
 | Plan | planner | Opus, high | ultra |
 | Backend | implementer | Sonnet, medium | full |
 | UI | implementer | Sonnet, medium | lite |
-| Reviews | spec-reviewer, quality-reviewer | Sonnet medium, Opus high | off |
+| Reviews | spec-reviewer, quality-reviewer | Opus medium, Opus high | off |
