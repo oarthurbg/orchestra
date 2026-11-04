@@ -6,7 +6,7 @@ What changed in each version of the orchestra plugin. The band's Changelog butto
 
 - `mechanical` and `normal` tasks now get one review: the task reviewer that comes with superpowers' `subagent-driven-development`, which reads the diff once and returns both the spec and the quality verdict. Its model goes on the call: Opus medium on `mechanical`, Opus high on `normal`. Until now a principal could run that reviewer and orchestra's `spec-reviewer` and `quality-reviewer` on the same task. The owner chose one combined reviewer for its cost; it was not tested against two.
 - `sensitive` tasks keep orchestra's two reviewers in sequence, then `security-audit`, in place of the task reviewer. A task never gets both.
-- The task reviewer gets the plan's Review Focus lines for its task and the workstream's test data variable.
+- The task reviewer gets the plan's Review Focus lines for its task, the workstream's test data variable, and a short list of `ponytail:ponytail-review`'s checks it lacks: security, data loss, scale, lean code, a concrete case for every finding, and `shortcut:` comments counted as decisions. Loading the skill itself would have it read every caller, which undoes the one read of the diff that makes the task reviewer cheap.
 
 ## 1.12.0
 
