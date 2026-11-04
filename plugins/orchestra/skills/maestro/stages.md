@@ -4,7 +4,7 @@ Every session starts in ponytail full. The principal switches its own mode as it
 
 | Stage | Who | Ponytail | Skills |
 | --- | --- | --- | --- |
-| Brainstorm and mockups | Principal, with the owner; mockups by a builder and a reviewer subagent (see Mockup recipe) | off; the fix round lite | `superpowers:brainstorming`, one direction skill by surface (`impeccable:impeccable` for app screens, `frontend-design` for pages, never two), `taste-skill` reviewing impeccable's app screens, the impeccable detector before showing a mockup, `design:design-critique` before showing a mockup, `design:ux-copy` for the mockup's words, `dataviz` for charts |
+| Brainstorm and mockups | Principal, with the owner; mockups by a builder subagent in brainstorming's visual companion, then a reviewer, a fixer and a recheck (see Mockup recipe) | off; the full recipe's fix round lite | `superpowers:brainstorming` and its visual companion; in the full recipe, one direction skill by surface (`impeccable:impeccable` for app screens, `frontend-design` for pages, never two), `taste-skill` reviewing impeccable's app screens, the impeccable detector before showing a mockup, `design:design-critique` before showing a mockup, `design:ux-copy` for the mockup's words, `dataviz` for charts |
 | Spec | Principal | lite | `security-audit` early on sensitive specs (access, credentials, public pages, email) |
 | Plan | `planner` (Opus, high) | ultra: cuts what the spec does not ask for, never what it does | `superpowers:writing-plans` |
 | Backend, database and integration work | `implementer` (Sonnet, medium) or `implementer-advanced` (Opus, high) | full | Principal: `superpowers:subagent-driven-development`, `superpowers:dispatching-parallel-agents`. Subagent: `test-driven-development`, `verification-before-completion`, `systematic-debugging` |
@@ -20,7 +20,7 @@ Every session starts in ponytail full. The principal switches its own mode as it
 
 ## Model and effort
 
-orchestra's nine agents set their own model and effort. Every other agent (the mockup builder, reviewer and fixer, any `general-purpose` agent) gets both on the Agent call, from this map:
+orchestra's nine agents set their own model and effort. Every other agent (the mockup builder, reviewer, fixer and recheck, any `general-purpose` agent) gets both on the Agent call, from this map:
 
 - setting a direction and UX fixes: Opus, high. In a blind test, the capped recipe with the builder at high or medium scored 7.3 and 7.4 out of 10 against 7.7 for an uncapped max build, with better accuracy, for about a third of the tokens;
 - reviews: Opus, xhigh. In a test of 10 reviewers on one correction, Opus xhigh found 12 of the 13 serious problems and max 10, in 2.5 times the time high took; Anthropic's effort benchmark also shows max far slower than high;
@@ -32,7 +32,25 @@ Max everywhere costs much more for little gain in the bulk stages. Agents never 
 
 ## Mockup recipe
 
-After the brainstorm, the principal runs each UI mockup through five steps instead of drawing it itself.
+The principal never draws a mockup itself. Mockups go one of two ways.
+
+### In the visual companion (the default)
+
+When the look is the owner's to decide, `superpowers:brainstorming` offers its visual companion, a browser tab the owner looks at and clicks. In a blind test on one app screen, built from the same brief, a builder writing one screen for the companion with no design skill averaged 7.3 out of 10 from three jurors, the full recipe below 7.0, and the companion with impeccable and three options behind tabs in one file 6.5 (a CSS rule the tabs shared drew 38% as 8%). The companion alone used a fifth of the recipe's tokens and a sixth of its time. The recipe's fix round also caused a defect that nobody looked for afterwards.
+
+1. **Brief**, as in the full recipe's step 1.
+2. **Companion.** The principal starts the server as brainstorming's `visual-companion.md` says, with the worktree as `--project-dir` (on Windows, with `run_in_background`). A builder (`general-purpose`, Opus, high, ponytail off) gets the brief and the `screen_dir`. It loads no direction skill, only `design:ux-copy` for the words and `dataviz` for charts. It writes each option as a full HTML document in its own file with a plain name (`queue.html`, `timeline.html`), never several options in one file, and checks it with `inspect.mjs` as in the full recipe's step 2 until 0 FAIL.
+   - The principal gives the owner the URL and each file's name: the newest is on screen, the others at `/files/<name>`. It never opens or screenshots the screens: the owner looks, so they stay out of the principal's context.
+   - To change one, the principal resumes the same builder with the owner's words; it writes a new file (`queue-v2.html`).
+   - When the owner is on the phone, the localhost tab won't open there: a Sonnet low agent screenshots each file at 390 and 1440, and the principal sends those files with `SendUserFile` without reading them.
+3. **Reviewer**, once the owner approves one: as in the full recipe's step 3, with the eyes of the skill the surface would have built with.
+4. **Fixer**: the principal turns the findings into a closed list for a Sonnet low agent (see "Model and effort"). A finding that needs a decision goes to the owner.
+5. **Recheck**: a new Sonnet low agent screenshots the fixed file at 1440, 768 and 390 in both themes and reports, for each finding, fixed or not, plus any text that a fix left crossed, cut off or covered. What it finds goes to one more fixer list; then the owner sees it.
+6. **Hand-off**, as in the full recipe's step 5.
+
+### The full recipe
+
+When the owner declines the companion, wants finished directions to compare side by side, or the surface is a public page (the companion test covered one app screen only), the principal runs each mockup through five steps.
 
 One skill owns the direction, picked by the surface, and a different skill reviews it. `frontend-design`, `taste-skill` and `impeccable:impeccable` each plan a direction of their own, so stacking two makes the second throw the first away (6.0 out of 10 in a blind comparison, the weakest first builds). Two rounds of blind comparison on an app screen and a landing page found:
 

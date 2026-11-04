@@ -44,6 +44,7 @@ From a shell, the same steps are `claude plugin marketplace add oarthurbg/orches
 
 Notes on the companions:
 
+- orchestra 1.12.0 and later expect superpowers 7 (its new brainstorming, design doc and plan sections). Update it with the others.
 - Skip any you already have from another marketplace (for example `superpowers@claude-plugins-official`) or as a skill in `~/.claude/skills`: two copies load duplicate skills.
 - `playwright-cli` is only for apps with a web UI, and also needs its CLI: `npm install -g @playwright/cli@latest`.
 - `dataviz` (chart and dashboard design) is built into recent Claude Code versions.

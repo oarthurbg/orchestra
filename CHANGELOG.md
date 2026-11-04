@@ -2,6 +2,18 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.12.0
+
+orchestra now expects superpowers 7. Update it with `claude plugin update superpowers@orchestra` (or the marketplace you installed it from), then `/reload-plugins`.
+
+- Mockups start in brainstorming's visual companion, a browser tab the owner looks at and clicks. A builder subagent writes each option there as its own file, and the principal never opens them, so they stay out of its context. In a blind test on one app screen, three jurors scored a companion build with no design skill 7.3 out of 10, the full recipe 7.0, and a companion build with impeccable and three options in one file 6.5. The companion alone used a fifth of the recipe's tokens. It was one screen and one run each, and the gap is smaller than the jurors' spread.
+- After the owner approves a companion mockup, it gets one review, a Sonnet low fixer with a closed list, and a recheck for anything the fix broke, then DESIGN.md. The recheck exists because in the test the recipe's fix round caused a defect nobody looked for.
+- The full recipe stays for when the owner declines the companion, wants finished directions side by side, or the surface is a public page, which the test didn't cover.
+- Brainstorming's design doc is the spec, written after the mockup is approved. A small change gets the short doc, and a principal still never builds anything itself. Brainstorming's builder check, on Opus high, replaces the principal's own list of decided details.
+- The `planner` agent still writes the plan in place of brainstorming's "invoke writing-plans", and keeps writing-plans' new `Spec:` line and `## Review Focus` section. The `quality-reviewer` gets the Review Focus and flags a line the task owns that has no test.
+- At close-out the principal always picks "Push and create a Pull Request" in finishing-a-development-branch, never "Merge locally".
+- `/orchestra:init` also adds `.superpowers/` to `.gitignore`, where brainstorming keeps its mockups and subagent-driven development its progress ledger.
+
 ## 1.11.2
 
 - The fixer rule now cites its test. Ten fixes from a real review, written as a closed list, went to Haiku, Sonnet and Opus at low and medium, each on its own copy, scored blind by an Opus reviewer. All six got 10 of 10 with no new bug. Sonnet low stayed on the list and was the fastest; Haiku used about twice the tokens, with 3 to 4 times the tool calls; Haiku at both efforts and Sonnet at medium each changed one thing the list didn't name. Sonnet low in ponytail off, lite, full and ultra made the same changes. The fixes were all spelled out, so this shows any model applies such a list; fixes that leave a choice were not tested, and neither was resuming the builder.

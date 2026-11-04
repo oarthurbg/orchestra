@@ -36,7 +36,7 @@ flowchart LR
 
 | Stage | Who | Ponytail | Skills |
 | --- | --- | --- | --- |
-| [Brainstorm and mockups](#brainstorm-and-mockups) | Principal with the owner; a builder and a reviewer subagent | off; fix round lite | `superpowers:brainstorming`, `impeccable:impeccable` for app screens or `frontend-design` for pages, `taste-skill` or the impeccable detector and `design:design-critique` to review, `design:ux-copy`, `dataviz` |
+| [Brainstorm and mockups](#brainstorm-and-mockups) | Principal with the owner; a builder in the visual companion, then a reviewer, a fixer and a recheck | off; the full recipe's fix round lite | `superpowers:brainstorming` and its visual companion; in the full recipe `impeccable:impeccable` for app screens or `frontend-design` for pages, `taste-skill` or the impeccable detector and `design:design-critique` to review, `design:ux-copy`, `dataviz` |
 | [Spec](#spec) | Principal | lite | `security-audit` on sensitive specs |
 | [Plan](#plan) | `planner` | ultra | `superpowers:writing-plans` |
 | [Backend, database and integrations](#backend-database-and-integrations) | `implementer` or `implementer-advanced` | full | `superpowers:subagent-driven-development`, `superpowers:dispatching-parallel-agents`, `test-driven-development`, `verification-before-completion`, `systematic-debugging` |
@@ -54,13 +54,18 @@ flowchart LR
 
 **Off**, because a brainstorm widens the options before picking one. A mode that pushes for the smallest answer would close it too early.
 
-- `superpowers:brainstorming` runs the conversation: one question at a time, two or three approaches with a recommendation, and a design the owner approves before anything is built.
+- `superpowers:brainstorming` runs the conversation: why you want it first, one question at a time, two or three approaches with a recommendation, and a design doc you approve before anything is built. That design doc is the spec.
+- Its visual companion shows the mockups: a browser tab you look at and click, next to the conversation.
 - One skill sets the visual direction, picked by the surface: `impeccable:impeccable` for app screens, `frontend-design` for pages. Never two: each plans a direction of its own, and stacked, the second throws the first away. `taste-skill` deals directions only when you ask for them.
 - A different skill reviews each mockup first, so the owner reviews the design, not its slips: `taste-skill`'s critique for impeccable's app screens, the impeccable detector and `design:design-critique` for frontend-design's pages.
 - `design:ux-copy` writes and checks the words: buttons that say what they do, empty states that say how to start, errors that say how to fix. The implementer copies the mockup's words, so this is where they are decided.
 - `dataviz` designs the charts.
 
-**The mockup recipe.** The principal doesn't draw mockups. It writes one brief (goal, the facts the page may state, brand traps, budget) and leaves the creative direction open. A builder subagent with its surface's skill builds until a neutral inspection (wrapped headlines, tiny text, overflow, covered text, contrast) reports 0 FAIL. A separate reviewer subagent checks the screenshots with another skill's eyes and returns at most 8 findings and a score. The builder fixes only those, in lite, with at most 3 look rounds before the owner sees it. There is one review round: in a third comparison a second review and fix lost a point on the app screen, because its fixes undid the first round's choices. After one round, what's left are judgement calls for you. Once you approve a mockup, it is written down as impeccable's DESIGN.md, so the implementer and the finish reviewer check the build against it. Steps in the [mockup recipe](../plugins/orchestra/skills/maestro/stages.md#mockup-recipe).
+**The mockup recipe.** The principal doesn't draw mockups. It writes one brief (goal, the facts the page may state, brand traps, budget) and leaves the creative direction open. A builder subagent writes each option into the visual companion as its own screen file, and you look at them in the browser; the principal never opens them, so they stay out of its context. On the phone, where the companion's tab won't open, you get screenshots instead. Once you approve one, a reviewer with a design skill's eyes checks it at 1440, 768 and 390 and returns at most 8 findings, a Sonnet low fixer applies them as a closed list, and a recheck screenshots it again to catch anything the fix broke. Then it is written down as impeccable's DESIGN.md, so the implementer and the finish reviewer check the build against it.
+
+**Why the companion first.** In a blind test on one app screen, three jurors scored a companion build with no design skill 7.3 out of 10, the full recipe 7.0, and a companion build with impeccable and three options in one file 6.5. The companion alone used a fifth of the recipe's tokens and a sixth of its time. You also steer it while it is drawn, which the test didn't measure.
+
+**The full recipe** runs when you'd rather not use the companion, want finished directions to compare side by side, or the surface is a public page, which the test didn't cover. A builder with its surface's skill builds until a neutral inspection (wrapped headlines, tiny text, overflow, covered text, contrast) reports 0 FAIL. A separate reviewer checks the screenshots with another skill's eyes. The builder fixes only those findings, in lite, with at most 3 look rounds before you see it. There is one review round: in a third comparison a second review and fix lost a point on the app screen, because its fixes undid the first round's choices. Steps in the [mockup recipe](../plugins/orchestra/skills/maestro/stages.md#mockup-recipe).
 
 **Why one skill per surface, reviewed by another.** Two rounds of blind comparison on a landing page and an app screen found:
 
@@ -79,11 +84,13 @@ Each skill's own checker enforces its house style (taste-skill fails hairlines a
 
 **Lite**, because the plan and the reviews check everything against the spec. Lite cuts padding but keeps every requirement; full could drop details a reviewer needs later.
 
+The spec is brainstorming's design doc, written after you approve the mockup. A small change gets a short one; a quick, clear task still gets one, since the principal never builds anything itself. For a full doc, brainstorming's builder check reads it as the person who will build it: what the conversation already answered goes into the doc, minor calls are marked as the principal's, and your questions come in one round.
+
 `security-audit` runs early on sensitive specs (access, credentials, public pages, email), so security questions are answered before the plan, not found in review.
 
 ## Plan
 
-**Ultra**, because the plan is where scope creep starts. It cuts whatever the spec does not ask for, never what it does. `superpowers:writing-plans` gives the format: self-contained tasks with an **Interfaces** block, complete code and exact commands. The [`planner`](agents.md#planner) tags each task with its agent and risk.
+**Ultra**, because the plan is where scope creep starts. It cuts whatever the spec does not ask for, never what it does. `superpowers:writing-plans` gives the format: self-contained tasks with an **Interfaces** block, complete code and exact commands. The [`planner`](agents.md#planner) tags each task with its agent and risk, and keeps writing-plans' `Spec:` line and `## Review Focus` section, the failures most likely to reach a user, which the `quality-reviewer` checks each task against. The planner runs writing-plans in its own context instead of the principal's: its reads stay out of a session that lasts the whole workstream, and a reader who saw only the spec stops on its gaps.
 
 ## Backend, database and integrations
 

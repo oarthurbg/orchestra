@@ -58,7 +58,7 @@ It exists so the maestro and principals never read whole files and keep only the
 
 ## planner
 
-Turns an approved spec into a plan with `superpowers:writing-plans`. Each task is self-contained, fits one subagent, and has an **Interfaces** block of exact names, signatures and paths. Each task is tagged with the agent that builds it and a risk (`mechanical`, `normal`, `sensitive` or `ui`) that picks its [reviews](stages.md#reviews).
+Turns an approved spec into a plan with `superpowers:writing-plans`, keeping its `Spec:` line and `## Review Focus` section. Each task is self-contained, fits one subagent, and has an **Interfaces** block of exact names, signatures and paths. Each task is tagged with the agent that builds it and a risk (`mechanical`, `normal`, `sensitive` or `ui`) that picks its [reviews](stages.md#reviews).
 
 It reads the HANDOFF, the spec, earlier plans on the same files and `docs/lessons.md` first. Ultra cuts whatever the spec does not ask for, never what it does. If the spec is wrong, incomplete or overlaps another workstream, it stops and reports: the spec gets fixed first.
 
@@ -84,7 +84,7 @@ The first review: was it built as the spec and plan say? It checks every spec it
 
 ## quality-reviewer
 
-The second review: real bugs, security holes, behavior on failure, tests that don't test what they claim, then maintenance problems. It uses the `ponytail:ponytail-review` method and flags only what it can back with a concrete failure scenario. Answers `APPROVED` or `CHANGES NEEDED`, each item with severity, `file:line`, the scenario and a fix. Low-severity items do not block.
+The second review: real bugs, security holes, behavior on failure, tests that don't test what they claim (including a line of the plan's Review Focus that has no test), then maintenance problems. It uses the `ponytail:ponytail-review` method and flags only what it can back with a concrete failure scenario. Answers `APPROVED` or `CHANGES NEEDED`, each item with severity, `file:line`, the scenario and a fix. Low-severity items do not block.
 
 ## screenshotter
 
