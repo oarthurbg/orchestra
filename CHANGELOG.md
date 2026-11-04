@@ -4,7 +4,7 @@ What changed in each version of the orchestra plugin. The band's Changelog butto
 
 ## 1.11.2
 
-- The fixer rule now cites its test. Ten fixes from a real review, written as a closed list, went to Haiku, Sonnet and Opus at low and medium, each on its own copy, scored blind by an Opus reviewer. All six got 10 of 10 with no new bug. Sonnet low stayed on the list and was the fastest; Haiku used more tokens, with 3 to 4 times the tool calls; Haiku at both efforts and Sonnet at medium each changed one thing the list didn't name. Sonnet low in ponytail off, lite, full and ultra made the same changes. The fixes were all spelled out, so this shows any model applies such a list; fixes that leave a choice were not tested, and neither was resuming the builder.
+- The fixer rule now cites its test. Ten fixes from a real review, written as a closed list, went to Haiku, Sonnet and Opus at low and medium, each on its own copy, scored blind by an Opus reviewer. All six got 10 of 10 with no new bug. Sonnet low stayed on the list and was the fastest; Haiku used about twice the tokens, with 3 to 4 times the tool calls; Haiku at both efforts and Sonnet at medium each changed one thing the list didn't name. Sonnet low in ponytail off, lite, full and ultra made the same changes. The fixes were all spelled out, so this shows any model applies such a list; fixes that leave a choice were not tested, and neither was resuming the builder.
 
 ## 1.11.1
 
