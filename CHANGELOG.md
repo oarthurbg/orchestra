@@ -2,6 +2,10 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.11.2
+
+- The fixer rule now cites its test. Ten fixes from a real review, written as a closed list, went to Haiku, Sonnet and Opus at low and medium, each on its own copy, scored blind by an Opus reviewer. All six got 10 of 10 with no new bug. Sonnet low stayed on the list and was the fastest; Haiku used about twice the tokens, with 3 to 4 times the tool calls; Haiku at both efforts and Sonnet at medium each changed one thing the list didn't name. Sonnet low in ponytail off, lite, full and ultra made the same changes. The fixes were all spelled out, so this shows any model applies such a list; fixes that leave a choice were not tested, and neither was resuming the builder.
+
 ## 1.11.1
 
 - The mockup builder, its fix round and UX fixes run at high, not max. The blind test behind the mockup recipe found the capped recipe with the builder at high or medium scored 7.3 and 7.4 out of 10 against 7.7 for an uncapped max build, with better accuracy, for about a third of the tokens. Max came back later without a new test. High also gives the owner a faster loop between rounds.
