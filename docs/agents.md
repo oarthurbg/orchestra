@@ -13,8 +13,8 @@ orchestra ships nine subagents. Each does one job, with its model, effort and po
 | [implementer](#implementer) | Sonnet, medium | full, lite on UI | yes | principal |
 | [implementer-advanced](#implementer-advanced) | Opus, high | full, ultra on infrastructure | yes | principal |
 | [mechanic](#mechanic) | Haiku, low | full | yes | maestro, principal |
-| [spec-reviewer](#spec-reviewer) | Opus, medium | off | no | principal |
-| [quality-reviewer](#quality-reviewer) | Opus, high (xhigh on sensitive tasks) | off | no | principal |
+| [spec-reviewer](#spec-reviewer) | Opus, medium (sensitive tasks) | off | no | principal |
+| [quality-reviewer](#quality-reviewer) | Opus, xhigh (sensitive tasks) | off | no | principal |
 | [screenshotter](#screenshotter) | Sonnet, low | full | no | principal |
 | [verifier](#verifier) | Sonnet, low | full | no | maestro, principal |
 
@@ -79,6 +79,8 @@ On servers, CI, scripts and dependencies it runs in ultra: every extra line ther
 One mechanical task, exactly as asked: docs, the HANDOFF, handoff notes, renames, formatting, moving files. If the task needs a decision (a name, a behavior change, reading the spec), it stops and reports.
 
 ## spec-reviewer
+
+On `sensitive` tasks, in place of superpowers' combined task reviewer, which reviews `mechanical` and `normal` tasks ([Reviews](stages.md#reviews)).
 
 The first review: was it built as the spec and plan say? It checks every spec item exists, the **Interfaces** match, nothing extra was added, the requested tests exist and pass (it runs them), and the commits follow the rules. Answers `APPROVED` or `REJECTED` with the mismatches, and flags the ones that look like spec errors. Style is not its job.
 

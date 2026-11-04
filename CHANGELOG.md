@@ -2,6 +2,12 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.13.0
+
+- `mechanical` and `normal` tasks now get one review: the task reviewer that comes with superpowers' `subagent-driven-development`, which reads the diff once and returns both the spec and the quality verdict. Its model goes on the call: Opus medium on `mechanical`, Opus high on `normal`. Until now a principal could run that reviewer and orchestra's `spec-reviewer` and `quality-reviewer` on the same task. The owner chose one combined reviewer for its cost; it was not tested against two.
+- `sensitive` tasks keep orchestra's two reviewers in sequence, then `security-audit`, in place of the task reviewer. A task never gets both.
+- The task reviewer gets the plan's Review Focus lines for its task and the workstream's test data variable.
+
 ## 1.12.0
 
 orchestra now expects superpowers 7. Update it with `claude plugin update superpowers@orchestra` (or the marketplace you installed it from), then `/reload-plugins`.
