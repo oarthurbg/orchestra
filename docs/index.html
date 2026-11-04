@@ -163,8 +163,8 @@ footer{font-size:12.5px;color:var(--muted);border-top:1px solid var(--line);padd
 
 <script>
 const STAGES=[
- {n:"Brainstorm and mockups",who:"Principal, with the owner; each mockup is built by one subagent and reviewed by another, with one skill owning the direction",agent:"builder · Opus high\nreviewer · Opus xhigh",mode:"off",skills:["superpowers:brainstorming","impeccable:impeccable","frontend-design","taste-skill","impeccable detector","design:design-critique","design:ux-copy","dataviz"]},
- {n:"Spec",who:"Principal",agent:"the session itself",mode:"lite",skills:["security-audit"]},
+ {n:"Brainstorm and mockups",who:"Principal, with the owner; a builder subagent draws each mockup in the visual companion, and the approved one gets a review, a fix and a recheck",agent:"builder · Opus high\nreviewer · Opus xhigh\nfixer, recheck · Sonnet low",mode:"off",skills:["superpowers:brainstorming","impeccable:impeccable","frontend-design","taste-skill","impeccable detector","design:design-critique","design:ux-copy","dataviz"]},
+ {n:"Spec",who:"Principal: brainstorming's design doc, read first by a builder check",agent:"the session itself\nbuilder check · Opus high",mode:"lite",skills:["security-audit"]},
  {n:"Plan",who:"Subagent",agent:"planner · Opus high",mode:"ultra",skills:["superpowers:writing-plans"]},
  {n:"Backend implementation",who:"The principal dispatches one subagent per task (subagent-driven-development); the subagent uses the rest",agent:"implementer · Sonnet medium\nor advanced · Opus high",mode:"full",skills:["superpowers:subagent-driven-development","superpowers:dispatching-parallel-agents","superpowers:test-driven-development","superpowers:verification-before-completion","superpowers:systematic-debugging"]},
  {n:"UI implementation",who:"The principal dispatches one subagent per task (subagent-driven-development); the subagent uses the rest",agent:"implementer · Sonnet medium",mode:"lite",skills:["superpowers:subagent-driven-development","superpowers:dispatching-parallel-agents","impeccable:impeccable","superpowers:test-driven-development","superpowers:verification-before-completion","dataviz"]},

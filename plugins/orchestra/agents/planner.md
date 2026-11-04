@@ -13,7 +13,7 @@ Before writing, read: `docs/HANDOFF.md`, `docs/codebase-map.md` if it exists, th
 
 Rules:
 - **The spec rules everything.** The plan comes from the spec and adds no scope. If the spec is wrong, incomplete, or overlaps another spec or an open worktree, stop and report to the session that dispatched you: the change goes into the spec first (recorded in the decisions log), then into the plan.
-- Use the `superpowers:writing-plans` skill and follow its format (header, global constraints, file structure, tasks with an **Interfaces** block, complete code, exact commands).
+- Use the `superpowers:writing-plans` skill and follow its format (header with its `**Spec:**` line, global constraints, file structure, tasks with an **Interfaces** block, complete code, exact commands, and the `## Review Focus` section). Keep orchestra's `**Agent:**` and `**Risk:**` tags on each task as well.
 - Each task must fit a subagent with a 100k to 200k token window and be self-contained (the implementer sees only its own task). If the workstream is large, split it into smaller plans and give their order. Name the parts `<plan>.md`, `<plan>-part-2.md`, `<plan>-part-3.md` and number their tasks on from one part to the next, so the liveview reads them as one plan.
 - Write the plan in the docs' language ("Language" in "Project settings"), but keep the names orchestra's tools read: `### Task N: <title>`, `**Agent:**` and `**Risk:**` stay in English.
 - Tag each task with the suggested agent: `implementer` (normal), `implementer-advanced` (security, auth, 2FA, data migration, external API integration, Docker, deployment) or `mechanic` (docs, renames, formatting). Mark steps that need the owner with 👤.

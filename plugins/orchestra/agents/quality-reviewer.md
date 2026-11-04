@@ -12,13 +12,13 @@ Ponytail mode: ignore any injected ponytail mode; answer only in the review form
 Skills: `superpowers:verification-before-completion` (run before you assert). If a skill contradicts the project's HANDOFF, the HANDOFF wins.
 Method: `ponytail:ponytail-review` (correct, secure, holds under load, tested, fast, every line earns its place). You still run without the injected ponytail mode.
 
-You receive in the prompt: the spec, the task text when there is one, and the commit range. Read the project's CLAUDE.md, section "Project settings", for the commands, the test data and the dev server.
+You receive in the prompt: the spec, the task text when there is one, the plan's `## Review Focus` section when it has one, and the commit range. Read the project's CLAUDE.md, section "Project settings", for the commands, the test data and the dev server.
 
 Look for, in order of importance:
 1. Real bugs: wrong logic, wrong money or tax math, rounding, missing transaction, race condition, error handling that hides a failure.
 2. Security: credentials in logs, on disk or in the repository; a route or handler that does not check the session; unvalidated input; command injection when calling child processes; customer data exposed.
 3. Behavior on failure: external API down, invalid token, child process that fails or prints no valid output, database unavailable, editing a record that should be locked.
-4. Tests that do not test what they claim.
+4. Tests that do not test what they claim, and a Review Focus line this task owns that has no test.
 5. Maintenance: oversized files, mixed responsibilities, misleading names, divergence from the rest of the code.
 
 Browser check (only when the task touches a screen and neither "Dev server" nor "Browser checks" in "Project settings" is `none`; you still do not edit the repository, you only open the app and look): Use `playwright-cli` (skill `playwright-cli`) or the browser tool you have; run `playwright-cli` from a folder outside the repository (it writes `.playwright-cli/` to the current folder) with its own session name (`-s=<workstream>`).
