@@ -91,7 +91,7 @@ No number is fixed. How much runs at once depends on the machine, the token limi
 
 ## Reviews and merging
 
-- The principal runs the reviews (two stages, risk-proportional, plus the third UI review with screenshots for web UIs; see `stages.md`) and the close-out review: `superpowers:requesting-code-review` dispatches a whole-branch reviewer using `ponytail:ponytail-review`, and `ponytail:ponytail-debt` lists the `shortcut:` comments in the PR description.
+- The principal runs the reviews (spec and quality, combined on most tasks and in sequence on sensitive ones, plus the third UI review with screenshots for web UIs; see `stages.md`) and the close-out review: `superpowers:requesting-code-review` dispatches a whole-branch reviewer using `ponytail:ponytail-review`, and `ponytail:ponytail-debt` lists the `shortcut:` comments in the PR description.
 - A principal never merges its own PR. You merge it with the merge checklist in `checklists.md`, which ends with the full test suite on the integration branch, since reviewers without test data skip the tests that need it.
 - Releases and hotfixes follow their checklists in `checklists.md`.
 - The integration and production branches are permanent: nobody commits or pushes to them directly, and release and hotfix-return PRs are merged with a merge commit (`gh pr merge --merge`), never squash or rebase, and never with `--delete-branch`, which would delete one of them.

@@ -44,7 +44,7 @@ flowchart LR
 | [Infrastructure](#infrastructure) | `implementer-advanced` | ultra | as for backend |
 | Mechanical work, at any stage | [`mechanic`](agents.md#mechanic) | full | none |
 | Searches, at any stage | [`explorer`](agents.md#explorer) | full | none |
-| [Reviews](#reviews) | `spec-reviewer`, `quality-reviewer`, `impeccable:impeccable-finish-reviewer` | off | `verification-before-completion`, `ponytail:ponytail-review`, `design:accessibility-review`, `design:ux-copy`, `superpowers:receiving-code-review` |
+| [Reviews](#reviews) | superpowers' task reviewer; `spec-reviewer` and `quality-reviewer` on sensitive tasks; `impeccable:impeccable-finish-reviewer` | off | `verification-before-completion`, `ponytail:ponytail-review`, `design:accessibility-review`, `design:ux-copy`, `superpowers:receiving-code-review` |
 | [Close-out and PR](#close-out-and-pr) | Principal; `verifier` | full | `superpowers:requesting-code-review`, `ponytail:ponytail-debt`, `security-audit`, `superpowers:finishing-a-development-branch` |
 | [Between releases](#between-releases) | Maestro | full | `ponytail:ponytail-audit`, the impeccable audit, a contradiction check of lessons and decisions |
 
@@ -120,16 +120,16 @@ The planner's risk tag picks the reviews:
 
 | Risk | Reviews |
 | --- | --- |
-| `mechanical` (docs, renames, text) | [`spec-reviewer`](agents.md#spec-reviewer) only |
-| `normal` | `spec-reviewer`, then [`quality-reviewer`](agents.md#quality-reviewer) |
-| `sensitive` (money, access, credentials, database) | `spec-reviewer`, `quality-reviewer` at xhigh, then `security-audit`, in sequence |
+| `mechanical` (docs, renames, text) | superpowers' task reviewer, Opus medium |
+| `normal` | superpowers' task reviewer, Opus high |
+| `sensitive` (money, access, credentials, database) | in its place, [`spec-reviewer`](agents.md#spec-reviewer), [`quality-reviewer`](agents.md#quality-reviewer) at xhigh, then `security-audit`, in sequence |
 | `ui` | the reviews of its other risk, plus a finish review: [`screenshotter`](agents.md#screenshotter) captures, then `impeccable:impeccable-finish-reviewer` compares with the approved mockup, with `design:accessibility-review` and `design:ux-copy` |
 
-Spec and quality reviews run in parallel only on low-risk tasks; on risky tasks they run in sequence, so the quality reviewer sees code that already matches the spec. The finish review needs a web UI with a dev server and browser checks; without them, `ui` tasks get only the reviews of their other risk. Before the PR, one more reviewer checks the whole branch (see [Close-out](#close-out-and-pr)).
+The task reviewer comes with `subagent-driven-development`: one agent reads the task's diff once and returns both verdicts, spec compliance and code quality, which costs less than two agents reading it each. It gets the plan's Review Focus lines for the task, and a short list of `ponytail:ponytail-review`'s checks it lacks (security, data loss, scale, lean code, a concrete case for every finding, `shortcut:` comments as decisions), without that skill's habit of reading every caller. On sensitive tasks orchestra's two reviewers replace it and run in sequence, so the quality reviewer sees code that already matches the spec; a task never gets both. One reviewer instead of two was your call for the cost, not a tested result. The finish review needs a web UI with a dev server and browser checks; without them, `ui` tasks get only the reviews of their other risk. Before the PR, one more reviewer checks the whole branch (see [Close-out](#close-out-and-pr)).
 
-Small changes stay light: a `ui` task that only adjusts an existing screen (spacing, colour, copy) gets `spec-reviewer` alone before the finish review, and screenshots cover only the widths and states it changes.
+Small changes stay light: a `ui` task that only adjusts an existing screen (spacing, colour, copy) gets the task reviewer at Opus medium before the finish review, and screenshots cover only the widths and states it changes.
 
-Skills: every reviewer uses `verification-before-completion` (run the command before asserting anything about it), and `quality-reviewer` uses the `ponytail:ponytail-review` method without the mode. The principal reads the findings with `superpowers:receiving-code-review`, checking each one before acting on it.
+Skills: orchestra's reviewers use `verification-before-completion` (run the command before asserting anything about it), and `quality-reviewer` uses the `ponytail:ponytail-review` method without the mode. The principal reads the findings with `superpowers:receiving-code-review`, checking each one before acting on it.
 
 ## Close-out and PR
 
