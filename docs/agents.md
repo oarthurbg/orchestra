@@ -76,7 +76,7 @@ On servers, CI, scripts and dependencies it runs in ultra: every extra line ther
 
 ## mechanic
 
-One mechanical task, exactly as asked: docs, the HANDOFF, handoff notes, renames, formatting, moving files. If the task needs a decision (a name, a behavior change, reading the spec), it stops and reports.
+One mechanical task, exactly as asked: docs, the HANDOFF, handoff notes, renames, formatting, moving files, or a plan task whose code and test are written out in full in the plan (never a `sensitive` one). If the task needs a decision (a name, a behavior change, reading the spec), it stops and reports.
 
 ## spec-reviewer
 

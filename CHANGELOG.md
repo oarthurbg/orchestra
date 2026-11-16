@@ -2,6 +2,12 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.15.0
+
+- The planner now sends a task whose plan already holds its complete code and test to `mechanic` (Haiku), since building it is copying and running the test. `sensitive` tasks never go to `mechanic`. This follows superpowers' `subagent-driven-development`, which uses its cheapest model for those tasks.
+- When a task's fix loop reaches its fourth round, the principal now moves the task one agent up (`mechanic` to `implementer`, `implementer` to `implementer-advanced`) instead of resuming the agent that is stuck. Before this, nothing said to change agents.
+- No cost or quality change was measured for these rules.
+
 ## 1.14.0
 
 - The maestro and the principals now clear themselves at a natural stop and come back on their own. An alarm session wakes them, and the hook gives them their role and resume again after a clear. Sessions used to stall after a compaction, and the maestro sat at high context re-reading it on every wake.
