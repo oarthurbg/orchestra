@@ -15,7 +15,8 @@ Before you merge, release, ship a hotfix, clear, archive or start a session, or 
 
 - `ask`: say what you are about to do and wait for the owner's yes.
 - `tell`: do it, then report it right away.
-- `auto`: do it, and report it in the next status round.
+- `auto`: do it; it shows only in the next status table, with no separate report.
+- A missing line counts as `auto` for the three opening and clearing lines (start a principal, clear a principal, clear the maestro) and as `ask` for every other. Opening an alarm ("The alarm" below) needs no level.
 
 orchestra is meant to run under bypass permissions, so Claude Code itself never stops you: this list is the gate. Anything that needs admin rights, deletes data or branches, or touches credentials, money or production data is always `ask`, whatever the list says. That rule binds principals and every subagent too. Change a level only on the owner's own word, and date the change in `docs/HANDOFF.md`.
 

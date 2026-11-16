@@ -43,14 +43,15 @@ The orchestra agents read this section for every project-specific value. Keep it
 
 ## Owner authorizations
 
-The maestro reads this before each action below and acts at its level: `ask` (wait for the owner's yes), `tell` (do it, then report right away) or `auto` (do it, report in the next status round). orchestra runs under bypass permissions, so this list is the gate. Change a level only on the owner's own word, and date the change in `docs/HANDOFF.md`.
+The maestro reads this before each action below and acts at its level: `ask` (wait for the owner's yes), `tell` (do it, then report right away) or `auto` (do it; it shows only in the next status table, with no separate report). orchestra runs under bypass permissions, so this list is the gate. Change a level only on the owner's own word, and date the change in `docs/HANDOFF.md`.
 
 - Merge a workstream PR into the integration branch: `ask`
 - Release (integration branch into production branch): `ask`
 - Hotfix into the production branch, and its back-merge: `ask`
-- Clear a principal session at a natural stop: `ask`
+- Clear a principal session at a natural stop: `auto`
+- Clear the maestro session at a natural stop: `auto`
 - Archive a finished principal session: `ask`
-- Start a new principal session: `ask`
+- Start a new principal session: `auto`
 - Server commands that need no admin rights and touch no production data (send files, read health and logs): `ask`
 
 Always `ask`, whatever is written above, for the maestro, principals and every subagent: anything that needs admin rights, deletes data or branches, or touches credentials, money or production data.
