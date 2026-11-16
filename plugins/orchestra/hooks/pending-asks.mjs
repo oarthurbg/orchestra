@@ -133,7 +133,8 @@ export function previousTranscript(dir, current, now) {
     .find(f => calledClear(readText(f)?.split('\n') ?? [])) ?? null
 }
 
-const readJson = f => { try { return JSON.parse(readText(f) ?? '') } catch { return {} } }
+// Anything but an object (null, a number, bad JSON) counts as empty.
+export const readJson = f => { try { const v = JSON.parse(readText(f) ?? ''); return v && typeof v === 'object' ? v : {} } catch { return {} } }
 
 async function main() {
   let input = {}

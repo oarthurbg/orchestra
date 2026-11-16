@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { test } from 'node:test'
-import { noteWaits, previousTranscript, registryExtras, render, renderPrincipal, resumeBlock, roleOf, unansweredMessages, waitingSessions } from '../hooks/pending-asks.mjs'
+import { noteWaits, previousTranscript, readJson, registryExtras, render, renderPrincipal, resumeBlock, roleOf, unansweredMessages, waitingSessions } from '../hooks/pending-asks.mjs'
 
 const NOW = Date.parse('2026-10-30T12:00:00Z')
 const at = h => new Date(NOW - h * 3_600_000).toISOString()
@@ -117,4 +117,15 @@ test('renderPrincipal: note, status line, limit and pause', () => {
   assert.match(out, /Task limit: 2/)
   assert.match(out, /next unticked task/)
   assert.match(renderPrincipal({ source: 'clear', workstream: 'auth', notePath: 'x', status: '', alarm: '', taskLimit: '', paused: true }), /paused/i)
+})
+
+test('readJson gives {} for anything but an object, so alarms lookups never throw', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'pending-asks-'))
+  try {
+    for (const [body, want] of [['null', {}], ['5', {}], ['"x"', {}], ['{bad', {}], ['{"maestro":{"alarm":"a"}}', { maestro: { alarm: 'a' } }]]) {
+      writeFileSync(join(dir, 'a.json'), body)
+      assert.deepEqual(readJson(join(dir, 'a.json')), want)
+    }
+    assert.deepEqual(readJson(join(dir, 'missing.json')), {})
+  } finally { rmSync(dir, { recursive: true, force: true }) }
 })
