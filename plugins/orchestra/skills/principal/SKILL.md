@@ -38,7 +38,7 @@ All nine, shared with the maestro: `explorer`, `planner`, `implementer`, `implem
 Send one line (in the desktop app, `SendMessage` to the maestro session; without it, the status line of your handoff note) when:
 - a decision affects another workstream;
 - you open or change a schema migration;
-- you close a wave of tasks or get close to 250k tokens, with your context size and the model and effort each agent ran at (`get_usage` on yourself; without the desktop app, see `/orchestra:close-wave` step 2);
+- you close a wave of tasks or get close to 250k tokens, with your context size, whether you cleared, and the model and effort each agent ran at (`get_usage` on yourself; without the desktop app, see `/orchestra:close-wave` step 2);
 - the PR is ready to check and merge.
 
 Nothing else. Progress between these (an agent finished, a review is running) goes in your handoff note's status line: every message wakes the maestro, and each wake re-reads its whole context. When the maestro started your session, the app also passes it the start of your last message at every turn end, so end each turn with where things stand in one line.
@@ -49,4 +49,4 @@ You never merge your own PR, and you never touch another workstream's spec, plan
 
 ## Context
 
-At the end of each wave of tasks, check your context and update the status line of your handoff note (skill `orchestra:handoff-note`). Above 250k tokens: stop dispatching, update your handoff note, commit it, and ask the maestro to clear you (`/orchestra:close-wave`). Never ask for a clear in the middle of a task. A notice that an agent or command "did not finish before the previous session ended" needs action now: check the worktree and output, then resume the agent with `SendMessage` or dispatch a new one from the last commit.
+At the end of each wave of tasks, check your context and update the status line of your handoff note (skill `orchestra:handoff-note`). Above 250k tokens: stop dispatching, update your handoff note, commit it, and clear yourself at that natural stop with "The alarm" and "Clearing yourself" in `${CLAUDE_PLUGIN_ROOT}/skills/maestro/SKILL.md` (you do not load that skill, so read those two subsections there). Your handoff note, committed, is the resume. Never clear in the middle of a task. A principal the hook says is paused only updates its status line and waits. With no alarm for your workstream in `.orchestra/alarms.json`, report and wait for the maestro to clear you (`/orchestra:close-wave`), as before. A notice that an agent or command "did not finish before the previous session ended" needs action now: check the worktree and output, then resume the agent with `SendMessage` or dispatch a new one from the last commit.
