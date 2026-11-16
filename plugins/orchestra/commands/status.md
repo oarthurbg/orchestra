@@ -26,14 +26,15 @@ Always in this shape, nothing more:
 Then two short lists:
 
 - **Needs you:** decisions, 👤 steps and approvals, most urgent first, each with the session to answer in.
-- **I'll do next:** what you will do on your own, each marked with its level from "Owner authorizations" in `CLAUDE.md` (for example "clear reports at its next natural stop (ask)").
+- **I'll do next:** what you will do on your own, each marked with its level from "Owner authorizations" in `CLAUDE.md` (for example "merge the PR for `<name>` (ask)"). `auto` items appear only in the table's Next column, not in this list.
 
 ## Act
 
 - **Stalled session:** tell it to resume (`SendMessage` to its session; without the desktop app, ask the owner to type it there), or check its worktree and output first if an agent died with the session.
-- **250k or more at a natural stop:** propose the clear (`/orchestra:close-wave <name>`).
-- **Your own context** at 200k or more, or a wave just ended: clear yourself at this natural stop, as "Context and clearing" in the maestro skill says.
+- **A principal at 250k or more at a natural stop** that has no alarm (no entry in `.orchestra/alarms.json`): clear it with `/orchestra:close-wave <name>`. One with an alarm clears itself.
+- **Your own context** at 200k or more, or at a wave end above 100k: clear yourself at this natural stop, as "Context and clearing" in the maestro skill says.
+- **Authorizations:** if any of the three opening and clearing lines in "Owner authorizations" is missing or `ask`, propose `auto` for it once, in "Needs you", and never again after the owner answers. Change `CLAUDE.md` only on the owner's word, through a docs PR, dated in `docs/HANDOFF.md`.
 - **PR ready:** run the merge checklist in `${CLAUDE_PLUGIN_ROOT}/skills/maestro/checklists.md`.
 - **Registry:** set each row's Stage in `.orchestra/workstreams.md` to the stage in its status line, so the registry never lags behind the note.
 
-Finally, write the same table, with the date and time, to `.orchestra/status.md` (rewrite it each round, never append). That file is not versioned (`/orchestra:init` adds `.orchestra/` to `.gitignore`), so the round never needs a commit; nobody commits to the integration branch directly.
+Finally, write the same table, with the date and time, to `.orchestra/status.md` (the round rewrites the table and the `## Resume` block under it, never appending; the block is refreshed from the current state: what runs, who waits on whom, open asks and what you do next, at most 20 lines). That file is not versioned (`/orchestra:init` adds `.orchestra/` to `.gitignore`), so the round never needs a commit; nobody commits to the integration branch directly.

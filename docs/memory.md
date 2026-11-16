@@ -39,7 +39,7 @@ The same writing rules apply to the note, the HANDOFF and the maestro's resume b
 
 A session that starts after a clear, or takes over a workstream, follows the note's clean-session checklist. Before trusting the note, it compares the note's last commit with `git log` and runs `git status`: newer commits or uncommitted changes mean the session before stopped without updating it, often on a usage limit, so it reads those first and fixes the note. A new session takes over only once the one before it has stopped, since two sessions in one worktree overwrite each other's work.
 
-After the maestro's context is compacted, orchestra's hook rebuilds from disk what still waits on it (unanswered messages, `waiting on:` lines in the notes), and the maestro answers each one before anything else.
+The maestro and the principals clear themselves at a natural stop, through an alarm session that wakes them afterwards. After a compact or a clear, orchestra's hook tells the session its role and gives it its resume: the maestro's `## Resume` block, or the principal's handoff note and status line with its task limit and pause. For the maestro it also rebuilds from disk what still waits on it (unanswered messages, `waiting on:` lines in the notes), and the maestro answers each one before anything else.
 
 ## Lessons
 

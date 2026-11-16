@@ -2,6 +2,15 @@
 
 What changed in each version of the orchestra plugin. The band's Changelog button opens this page. Older versions are in the [commit history](https://github.com/oarthurbg/orchestra/commits/main).
 
+## 1.14.0
+
+- The maestro and the principals now clear themselves at a natural stop and come back on their own. An alarm session wakes them, and the hook gives them their role and resume again after a clear. Sessions used to stall after a compaction, and the maestro sat at high context re-reading it on every wake.
+- Opening principals, clearing principals and clearing the maestro now default to `auto`, so the maestro no longer asks. A missing line counts as `auto` for those three; everything else still starts at `ask`.
+- New worktrees get orchestra turned on and the maestro's permission mode, so a principal starts working instead of waiting on prompts.
+- The registry gains Task limit and Paused columns, which the hook hands back to a principal after a clear.
+- Messages and notes with no question, decision, PR or pause, or that the resume block lists as settled, get no reply after a clear or compact, only open items do. Progress notes still get an empty turn.
+- No savings were measured for these changes.
+
 ## 1.13.0
 
 - `mechanical` and `normal` tasks now get one review: the task reviewer that comes with superpowers' `subagent-driven-development`, which reads the diff once and returns both the spec and the quality verdict. Its model goes on the call: Opus medium on `mechanical`, Opus high on `normal`. Until now a principal could run that reviewer and orchestra's `spec-reviewer` and `quality-reviewer` on the same task. The owner chose one combined reviewer for its cost; it was not tested against two.

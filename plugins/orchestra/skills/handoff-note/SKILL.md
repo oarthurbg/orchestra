@@ -1,6 +1,6 @@
 ---
 name: handoff-note
-description: Fixed template for a workstream's handoff note and the checklist a clean session follows to resume from it. Use when a principal closes a wave, before its context is cleared, and when a cleared or new session picks a workstream back up.
+description: Fixed template for a workstream's handoff note and the checklist a clean session follows to resume from it. Use when a principal closes a wave, before its context is cleared (by itself or by the maestro), and when a cleared or new session picks a workstream back up.
 ---
 
 # Handoff note
@@ -13,13 +13,13 @@ The last commit of the workstream, before merge, deletes the note. The lasting s
 
 ## Status line
 
-The line right under the title is what the maestro's status round reads, so keep it current: update it at the end of every wave, when you start waiting on the owner, and before asking for a clear.
+The line right under the title is what the maestro's status round reads, so keep it current: update it at the end of every wave, when you start waiting on the owner, and before you clear.
 
 `Status: <running | idle | waiting on owner> · context <N>k · <stage>[, task <N> of <M>] · PR <none | #N open | #N ready> · waiting on: <none | what, for whom> · updated <YYYY-MM-DD HH:MM>`
 
 Leave out the task until the plan exists (`spec`, then `plan, task 1 of 12`). Context is the measured size (see `/orchestra:close-wave` step 2), never a guess. `updated` is the real local time (`date`), never a placeholder: the status round uses it to spot stalled sessions.
 
-It is also how a principal reports without the desktop app: the maestro reads it straight from the worktree folder.
+The note is also the resume a principal reads after it clears itself, so write it to be read cold. It is also how a principal reports without the desktop app: the maestro reads it straight from the worktree folder.
 
 ## Template
 
@@ -48,7 +48,7 @@ Write the note in the docs' language, but keep its file name (`docs/workstreams/
 
 ## Clean-session checklist
 
-A session that starts after a clear, or a new session taking over a workstream, does exactly this, in order. A new session takes over only once the one before it has stopped: two sessions in one worktree overwrite each other's work.
+A session that starts after a clear (its own, which the hook resumes, or the maestro's), or a new session taking over a workstream, does exactly this, in order. A new session takes over only once the one before it has stopped: two sessions in one worktree overwrite each other's work.
 
 1. Read the handoff note.
 2. Check it is current: compare its last commit with `git log --oneline -5`, and run `git status`. Newer commits or uncommitted changes mean the session before stopped without updating the note, often on a usage limit. Read those commits and changes first and trust them over the note, then fix the note.

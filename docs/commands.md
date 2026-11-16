@@ -28,11 +28,12 @@ Sets up orchestra in the current project. Run it once in your main session, then
 
 It reads the project first (scripts, test runner, branches, dev server, data store) and proposes values. Then it adds:
 
-- **`CLAUDE.md`:** "How we work", "Project settings", "Owner authorizations" and "Rules from lessons". Every authorization starts at `ask`. If your docs are in another language, it records that and lists any file or heading that breaks the names orchestra's tools read (a translated `## Next workstreams`, `### Tarefa N:`), renaming them only on your yes. See [Docs in another language](setup.md#docs-in-another-language).
+- **`CLAUDE.md`:** "How we work", "Project settings", "Owner authorizations" and "Rules from lessons". Every authorization starts at `ask`, except opening a principal, clearing a principal and clearing the maestro, which start at `auto`. If your docs are in another language, it records that and lists any file or heading that breaks the names orchestra's tools read (a translated `## Next workstreams`, `### Tarefa N:`), renaming them only on your yes. See [Docs in another language](setup.md#docs-in-another-language).
 - **`docs/HANDOFF.md`**, **`docs/workstreams/`**, **`docs/decisions.md`**, **`docs/lessons.md`** and **`docs/superpowers/specs/`**, when missing.
 - **`.orchestra/`** in `.gitignore`, for the live files the band and status rounds write.
 - **Test data commands** for your data store, or `none`.
 - **A branch guard,** if you accept: a pre-push hook that refuses direct pushes to your integration and production branches.
+- **The maestro's alarm,** a session that wakes the maestro after it clears itself.
 
 It shows every change to an existing file before making it, never changes your Claude Code settings (it lists the [recommended ones](setup.md#recommended-settings)), and commits nothing unless you ask.
 
@@ -52,8 +53,9 @@ First it checks that the goal does not overlap an open spec or workstream, that 
 
 - creates a worktree on a new branch from your integration branch, next to the main checkout (when adopting, on the existing branch, or reuses the worktree it already has);
 - creates the workstream's test data and picks a free dev server port, when the project has them;
-- adds a row to `.orchestra/workstreams.md`;
-- starts the principal's session in the worktree with a briefing, at the level of "Start a new principal session" in your owner authorizations. Outside the desktop app, it prints the briefing for you to paste.
+- adds a row to `.orchestra/workstreams.md`, including its Task limit and Paused columns;
+- turns orchestra on in the worktree and gives the principal the maestro's permission mode;
+- starts the principal's session in the worktree with a briefing that also opens its alarm, at the level of "Start a new principal session" in your owner authorizations. Outside the desktop app, it prints the briefing for you to paste.
 
 ## `/orchestra:status`
 
@@ -66,7 +68,7 @@ A status round. Run it in the maestro whenever you want to know how things are g
 | Workstream | State | Context | Stage and task | PR and CI | Waiting on owner | Next |
 | --- | --- | --- | --- | --- | --- | --- |
 
-Then two lists: **Needs you** (decisions and approvals, most urgent first, with the session to answer in) and **I'll do next** (with each action's authorization level). It also nudges stalled sessions, proposes clearing any session at 250k tokens or more (the maestro itself at 200k or at the end of a wave), and runs the merge checklist on a ready PR. The table is also saved to `.orchestra/status.md`, which is not committed.
+Then two lists: **Needs you** (decisions and approvals, most urgent first, with the session to answer in) and **I'll do next** (with each action's authorization level). It also nudges stalled sessions, proposes clearing any session at 250k tokens or more (the maestro itself at 200k or at the end of a wave), and runs the merge checklist on a ready PR. The first time, it proposes the three authorization levels for opening sessions, clearing principals and clearing the maestro. It also rewrites the maestro's `## Resume` block. The table is also saved to `.orchestra/status.md`, which is not committed.
 
 ## `/orchestra:codemap`
 
@@ -102,8 +104,8 @@ The numbers are weighted by what each kind of token costs (input 1, cache write 
 
 Closes a wave of tasks, so a long session can be cleared without losing its place.
 
-- **In a principal,** no argument: waits for running agents, checks the context size, commits the updated handoff note and reports to the maestro. Below 250k tokens it carries on; above, it waits for the maestro.
-- **In the maestro,** with the workstream's name: above 250k tokens and at a natural stop, it confirms the handoff note is current, clears the session and briefs it to resume. Below 250k it does nothing. If the PR is merged and no work remains, it leaves the session idle for the app to archive after a day. Each time, it also checks the size of `docs/HANDOFF.md` on the integration branch: above 12 KB, the next docs PR trims it (see [Memory and handoff](memory.md#the-handoff)).
+- **In a principal,** no argument: waits for running agents, checks the context size, commits the updated handoff note and reports to the maestro. Below 250k tokens it carries on; above, a principal with an alarm clears itself and the hook resumes it; without one, it waits for the maestro.
+- **In the maestro,** with the workstream's name (the fallback for a principal that cannot clear itself): above 250k tokens and at a natural stop, it confirms the handoff note is current, clears the session and briefs it to resume. Below 250k it does nothing. If the PR is merged and no work remains, it leaves the session idle for the app to archive after a day. Each time, it also checks the size of `docs/HANDOFF.md` on the integration branch: above 12 KB, the next docs PR trims it (see [Memory and handoff](memory.md#the-handoff)).
 
 ## `/orchestra:liveview`
 

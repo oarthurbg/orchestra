@@ -6,7 +6,7 @@ How to install, update and configure orchestra.
 
 ## Install
 
-Install at user scope (the default). Principals work in their own worktrees, so a project-scope install reaches them only if `.claude/settings.json` is committed.
+Install at user scope (the default). Principals work in their own worktrees, so a project-scope install reaches them only if `.claude/settings.json` is committed. Keeping orchestra off by default and turning it on per folder also works: `/orchestra:start-workstream` copies the entry into each new worktree.
 
 **With the script** (needs Node 18 or newer). From a terminal:
 
@@ -127,7 +127,7 @@ A change takes effect in sessions started after it, or after `/reload-plugins`.
 orchestra never changes these for you. Apply them yourself.
 
 - **Bypass permissions, in the project only.** With 4 to 6 sessions and their subagents, approval prompts would stall the work. Set it with the desktop app's permission-mode picker per session, or `"permissions": { "defaultMode": "bypassPermissions" }` in the project's `.claude/settings.local.json`. Never in your global settings. Claude Code then never asks, so two gates take over:
-  - **Owner authorizations** in the project's `CLAUDE.md`: `ask`, `tell` or `auto` for merges, releases, hotfixes, clears, archiving and new sessions. They start at `ask`. Anything that needs admin rights, deletes data or branches, or touches credentials, money or production data is always `ask`.
+  - **Owner authorizations** in the project's `CLAUDE.md`: `ask`, `tell` or `auto` for merges, releases, hotfixes, clears, archiving and new sessions. They start at `ask`, except opening sessions, clearing principals and clearing the maestro, which start at `auto`; a missing line counts as `auto` for those three. Anything that needs admin rights, deletes data or branches, or touches credentials, money or production data is always `ask`.
   - **The branch guard**, offered by `/orchestra:init`: a `pre-push` hook that refuses direct pushes to your integration and production branches. It is per clone and `--no-verify` skips it, so also turn on branch protection on GitHub for both branches.
   - **The delete guard**, always on with the plugin: when Claude Code runs shell commands without asking, it refuses `rm`, `Remove-Item`, `rd`, `del`, `rimraf`, `find -delete`, `rsync --delete` and `robocopy /MIR` on anything outside the session's folder and the temp folder, on the folder itself or its `.git`, and on paths it cannot read (an unset variable, `$(...)`, a pipe or `xargs`), and on wildcards that can match `.git`. The agent is told to ask you to delete it yourself. It is a net for a mis-expanded path, not a sandbox: a script, `python` or `node` deleting files gets past it. Keep backups of what you can't lose.
 
@@ -146,7 +146,7 @@ orchestra never changes these for you. Apply them yourself.
 
   In the desktop app the maestro cannot get a larger window than principals: the window is per model, and worktree sessions read project settings from the main checkout. In the plain CLI, start the maestro with `claude --autocompact 800000` (that launch only).
 
-  If the maestro compacts anyway, orchestra's `SessionStart` hook lists what still waits on it: unanswered messages from other sessions (last 24 hours), sessions waiting in their band reports, and handoff notes waiting on someone. The maestro then answers each one still open.
+  If the maestro compacts anyway, orchestra's `SessionStart` hook (it also runs after a clear, for the maestro and the principals) lists what still waits on it: unanswered messages from other sessions (last 24 hours), sessions waiting in their band reports, and handoff notes waiting on someone. The maestro then answers each one still open.
 
 - **Auto-archive on PR close: off; auto-archive of inactive sessions: 1 day** (desktop app settings). PR-close archiving fires on any PR a session is bound to, so it archives a principal minutes after its spec PR merges, mid-workstream, and turns its Remote Control off. The inactivity archive costs no tokens and skips sessions that are running or have background work. The maestro unarchives a session before messaging it, since an archived session refuses messages.
 

@@ -15,7 +15,8 @@ Before you merge, release, ship a hotfix, clear, archive or start a session, or 
 
 - `ask`: say what you are about to do and wait for the owner's yes.
 - `tell`: do it, then report it right away.
-- `auto`: do it, and report it in the next status round.
+- `auto`: do it; it shows only in the next status table, with no separate report.
+- A missing line counts as `auto` for the three opening and clearing lines (start a principal, clear a principal, clear the maestro) and as `ask` for every other. Opening an alarm ("The alarm" below) needs no level.
 
 orchestra is meant to run under bypass permissions, so Claude Code itself never stops you: this list is the gate. Anything that needs admin rights, deletes data or branches, or touches credentials, money or production data is always `ask`, whatever the list says. That rule binds principals and every subagent too. Change a level only on the owner's own word, and date the change in `docs/HANDOFF.md`.
 
@@ -85,7 +86,7 @@ No number is fixed. How much runs at once depends on the machine, the token limi
 
 - The owner answers checkpoints, mockups and design choices directly in the principal (it saves your tokens). You keep priorities, the schema queue, conflicts between workstreams, merges, releases and rollout.
 - Steps marked 👤 need the owner: say so before, and wait for the go-ahead.
-- Every note from a principal wakes you, and each wake re-reads your whole context. A note that only reports progress (no decision, no question for the owner, no PR, no pause) gets a one-line answer with no tool calls, or none at all.
+- Every note from a principal wakes you, and each wake re-reads your whole context. A note that carries no decision, question, PR or pause gets an empty turn: no tool calls, no text.
 - Run `/orchestra:status` every time the owner asks how things are going, when a principal closes a wave, before any merge, and at the start of each of your sessions. It produces one table of every workstream, a "Needs you" list and an "I'll do next" list, catches stalled sessions, and rewrites `.orchestra/status.md`, which is not versioned.
 - A notice that an agent or command "did not finish before the previous session ended" needs action right away: check the worktree and the output, then resume the same agent with `SendMessage` or dispatch a new one from the last commit.
 
@@ -109,20 +110,36 @@ No number is fixed. How much runs at once depends on the machine, the token limi
 ## Context and clearing
 
 - The auto-compact safety net sits at 600k tokens (`autoCompactWindow: 600000` in `~/.claude/settings.json`, at the top level and under `modelSettings` for the session's model, since a per-model value wins in the same file; it applies to new or restarted sessions). It is the net for when nobody checked in time, not the plan. In the desktop app every session on a model shares one window, yours included; only a CLI maestro can get a larger one (`claude --autocompact 800000`).
-- Each principal checks its own context (`get_usage` on itself) when it closes a wave of tasks. Above 250k tokens it stops dispatching, updates its handoff note (skill `orchestra:handoff-note`) and asks you to clear it. Below 250k clearing does not pay off, because the restart rereads the note, the HANDOFF, the spec and the plan.
-- You check every session's usage at each progress question from the owner and whenever a principal closes a wave. At a natural stop (PR merged, wave done, checkpoint, no agent or command running): ask the session to update its handoff note, clear it with `clear_session` (at its level in "Owner authorizations"), then send the briefing back. Use `/orchestra:close-wave`, which holds the briefing text.
+- Each principal checks its own context (`get_usage` on itself) when it closes a wave of tasks. Above 250k tokens it stops dispatching, updates its handoff note (skill `orchestra:handoff-note`) and clears itself, the way "Clearing yourself" below says, and says so in its wave-end line. Below 250k clearing does not pay off, because the restart rereads the note, the HANDOFF, the spec and the plan.
+- You check every session's usage at each progress question from the owner and whenever a principal closes a wave. Principals clear themselves; you clear a principal (with `clear_session`, at its level in "Owner authorizations") only with `/orchestra:close-wave`, which holds the briefing text, when it has no alarm or its own clear failed.
 - Never clear a session in the middle of a task.
 - `clear_session` fails while the session has Remote Control on or live work (a background task, a queued message). Turn Remote Control off first (`set_remote_control`), or ask the session to finish its background tasks and clear itself. A briefing you send right after the clear survives it.
-- Your own context: clear yourself at the end of every wave and above 200k tokens, at a natural stop. Run `/orchestra:status`, write a resume block of at most 20 lines to `.orchestra/status.md` (what runs, what waits on whom, what you do next), then ask the owner to clear you, or `clear_session` on yourself at its level in "Owner authorizations". You live for days, and each wake re-reads everything you hold; your state is in the notes and the status file, so a clear costs little. Durable changes to `docs/HANDOFF.md` go through a PR like any other change. Every session reads it, so keep it under about 12 KB: when it grows past that, the next docs PR trims it. Which lines stay, move or go is your call, so write that list yourself (each line or section, and where it moves); the `mechanic` applies only that list, since a summary made on its own drops facts. Keep in "Where we are" the current state and the last 5 merges, one line per item in "Next workstreams" with a link to its spec or issue, and in "How we work" only what the project adds to the template's rules. Details move to the spec, the decisions log or the handoff note, never out of the repository. Write the HANDOFF and your resume block by the handoff note's writing rules (skill `orchestra:handoff-note`): the latest state wins, running work is pending, exact text, nothing made up.
-- Before a pause longer than the cache lifetime (an hour on a subscription), clear at a natural stop instead of sitting idle: the first message after the cache expires pays to write the whole context again.
+- Changes to `docs/HANDOFF.md` go through a PR like any other change. Every session reads it, so keep it under about 12 KB: when it grows past that, the next docs PR trims it. Which lines stay, move or go is your call, so write that list yourself (each line or section, and where it moves); the `mechanic` applies only that list, since a summary made on its own drops facts. Keep in "Where we are" the current state and the last 5 merges, one line per item in "Next workstreams" with a link to its spec or issue, and in "How we work" only what the project adds to the template's rules. Details move to the spec, the decisions log or the handoff note, never out of the repository. Write the HANDOFF and your resume block by the handoff note's writing rules (skill `orchestra:handoff-note`): the latest state wins, running work is pending, exact text, nothing made up.
 
-## After a compact
+### The alarm
 
-When your context is compacted, orchestra's hook adds a list headed "orchestra: your context was just compacted" with what may still wait on you: messages from sessions you have not answered with `SendMessage` (last 24 hours), waiting band reports and handoff notes whose status line waits on someone. Before anything else:
+A cleared session waits for a message, and nothing sends one. The alarm is a child session that sits idle and wakes you after you clear: a cleared session wakes on a message, and the alarm's turn-end note reaches its parent, which is you. Its entry in `.orchestra/alarms.json` is keyed by the role that owns it (`maestro`, or a workstream name for a principal).
+
+- **When:** open it on the first turn the owner types to you, or in `/orchestra:init`. A principal opens its own in the turn its briefing started (a session may start another in its first brief). The app refuses `start_session` on a turn that a message or a note started. Check `.orchestra/alarms.json` first: if your entry has an `alarm` and `get_session` finds it unarchived, keep it.
+- **How:** get your own id with `get_session("self")` first, since the brief needs it. Then `start_session` with `use_worktree: false`, model `claude-haiku-5-5`, effort `low`, title "orchestra alarm", `context: "fresh"` and this brief, exactly: "orchestra alarm for session <your local_ id>. Edit nothing, read nothing, load no skill. When a message asks you to wait N seconds, run `node -e \"setTimeout(()=>{}, N*1000)\"` and end your turn with the one word `done`. Any other message: end your turn with `idle`." Then `set_session_permission_mode` on it to your own mode (a session you started shows no approval card), and write `{ "<key>": { "session": "<your local_ id>", "alarm": "<its id>" } }` into the main checkout's `.orchestra/alarms.json` (the first line of `git worktree list`: the hook reads it from there, so a principal in a worktree must not write its own copy), keeping the other keys and creating `.orchestra/` if it is missing. The key is `maestro`, or the workstream's name for a principal.
+
+### Clearing yourself
+
+Do it at a natural stop (no agent or command running) above 200k tokens, at a wave end above 100k, and above 150k before a pause longer than an hour (the cache lifetime on a subscription: the first message after it expires pays to write the whole context again). A principal clears only at a wave end above 250k; its step 2 is updating and committing its handoff note instead of writing `status.md`, and its resume is that note.
+
+1. Check the alarm: `get_session` on it. If `isArchived`, run `unarchive_session` (no owner question). If it is missing, open a new one as "The alarm" says if this turn allows it; otherwise do not clear, and say so in "Needs you" (maestro) or in your wave-end report (principal). Then run `set_session_permission_mode` on the alarm to your own mode (harmless when it is already there), so an alarm opened while its parent was still in auto mode gets raised.
+2. Write the resume block under `## Resume` in `.orchestra/status.md`: at most 20 lines with what runs, who waits on whom, the open asks you know of and what you do next.
+3. Turn Remote Control off on yourself (`set_remote_control`).
+4. `SendMessage` to your alarm: "wait 20 s, then end your turn".
+5. `clear_session("self")` and end the turn. The alarm's note wakes you, and the hook's resume carries you on. If `clear_session` refuses, turn Remote Control back on and carry on; the alarm's `done` still arrives, so give it an empty turn.
+
+## After a compact or a clear
+
+When your context is compacted or cleared, orchestra's hook adds a list. After a clear (header "orchestra: you cleared your context.") it starts with the first steps: load this skill, turn Remote Control back on, the resume block and your alarm. Under the header "orchestra: your context was just compacted" (or cleared) it lists what may still wait on you: messages from sessions you have not answered with `SendMessage` (last 24 hours), waiting band reports and handoff notes whose status line waits on someone. Before anything else:
 
 1. Take each item in turn. Check whether it is already settled: the PR merged, the decision sent, the session moved on (its band report or status line no longer waits).
-2. Answer every open one now, with `SendMessage` to that session. One line is enough when the answer is "noted" or "merged".
-3. Run `/orchestra:status`.
+2. Answer every open one now, with `SendMessage` to that session. One line is enough when the answer is "noted" or "merged". A message or note that carries no question, decision, PR or pause, or that the `## Resume` block lists as settled, counts as settled and gets no reply.
+3. If no session is working and nothing needs you, run `/orchestra:status`.
 
 Without the list (the hook did not run, or you are not sure the summary kept everything), rebuild it by hand: read `.orchestra/sessions/*.json` for `waiting` states and their `detail`, the status line of each registered workstream's handoff note, and ask the owner whether a principal is waiting on you.
 
@@ -144,6 +161,7 @@ The roles and agents work in the plain CLI; the session tools become manual step
 | `SendMessage` to a principal (resume, briefing) | The owner types it in that session |
 | `get_usage` | Each principal records its context size in the status line at the end of every wave |
 | `clear_session` | The owner types `/clear` in that session and pastes the briefing back |
+| The alarm and clearing yourself | The owner types `/clear` and the hook's resume carries you on |
 | `archive_session` | The owner closes that terminal |
 | `list_events` (stalled check) | The status line's "updated" time and the worktree's last commit time |
 
