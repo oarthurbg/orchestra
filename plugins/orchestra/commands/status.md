@@ -37,4 +37,4 @@ Then two short lists:
 - **PR ready:** run the merge checklist in `${CLAUDE_PLUGIN_ROOT}/skills/maestro/checklists.md`.
 - **Registry:** set each row's Stage in `.orchestra/workstreams.md` to the stage in its status line, so the registry never lags behind the note.
 
-Finally, write the same table, with the date and time, to `.orchestra/status.md` (the round rewrites the table and the `## Resume` block under it, never appending). That file is not versioned (`/orchestra:init` adds `.orchestra/` to `.gitignore`), so the round never needs a commit; nobody commits to the integration branch directly.
+Finally, write the same table, with the date and time, to `.orchestra/status.md` (the round rewrites the table and the `## Resume` block under it, never appending; the block is refreshed from the current state: what runs, who waits on whom, open asks and what you do next, at most 20 lines). That file is not versioned (`/orchestra:init` adds `.orchestra/` to `.gitignore`), so the round never needs a commit; nobody commits to the integration branch directly.
