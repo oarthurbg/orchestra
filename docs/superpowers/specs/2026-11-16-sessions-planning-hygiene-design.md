@@ -67,7 +67,7 @@ On Gcem and gcem core the owner sees four problems:
 - It is opened when the app allows it: the maestro's in `/orchestra:init` or on the first turn the owner types to the maestro; a principal's on its first turn, from its briefing (`/orchestra:start-workstream` adds the step to the briefing).
 - Its brief: when messaged, wait the number of seconds the message says (a `node -e "setTimeout(...)"` wait), then end the turn with one line. Edit nothing.
 - Right after opening it, the opener raises it to its own permission mode with `set_session_permission_mode`. A session may raise one it started to its own mode with no approval card. An alarm left in auto mode could have its wait held, and the cleared session would never wake.
-- Its session id is written where the hook finds it: `.orchestra/alarms.json` in the main checkout, keyed by the app's session id of the session that owns it (the `local_…` id from `get_session("self")`, which stays the same across a clear; the transcript does not).
+- Its session id is written where the hook finds it: `.orchestra/alarms.json` in the main checkout, keyed by the owner's role (`maestro`, or the workstream's name), which stays the same across a clear as the transcript does not, with the owner's app session id (`local_…` from `get_session("self")`) beside the alarm's. The hook gets no app session id, so it finds the entry by role.
 
 **1.3 Clearing yourself.** Same steps for both roles, at a natural stop (no agent or command running, wave done, PR merged or checkpoint):
 1. Write the resume: the principal updates its handoff note (skill `orchestra:handoff-note`) and commits it; the maestro rewrites the resume block in `.orchestra/status.md` (at most 20 lines: what runs, who waits on whom, what it does next). The maestro rewrites this block in every status round too, so it is never stale.
@@ -89,6 +89,7 @@ The output stays under the hook's current 9,500-character cap.
 **1.5 Notes that only report progress.** The maestro answers an automatic turn-end note that carries no decision, question, PR or pause with an empty turn: no tool calls, no text. Today the rule allows "a one-line answer".
 
 **1.6 Permission mode of a new principal.** `/orchestra:start-workstream` raises a new principal to the maestro's own permission mode with `set_session_permission_mode` right after `start_session`, as it already raises effort. Without it the principal starts in auto mode and its alarm, clear and Remote Control calls get refused.
+- **The plugin in the new folder.** The owner keeps orchestra off in the user settings and turns it on per project folder (`enabledPlugins` with `"orchestra@<marketplace>": true` in that folder's `.claude/settings.local.json`, which git does not copy into a new worktree). Before `start_session`, `/orchestra:start-workstream` writes the same entry, copied from the main checkout's settings, into the worktree's `.claude/settings.local.json`, merging into a file that exists. Without it the principal has no `orchestra:principal` skill, no agents and no resume hook after a clear. The alarm shares the folder, so it gets the plugin too. (Owner, 2026-11-16.)
 
 ### Part 2: planning the app
 
