@@ -1,7 +1,10 @@
 // Run with: node --test plugins/orchestra/tests/pending-asks.test.mjs
 import assert from 'node:assert/strict'
+import { mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
 import { test } from 'node:test'
-import { noteWaits, render, unansweredMessages, waitingSessions } from '../hooks/pending-asks.mjs'
+import { noteWaits, previousTranscript, registryExtras, render, renderPrincipal, resumeBlock, roleOf, unansweredMessages, waitingSessions } from '../hooks/pending-asks.mjs'
 
 const NOW = Date.parse('2026-10-30T12:00:00Z')
 const at = h => new Date(NOW - h * 3_600_000).toISOString()
@@ -56,4 +59,62 @@ test('render lists every source and stays under the context cap', () => {
   const small = render({ messages: [], waiting: [{ who: 'reports', detail: 'pick', since: at(1) }], notes: [{ workstream: 'auth', on: 'maestro' }] })
   assert.match(small, /- reports: pick/)
   assert.match(small, /- auth: waiting on maestro/)
+})
+
+test('roleOf: main checkout is the maestro, a registered worktree its principal, anything else nothing', () => {
+  const registry = [{ name: 'auth', worktree: '../repo-auth' }]
+  assert.deepEqual(roleOf({ top: '/w/repo', main: '/w/repo', registry }), { role: 'maestro' })
+  assert.deepEqual(roleOf({ top: '/w/repo-auth', main: '/w/repo', registry }), { role: 'principal', workstream: 'auth', worktree: resolve('/w/repo', '../repo-auth') })
+  assert.equal(roleOf({ top: '/w/other', main: '/w/repo', registry }), null)
+})
+
+test('registryExtras reads task limit and pause by header, with or without the optional columns', () => {
+  const full = '| Workstream | Session | Branch and worktree | Test data | Port | Schema change | Stage | Task limit | Paused |\n| --- | --- | --- | --- | --- | --- | --- | --- | --- |\n| auth | s1 | `auth` at `/w/a` | db_auth | 3001 | no | build | 2 | yes |'
+  const lean = '| Workstream | Session | Branch and worktree | Schema change | Stage | Task limit | Paused |\n| --- | --- | --- | --- | --- | --- | --- |\n| auth | s1 | `auth` at `/w/a` | no | build | 3 | no |'
+  assert.deepEqual(registryExtras(full, 'auth'), { taskLimit: '2', paused: true })
+  assert.deepEqual(registryExtras(lean, 'auth'), { taskLimit: '3', paused: false })
+  assert.deepEqual(registryExtras(lean, 'gone'), { taskLimit: '', paused: false })
+  assert.deepEqual(registryExtras('', 'auth'), { taskLimit: '', paused: false })
+})
+
+test('resumeBlock takes the Resume section, capped at 20 lines', () => {
+  const md = `# Status\n\n| table |\n\n## Resume\n${Array.from({ length: 25 }, (_, i) => `- line ${i}`).join('\n')}\n\n## Other\nx`
+  const block = resumeBlock(md)
+  assert.equal(block.split('\n').length, 20)
+  assert.match(block, /^- line 0/)
+  assert.equal(resumeBlock('# Status\nno block'), '')
+})
+
+test('previousTranscript picks the newest earlier transcript that cleared itself, never the alarm', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'pending-asks-'))
+  try {
+    const cleared = JSON.stringify({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'mcp__ccd_session_mgmt__clear_session', input: {} }] } })
+    const plain = JSON.stringify({ type: 'assistant', message: { content: [{ type: 'text', text: 'hi' }] } })
+    for (const [f, body] of [['current.jsonl', plain], ['alarm.jsonl', plain], ['maestro.jsonl', cleared], ['old.jsonl', cleared]]) writeFileSync(join(dir, f), body)
+    const now = Date.now()
+    const t = ms => new Date(now - ms)
+    utimesSync(join(dir, 'old.jsonl'), t(2 * 86_400_000), t(2 * 86_400_000))
+    utimesSync(join(dir, 'maestro.jsonl'), t(60_000), t(60_000))
+    utimesSync(join(dir, 'alarm.jsonl'), t(1000), t(1000))
+    assert.equal(previousTranscript(dir, join(dir, 'current.jsonl'), now), join(dir, 'maestro.jsonl'))
+  } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('render after a clear starts with the maestro first steps, the resume and the alarm', () => {
+  const out = render({ source: 'clear', resume: '- auth builds task 3', alarm: 'local_al', messages: [], waiting: [], notes: [] })
+  assert.match(out, /orchestra:maestro/)
+  assert.match(out, /set_remote_control/)
+  assert.match(out, /- auth builds task 3/)
+  assert.match(out, /local_al/)
+  assert.match(out, /\/orchestra:status/)
+  assert.match(render({ source: 'clear', messages: [], waiting: [], notes: [] }), /No alarm recorded/)
+})
+
+test('renderPrincipal: note, status line, limit and pause', () => {
+  const out = renderPrincipal({ source: 'clear', workstream: 'auth', notePath: 'docs/workstreams/auth.md', status: 'Status: idle · context 40k', alarm: 'local_al', taskLimit: '2', paused: false })
+  assert.match(out, /orchestra:principal/)
+  assert.match(out, /docs\/workstreams\/auth\.md/)
+  assert.match(out, /Task limit: 2/)
+  assert.match(out, /next unticked task/)
+  assert.match(renderPrincipal({ source: 'clear', workstream: 'auth', notePath: 'x', status: '', alarm: '', taskLimit: '', paused: true }), /paused/i)
 })

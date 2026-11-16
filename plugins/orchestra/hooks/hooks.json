@@ -1,7 +1,7 @@
 {
   "hooks": {
     "SessionStart": [
-      { "matcher": "compact", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/pending-asks.mjs\"" }] }
+      { "matcher": "compact|clear", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/pending-asks.mjs\"" }] }
     ],
     "PreToolUse": [
       { "matcher": "Bash|PowerShell", "hooks": [{ "type": "command", "command": "node \"${CLAUDE_PLUGIN_ROOT}/hooks/delete-guard.mjs\"" }] }
