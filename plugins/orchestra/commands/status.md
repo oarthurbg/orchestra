@@ -26,7 +26,7 @@ Always in this shape, nothing more:
 Then two short lists:
 
 - **Needs you:** decisions, 👤 steps and approvals, most urgent first, each with the session to answer in.
-- **I'll do next:** what you will do on your own, each marked with its level from "Owner authorizations" in `CLAUDE.md` (for example "clear reports at its next natural stop (ask)"). `auto` items appear only in the table's Next column, not in this list.
+- **I'll do next:** what you will do on your own, each marked with its level from "Owner authorizations" in `CLAUDE.md` (for example "merge the PR for `<name>` (ask)"). `auto` items appear only in the table's Next column, not in this list.
 
 ## Act
 
@@ -37,4 +37,4 @@ Then two short lists:
 - **PR ready:** run the merge checklist in `${CLAUDE_PLUGIN_ROOT}/skills/maestro/checklists.md`.
 - **Registry:** set each row's Stage in `.orchestra/workstreams.md` to the stage in its status line, so the registry never lags behind the note.
 
-Finally, write the same table, with the date and time, to `.orchestra/status.md` (rewrite it each round, never append). That file is not versioned (`/orchestra:init` adds `.orchestra/` to `.gitignore`), so the round never needs a commit; nobody commits to the integration branch directly.
+Finally, write the same table, with the date and time, to `.orchestra/status.md` (the round rewrites the table and the `## Resume` block under it, never appending). That file is not versioned (`/orchestra:init` adds `.orchestra/` to `.gitignore`), so the round never needs a commit; nobody commits to the integration branch directly.
