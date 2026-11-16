@@ -28,7 +28,7 @@ Sets up orchestra in the current project. Run it once in your main session, then
 
 It reads the project first (scripts, test runner, branches, dev server, data store) and proposes values. Then it adds:
 
-- **`CLAUDE.md`:** "How we work", "Project settings", "Owner authorizations" and "Rules from lessons". Every authorization starts at `ask`. If your docs are in another language, it records that and lists any file or heading that breaks the names orchestra's tools read (a translated `## Next workstreams`, `### Tarefa N:`), renaming them only on your yes. See [Docs in another language](setup.md#docs-in-another-language).
+- **`CLAUDE.md`:** "How we work", "Project settings", "Owner authorizations" and "Rules from lessons". Every authorization starts at `ask`, except opening a principal, clearing a principal and clearing the maestro, which start at `auto`. If your docs are in another language, it records that and lists any file or heading that breaks the names orchestra's tools read (a translated `## Next workstreams`, `### Tarefa N:`), renaming them only on your yes. See [Docs in another language](setup.md#docs-in-another-language).
 - **`docs/HANDOFF.md`**, **`docs/workstreams/`**, **`docs/decisions.md`**, **`docs/lessons.md`** and **`docs/superpowers/specs/`**, when missing.
 - **`.orchestra/`** in `.gitignore`, for the live files the band and status rounds write.
 - **Test data commands** for your data store, or `none`.

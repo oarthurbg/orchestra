@@ -8,7 +8,7 @@ What changed in each version of the orchestra plugin. The band's Changelog butto
 - Opening principals, clearing principals and clearing the maestro now default to `auto`, so the maestro no longer asks. A missing line counts as `auto` for those three; everything else still starts at `ask`.
 - New worktrees get orchestra turned on and the maestro's permission mode, so a principal starts working instead of waiting on prompts.
 - The registry gains Task limit and Paused columns, which the hook hands back to a principal after a clear.
-- Notes that only report progress get an empty turn, so they no longer cost a reply.
+- Messages and notes with no question, decision, PR or pause, or that the resume block lists as settled, get no reply after a clear or compact, only open items do. Progress notes still get an empty turn.
 - No savings were measured for these changes.
 
 ## 1.13.0

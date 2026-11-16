@@ -125,21 +125,21 @@ A cleared session waits for a message, and nothing sends one. The alarm is a chi
 
 ### Clearing yourself
 
-Do it at a natural stop (no agent or command running) above 200k tokens, at every wave end, and above 150k before a pause longer than an hour (the cache lifetime on a subscription: the first message after it expires pays to write the whole context again). A principal clears only at a wave end above 250k; its step 2 is updating and committing its handoff note instead of writing `status.md`, and its resume is that note.
+Do it at a natural stop (no agent or command running) above 200k tokens, at a wave end above 100k, and above 150k before a pause longer than an hour (the cache lifetime on a subscription: the first message after it expires pays to write the whole context again). A principal clears only at a wave end above 250k; its step 2 is updating and committing its handoff note instead of writing `status.md`, and its resume is that note.
 
-1. Check the alarm: `get_session` on it. If `isArchived`, run `unarchive_session` (no owner question). If it is missing, open a new one as "The alarm" says if this turn allows it; otherwise do not clear, and say so in "Needs you".
+1. Check the alarm: `get_session` on it. If `isArchived`, run `unarchive_session` (no owner question). If it is missing, open a new one as "The alarm" says if this turn allows it; otherwise do not clear, and say so in "Needs you" (maestro) or in your wave-end report (principal). Then run `set_session_permission_mode` on the alarm to your own mode (harmless when it is already there), so an alarm opened while its parent was still in auto mode gets raised.
 2. Write the resume block under `## Resume` in `.orchestra/status.md`: at most 20 lines with what runs, who waits on whom, the open asks you know of and what you do next.
 3. Turn Remote Control off on yourself (`set_remote_control`).
 4. `SendMessage` to your alarm: "wait 20 s, then end your turn".
-5. `clear_session("self")` and end the turn. The alarm's note wakes you, and the hook's resume carries you on. If `clear_session` refuses, turn Remote Control back on and carry on.
+5. `clear_session("self")` and end the turn. The alarm's note wakes you, and the hook's resume carries you on. If `clear_session` refuses, turn Remote Control back on and carry on; the alarm's `done` still arrives, so give it an empty turn.
 
 ## After a compact or a clear
 
 When your context is compacted or cleared, orchestra's hook adds a list. After a clear (header "orchestra: you cleared your context.") it starts with the first steps: load this skill, turn Remote Control back on, the resume block and your alarm. Under the header "orchestra: your context was just compacted" (or cleared) it lists what may still wait on you: messages from sessions you have not answered with `SendMessage` (last 24 hours), waiting band reports and handoff notes whose status line waits on someone. Before anything else:
 
 1. Take each item in turn. Check whether it is already settled: the PR merged, the decision sent, the session moved on (its band report or status line no longer waits).
-2. Answer every open one now, with `SendMessage` to that session. One line is enough when the answer is "noted" or "merged".
-3. Run `/orchestra:status`.
+2. Answer every open one now, with `SendMessage` to that session. One line is enough when the answer is "noted" or "merged". A message or note that carries no question, decision, PR or pause, or that the `## Resume` block lists as settled, counts as settled and gets no reply.
+3. If no session is working and nothing needs you, run `/orchestra:status`.
 
 Without the list (the hook did not run, or you are not sure the summary kept everything), rebuild it by hand: read `.orchestra/sessions/*.json` for `waiting` states and their `detail`, the status line of each registered workstream's handoff note, and ask the owner whether a principal is waiting on you.
 

@@ -75,7 +75,7 @@ On Gcem and gcem core the owner sees four problems:
 3. Message its alarm: "wait 20 s, then end your turn".
 4. `clear_session("self")` and end the turn.
 
-When the maestro clears: at a natural stop above 200k tokens, at the end of every wave, and before an idle stretch longer than the cache lifetime (an hour) above 150k. A principal: at the end of a wave above 250k (the current threshold). The principal no longer asks the maestro to clear it; it reports the clear in its wave-end line. The maestro's `/orchestra:close-wave` part for principals becomes the fallback for a principal that has no alarm (opened before this version) or a failed clear.
+When the maestro clears: at a natural stop above 200k tokens, at the end of a wave above 100k, and before an idle stretch longer than the cache lifetime (an hour) above 150k. A principal: at the end of a wave above 250k (the current threshold). The principal no longer asks the maestro to clear it; it reports the clear in its wave-end line. The maestro's `/orchestra:close-wave` part for principals becomes the fallback for a principal that has no alarm (opened before this version) or a failed clear.
 
 **1.4 Coming back.** The SessionStart hook (`hooks/pending-asks.mjs`, today matcher `compact`) also runs on `clear`. It works out the role from the session's folder: the main checkout is the maestro, a folder registered in `.orchestra/workstreams.md` is that workstream's principal. It injects:
 - the first steps: load the role's skill (`orchestra:maestro` or `orchestra:principal`) and turn Remote Control back on;

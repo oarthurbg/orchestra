@@ -60,7 +60,7 @@ export function render({ source = 'compact', resume = '', alarm = '', messages, 
   const cleared = source === 'clear'
   const out = [cleared
     ? `orchestra: you cleared your context. First: load the orchestra:maestro skill, turn your Remote Control back on (set_remote_control on yourself), then read the resume below. ${alarm ? `Your alarm for the next clear: ${alarm}.` : noAlarm('The alarm', 'maestro')}`
-    : 'orchestra: your context was just compacted, and principals may still be waiting on you. Follow "After a compact" in the maestro skill: for each item below, check whether it is already done (PR merged, decision sent); if not, answer it now with SendMessage to that session. Then run /orchestra:status.']
+    : 'orchestra: your context was just compacted, and principals may still be waiting on you. Follow "After a compact" in the maestro skill: for each item below, check whether it is already done (PR merged, decision sent); if not, answer it now with SendMessage to that session.']
   if (cleared) out.push('Resume (from .orchestra/status.md):', resume || 'No resume block in .orchestra/status.md.')
   else if (resume) out.push('Resume (from .orchestra/status.md):', resume)
   out.push('What waits, rebuilt from disk:')
@@ -90,7 +90,7 @@ export function renderPrincipal({ source = 'compact', workstream, notePath, stat
     status,
     `Task limit: ${taskLimit || 1} at once.`,
     alarm ? `Your alarm for the next clear: ${alarm}.` : noAlarm('Context', 'principal'),
-    paused ? 'You are paused: update your status line and wait for the maestro.' : 'Continue from the next unticked task of your plan.',
+    paused ? 'You are paused: update your status line and wait for the maestro.' : 'Continue from the task your note names (the next unticked task of your plan).',
   ].filter(Boolean).join('\n'), MAX_OUT)
 }
 

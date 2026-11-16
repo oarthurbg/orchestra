@@ -17,7 +17,7 @@
 - `parseRegistry` in `liveview/snapshot.mjs` is unchanged: the liveview tests pin its rows exactly.
 - The always-`ask` list (admin rights, deleting data or branches, credentials, money, production data) is unchanged everywhere.
 - The alarm: Haiku at low effort, sharing the opener's folder, wait 20 s; the wait is `node -e "setTimeout(()=>{}, <ms>)"`.
-- Thresholds: maestro clears above 200k at a natural stop, at every wave end, and above 150k before an idle stretch over an hour; a principal clears at a wave end above 250k.
+- Thresholds: maestro clears above 200k at a natural stop, at a wave end above 100k, and above 150k before an idle stretch over an hour; a principal clears at a wave end above 250k.
 - Resume block: at most 20 lines.
 - Version `1.14.0` in `plugins/orchestra/.claude-plugin/plugin.json`, with a `## 1.14.0` section at the top of `CHANGELOG.md`, in plain words, claiming nothing unmeasured.
 - Commits: `git add <path>` only; end with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
