@@ -94,7 +94,7 @@ The spec is brainstorming's design doc, written after you approve the mockup. A 
 
 ## Backend, database and integrations
 
-**Full**, because in backend code extra lines become extra bugs. Full still keeps validation, error handling and security. `implementer` takes normal tasks, `implementer-advanced` takes security, migrations and integrations.
+**Full**, because in backend code extra lines become extra bugs. Full still keeps validation, error handling and security. `implementer` takes normal tasks, `implementer-advanced` takes security, migrations and integrations, and `mechanic` takes a task whose plan already holds its complete code and test. When a task's fix loop reaches its fourth round, the principal moves it one agent up (`mechanic` to `implementer`, `implementer` to `implementer-advanced`) instead of resuming the stuck one.
 
 - The principal runs the plan with `superpowers:subagent-driven-development` (one fresh subagent per task, reviews between tasks) and `superpowers:dispatching-parallel-agents` for independent tasks.
 - The subagent uses `test-driven-development` (see the test fail first), `verification-before-completion` (claim done only with real command output) and `systematic-debugging` (root cause before any change).
